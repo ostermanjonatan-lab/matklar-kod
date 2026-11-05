@@ -1,0 +1,103 @@
+import React, { useState, useLayoutEffect } from 'react';
+import { RecipeProvider, useRecipes } from './context/RecipeContext';
+import { BottomNav } from './components/layout/BottomNav';
+import { DesktopNav } from './components/layout/DesktopNav';
+import { PwaInstallPrompt } from './components/layout/PwaInstallPrompt';
+import { RecipeList } from './components/recipes/RecipeList';
+import { RecipeDetail } from './components/recipes/RecipeDetail';
+import { MealPlanView } from './components/mealplan/MealPlanView';
+import { ShoppingListView } from './components/shopping/ShoppingListView';
+import { SettingsView } from './components/settings/SettingsView';
+import { AddRecipeModal } from './components/recipes/AddRecipeModal';
+import { AddShoppingItemModal } from './components/shopping/AddShoppingItemModal';
+import { JoinRequestNotification } from './components/notifications/JoinRequestNotification';
+import { useModalBackHandler } from './hooks/useModalBackHandler';
+
+const AppContent: React.FC = () => {
+  const { activeTab, selectedRecipe, closeRecipeDetail } = useRecipes();
+  const [showAddModal, setShowAddModal] = useState<boolean>(false);
+  const [showAddShoppingModal, setShowAddShoppingModal] = useState<boolean>(false);
+
+  // Synchronize Modals with Android back button
+  useModalBackHandler(showAddModal, () => setShowAddModal(false), 'add-recipe-modal');
+  useModalBackHandler(showAddShoppingModal, () => setShowAddShoppingModal(false), 'add-shopping-modal');
+  useModalBackHandler(!!selectedRecipe, closeRecipeDetail, 'recipe-detail-modal');
+
+  // Always reset scroll to top whenever changing tabs
+  useLayoutEffect(() => {
+    const resetScroll = () => {
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+      if (document.documentElement) document.documentElement.scrollTop = 0;
+      if (document.body) document.body.scrollTop = 0;
+      const mainEl = document.querySelector('main');
+      if (mainEl) mainEl.scrollTop = 0;
+    };
+
+    resetScroll();
+    const rafId = requestAnimationFrame(resetScroll);
+    const timerId = setTimeout(resetScroll, 20);
+
+    return () => {
+      cancelAnimationFrame(rafId);
+      clearTimeout(timerId);
+    };
+  }, [activeTab]);
+
+  return (
+    <div className="min-h-screen w-full bg-[#FCFAF5] flex flex-col justify-between selection:bg-emerald-200 overflow-x-hidden font-sans text-stone-900">
+      {/* Desktop & iPad Top Navigation Bar (Hidden on Mobile) */}
+      <DesktopNav
+        onAddRecipeClick={() => setShowAddModal(true)}
+        onAddShoppingItemClick={() => setShowAddShoppingModal(true)}
+      />
+
+      {/* Adaptive Container: max-w-md on mobile, max-w-5xl on tablet, max-w-7xl on desktop */}
+      <main className="w-full max-w-md md:max-w-5xl lg:max-w-7xl mx-auto min-h-screen bg-[#FCFAF5] shadow-2xl md:shadow-none flex flex-col relative min-w-0 overflow-x-hidden flex-1">
+        {/* PWA Install Prompt Banner */}
+        <PwaInstallPrompt />
+
+        {/* Global Join Request Notification for Household Admin */}
+        <JoinRequestNotification />
+
+        {/* Main Tab Views (Stay mounted underneath when modal opens) */}
+        {activeTab === 'recipes' && <RecipeList />}
+        {activeTab === 'mealplan' && <MealPlanView />}
+        {activeTab === 'shopping' && <ShoppingListView />}
+        {activeTab === 'settings' && <SettingsView />}
+
+        {/* Recipe Detail Popup Modal with blurred background */}
+        {selectedRecipe && (
+          <RecipeDetail
+            key={selectedRecipe.id}
+            recipe={selectedRecipe}
+            onBack={closeRecipeDetail}
+          />
+        )}
+
+        {/* Global Add Recipe Modal */}
+        {showAddModal && <AddRecipeModal onClose={() => setShowAddModal(false)} />}
+
+        {/* Global Add Shopping Item Modal */}
+        {showAddShoppingModal && (
+          <AddShoppingItemModal onClose={() => setShowAddShoppingModal(false)} />
+        )}
+
+        {/* Persistent Bottom Navigation Bar with Center Add Button */}
+        <BottomNav
+          onAddRecipeClick={() => setShowAddModal(true)}
+          onAddShoppingItemClick={() => setShowAddShoppingModal(true)}
+        />
+      </main>
+    </div>
+  );
+};
+
+export function App() {
+  return (
+    <RecipeProvider>
+      <AppContent />
+    </RecipeProvider>
+  );
+}
+
+export default App;
