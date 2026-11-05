@@ -2,8 +2,8 @@
   "name": "Matklar – Recept & Veckoplan",
   "short_name": "Matklar",
   "description": "Matklar – Smart mobilanpassad receptsamling, veckoplanering och inköpslista för hela hushållet.",
-  "start_url": "/",
-  "scope": "/",
+  "start_url": "./",
+  "scope": "./",
   "display": "standalone",
   "orientation": "portrait-primary",
   "background_color": "#FCFAF5",
@@ -12,13 +12,13 @@
   "categories": ["food", "lifestyle", "utilities"],
   "icons": [
     {
-      "src": "/icon.svg",
+      "src": "./icon.svg",
       "sizes": "192x192 512x512",
       "type": "image/svg+xml",
       "purpose": "any"
     },
     {
-      "src": "/icon.svg",
+      "src": "./icon.svg",
       "sizes": "192x192 512x512",
       "type": "image/svg+xml",
       "purpose": "maskable"
@@ -29,22 +29,22 @@
       "name": "Recept",
       "short_name": "Recept",
       "description": "Öppna receptsamlingen",
-      "url": "/?tab=recipes",
-      "icons": [{ "src": "/icon.svg", "sizes": "192x192" }]
+      "url": "./?tab=recipes",
+      "icons": [{ "src": "./icon.svg", "sizes": "192x192" }]
     },
     {
       "name": "Veckoplan",
       "short_name": "Vecka",
       "description": "Öppna veckomenyn",
-      "url": "/?tab=mealplan",
-      "icons": [{ "src": "/icon.svg", "sizes": "192x192" }]
+      "url": "./?tab=mealplan",
+      "icons": [{ "src": "./icon.svg", "sizes": "192x192" }]
     },
     {
       "name": "Inköpslista",
       "short_name": "Inköp",
       "description": "Öppna inköpslistan",
-      "url": "/?tab=shopping",
-      "icons": [{ "src": "/icon.svg", "sizes": "192x192" }]
+      "url": "./?tab=shopping",
+      "icons": [{ "src": "./icon.svg", "sizes": "192x192" }]
     }
   ]
 }

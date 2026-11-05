@@ -1,9 +1,9 @@
-const CACHE_NAME = 'matklar-v1';
+const CACHE_NAME = 'matklar-v3';
 const PRECACHE_ASSETS = [
-  '/',
-  '/index.html',
-  '/manifest.json',
-  '/icon.svg',
+  './',
+  './index.html',
+  './manifest.json',
+  './icon.svg',
 ];
 
 // Install Event: Pre-cache App Shell
@@ -68,7 +68,7 @@ self.addEventListener('fetch', (event) => {
           caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseToCache));
           return networkResponse;
         }).catch(() => {
-          return caches.match('/');
+          return caches.match('./');
         });
       })
     );
@@ -89,7 +89,7 @@ self.addEventListener('fetch', (event) => {
         return caches.match(event.request).then((cachedResponse) => {
           if (cachedResponse) return cachedResponse;
           if (event.request.headers.get('accept')?.includes('text/html')) {
-            return caches.match('/index.html') || caches.match('/');
+            return caches.match('./index.html') || caches.match('./');
           }
           return new Response('Offline mode', { status: 503, statusText: 'Offline' });
         });

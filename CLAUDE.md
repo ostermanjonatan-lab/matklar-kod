@@ -16,3 +16,7 @@ Svensk app för recept, veckoplan och inköpslista. React, TypeScript och Vite, 
 - Inköpslistans sammanslagning och valda kategorier: `src/utils/shoppingAggregator.ts`.
 - Synk mot Supabase: `src/services/realtimeSync.ts`. Tabellerna finns i `supabase_schema.sql`.
 - Ändringar i `supabase_schema.sql` måste användaren själv köra i Supabase.
+
+## Publicering
+
+Varje ändring på `main` här byggs av `.github/workflows/publish.yml` och läggs automatiskt i repot `ostermanjonatan-lab/Matklar`, grenarna `main` (matklar.vercel.app) och `gh-pages` (GitHub Pages). Det som hamnar på `main` går alltså direkt ut till användarna. Lägg inte källkod i repot Matklar.

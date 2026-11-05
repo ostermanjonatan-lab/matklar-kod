@@ -179,6 +179,7 @@ function supabaseConfigPlugin(): Plugin {
 
 // https://vite.dev/config/
 export default defineConfig({
+  base: './', // Fungerar både på matklar.vercel.app och under /Matklar/ på GitHub Pages
   plugins: [
     react(),
     tailwindcss(),
