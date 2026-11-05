@@ -201,14 +201,14 @@ export function isCommonPantryStaple(name: string): boolean {
 }
 
 /**
- * Resolves the aisle of a saved item. Empty aisles are detected from the name, and
- * "färsk ..." items that an older rule filed under Kött & Chark are moved.
- * Other saved aisles are kept, since they may have been chosen by the user.
+ * Resolves the aisle of a saved item. The user's own choices are stored separately as
+ * aisle overrides, so a saved aisle is re-detected from the name. This moves items that
+ * older rules filed wrongly. The saved aisle is kept only when the name is not recognised.
  */
 export function resolveSavedAisle(name: string, aisle?: string): string {
-  if (!aisle || aisle === 'Övrigt') return detectAisle(name);
-  if (aisle === 'Kött & Chark' && /färsk|ingefärs/.test(name.toLowerCase())) return detectAisle(name);
-  return aisle;
+  const detected = detectAisle(name);
+  if (detected === 'Övrigt' && aisle) return aisle;
+  return detected;
 }
 
 export function detectAisle(name: string): string {
@@ -227,9 +227,77 @@ export function detectAisle(name: string): string {
     l.includes('kroketter') ||
     l.includes('pyttipanna') ||
     l.includes('vårrull') ||
-    l.includes('fiskpinn')
+    l.includes('fiskpinn') ||
+    l.includes('frysta') ||
+    l.includes('smördeg') ||
+    l.includes('wokgrönsak') ||
+    l.includes('edamame') ||
+    l.includes('wonton') ||
+    l.includes('nuggets') ||
+    l.includes('pannkakor') ||
+    (/(^|\s)(gröna )?ärt(or|er)\b/.test(l) && !l.includes('gula'))
   ) {
     return 'Fryst';
+  }
+
+  // Jars, pickles, spreads and processed goods whose names contain a vegetable,
+  // dairy or meat word (e.g. "inlagd gurka", "jordnötssmör", "hjortronsylt", "potatismjöl")
+  if (
+    l.includes('inlagd') ||
+    l.includes('pickles') ||
+    l.includes('saltgurka') ||
+    l.includes('bostongurka') ||
+    l.includes('smörgåsgurka') ||
+    l.includes('ättiksgurka') ||
+    l.includes('kryddgurka') ||
+    /rostade? lök|stekt lök|rostad paprika|grillad paprika/.test(l) ||
+    l.includes('kronärtskockshjärt') ||
+    l.includes('bambuskott') ||
+    l.includes('vattenkastanj') ||
+    l.includes('tomatsås') ||
+    l.includes('pastasås') ||
+    l.includes('ketchup') ||
+    /sylt(?!a\b)/.test(l) ||
+    l.includes('marmelad') ||
+    l.includes('äppelmos') ||
+    l.includes('mospulver') ||
+    /mjöl(?!k)/.test(l) ||
+    l.includes('stärkelse') ||
+    l.includes('jordnötssmör') ||
+    l.includes('mandelsmör') ||
+    l.includes('cashewsmör') ||
+    l.includes('tahini') ||
+    l.includes('ströbröd') ||
+    l.includes('chips') ||
+    l.includes('nachos') ||
+    l.includes('tacoskal') ||
+    /curry\s?pasta|curry paste/.test(l) ||
+    /vanilj(stång|stänger|extrakt|pulver|socker|arom)/.test(l) ||
+    (l.includes('choklad') && !l.includes('chokladmjölk') && !l.includes('chokladpudding')) ||
+    l.includes('kondenserad mjölk') ||
+    l.includes('mjölkpulver') ||
+    l.includes('strössel') ||
+    l.includes('marsipan') ||
+    l.includes('mandelmassa') ||
+    l.includes('glasyr') ||
+    l.includes('gnocchi') ||
+    l.includes('tortellini') ||
+    l.includes('ravioli')
+  ) {
+    return 'Skafferi';
+  }
+
+  // Fresh produce whose names would otherwise match a later aisle
+  // (e.g. "rucola" contains "cola", "böngroddar" contains "bön")
+  if (
+    l.includes('rucola') ||
+    l.includes('groddar') ||
+    l.includes('ärtskott') ||
+    l.includes('kronärtskock') ||
+    l.includes('rotfrukt') ||
+    l.includes('rotsaker')
+  ) {
+    return 'Frukt & Grönt';
   }
 
   // Dry powdered spices or herbs (must come before fresh vegetables/herbs)
@@ -251,9 +319,27 @@ export function detectAisle(name: string): string {
     l.includes('torkad persilja') ||
     l.includes('torkad rosmarin') ||
     l.includes('torkad koriander') ||
-    l.includes('torkad dragon')
+    l.includes('torkad dragon') ||
+    /(paprika|curry|cayenne|vitlöks|chili)pulver/.test(l) ||
+    /(koriander|senaps|fänkåls|kummin|anis)frö/.test(l) ||
+    /(vit|svart|krydd|grön|citron|rosé|rose|rosa|fyr)\s?peppar|pepparmix/.test(l) ||
+    l.includes('limeblad') ||
+    l.includes('kaffirlime') ||
+    l.includes('aromat') ||
+    l.includes('krydda') ||
+    l.includes('kryddor') ||
+    l.includes('kryddmix') ||
+    /provencalska|provençalska|herbes de/.test(l) ||
+    // Ground spices, e.g. "malen ingefära", "mald kardemumma" (not ground coffee or nuts)
+    (/(^|\s)(malen|mald|malet|malda)\s/.test(l) && !/kaffe|mandel|nöt|kött|färs/.test(l))
   ) {
     return 'Kryddor & Olja';
+  }
+
+  // Other dried goods (dried fruit, dried mushrooms)
+  if (/(^|\s)torkade?\s/.test(l)) {
+    if (/mynta|salvia|chili|lagerblad|örter|citrongräs/.test(l)) return 'Kryddor & Olja';
+    return 'Skafferi';
   }
 
   // Bottled chili sauces, sweet chili, sriracha, salsa & condiments (must come before fresh chili in Frukt & Grönt)
@@ -332,7 +418,7 @@ export function detectAisle(name: string): string {
   }
 
   // Cakes & cookies (must come before fruit and meat, "banankaka" contains "banan" and "anka")
-  if (/kak(a|or)\b/.test(l)) {
+  if (/kak(a|or)\b/.test(l) && !l.includes('ostkaka')) {
     return 'Bröd & Bageri';
   }
 
@@ -380,6 +466,13 @@ export function detectAisle(name: string): string {
     l.includes('kvarg') ||
     l.includes('keso') ||
     l.includes('cottage cheese') ||
+    l.includes('cream cheese') ||
+    l.includes('kesella') ||
+    /(^|\s)i\s?mat\b|oatly/.test(l) ||
+    l.includes('vaniljsås') ||
+    l.includes('tofu') ||
+    l.includes('hummus') ||
+    l.includes('ostkaka') ||
     (l.includes('ägg') && !l.includes('äggnudl')) ||
     l.includes('havremjölk') ||
     l.includes('sojamjölk') ||
@@ -440,7 +533,13 @@ export function detectAisle(name: string): string {
     l.includes('pancetta') ||
     l.includes('lamm') ||
     l.includes('älg') ||
-    l.includes('hjort') ||
+    /hjort(?!ron)/.test(l) ||
+    l.includes('kassler') ||
+    l.includes('pulled pork') ||
+    l.includes('hamburgare') ||
+    l.includes('kebab') ||
+    l.includes('anklever') ||
+    /(^|\s)sylta\b/.test(l) ||
     l.includes('rådjur') ||
     l.includes('vildsvin')
   ) {
@@ -475,10 +574,13 @@ export function detectAisle(name: string): string {
     l.includes('mussl') ||
     l.includes('bläckfisk') ||
     l.includes('calamari') ||
-    (l.includes('rom') && !l.includes('rosmarin') && !l.includes('romansallad') && !l.includes('fromage')) ||
+    (l.includes('rom') && !l.includes('rosmarin') && !l.includes('arom') && !l.includes('romansallad') && !l.includes('fromage')) ||
     l.includes('löjrom') ||
     l.includes('sikrom') ||
-    l.includes('kaviar')
+    l.includes('kaviar') ||
+    l.includes('sardin') ||
+    l.includes('ansjovis') ||
+    l.includes('surimi')
   ) {
     return 'Fisk & Skaldjur';
   }
@@ -489,12 +591,15 @@ export function detectAisle(name: string): string {
     (l === 'öl' || l.startsWith('öl ') || l.endsWith(' öl') || l.includes('lättöl') || l.includes('folköl') || l.includes('starköl')) ||
     l.includes('cider') ||
     l.includes('läsk') ||
-    l.includes('cola') ||
+    /(^|\s|coca-?)cola\b|pepsi/.test(l) ||
     l.includes('fanta') ||
     l.includes('sprite') ||
     l.includes('tonic') ||
     l.includes('sodavatten') ||
     l.includes('mineralvatten') ||
+    l.includes('kolsyrat vatten') ||
+    l.includes('bubbelvatten') ||
+    l.includes('kokosvatten') ||
     l.includes('loka') ||
     l.includes('ramlösa') ||
     l.includes('juice') ||
@@ -503,7 +608,7 @@ export function detectAisle(name: string): string {
     l.includes('champagne') ||
     l.includes('prosecco') ||
     l.includes('cava') ||
-    (l === 'must' || l.includes('julmust') || l.includes('påskmust'))
+    /must\b/.test(l)
   ) {
     return 'Drycker';
   }
@@ -626,6 +731,7 @@ export function detectAisle(name: string): string {
     l.includes('blåbär') ||
     l.includes('björnbär') ||
     l.includes('lingon') ||
+    l.includes('hjortron') ||
     l.includes('rabarber')
   ) {
     return 'Frukt & Grönt';
@@ -633,7 +739,7 @@ export function detectAisle(name: string): string {
 
   // 7. KRYDDOR & OLJA
   if (
-    l.includes('salt') ||
+    /salt\b/.test(l) ||
     l.includes('peppar') ||
     l.includes('cayenne') ||
     l.includes('paprikapulver') ||
@@ -750,6 +856,7 @@ export function detectAisle(name: string): string {
     l.includes('bön') ||
     l.includes('beans') ||
     l.includes('kikärt') ||
+    l.includes('gula ärtor') ||
     l.includes('chickpea') ||
     l.includes('lins') ||
     l.includes('ströbröd') ||
