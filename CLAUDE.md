@@ -19,4 +19,4 @@ Svensk app för recept, veckoplan och inköpslista. React, TypeScript och Vite, 
 
 ## Publicering
 
-Varje ändring på `main` här byggs av `.github/workflows/publish.yml` och läggs automatiskt i repot `ostermanjonatan-lab/Matklar`, grenarna `main` (matklar.vercel.app) och `gh-pages` (GitHub Pages). Det som hamnar på `main` går alltså direkt ut till användarna. Lägg inte källkod i repot Matklar.
+Vercel bygger och publicerar varje ändring på `main` här till matklar.vercel.app. Det som hamnar på `main` går alltså direkt ut till användarna. Det äldre repot `ostermanjonatan-lab/Matklar` och dess adress på GitHub Pages uppdateras inte längre.
