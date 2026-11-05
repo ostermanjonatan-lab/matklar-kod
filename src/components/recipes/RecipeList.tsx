@@ -754,8 +754,8 @@ export const RecipeList: React.FC = () => {
       {/* Main Content Area */}
       <div className="w-full max-w-md md:max-w-5xl lg:max-w-7xl mx-auto px-4 md:px-6 pt-2 md:pt-4 space-y-4 md:space-y-6">
         {/* Scandinavian Clean "Vad ska vi äta idag?" Banner (Mobile only, desktop has hero above) */}
-        <div className="block md:hidden bg-[#284235] rounded-2xl px-4 py-3 text-white shadow-sm flex items-center justify-between gap-4">
-          <div className="min-w-0 pr-1">
+        <div className="md:hidden bg-[#284235] rounded-2xl px-4 py-3 text-white shadow-sm flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+          <div className="min-w-[7rem] flex-1 pr-1">
             <h2 className="font-serif text-sm sm:text-base font-bold text-white leading-tight">
               Vad ska vi äta idag?
             </h2>
@@ -786,8 +786,8 @@ export const RecipeList: React.FC = () => {
         </div>
 
         {/* Results Info & Sort Controls Row */}
-        <div className="flex items-center justify-between px-1 gap-2">
-          <span className="text-xs font-semibold text-stone-500 truncate">
+        <div className="flex flex-wrap items-center justify-between px-1 gap-2">
+          <span className="text-xs font-semibold text-stone-500 whitespace-nowrap">
             {sortedAndFilteredRecipes.length} recept hittades
             {onlyFavorites && ' (favoriter)'}
           </span>

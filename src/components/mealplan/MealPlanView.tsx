@@ -320,8 +320,8 @@ export const MealPlanView: React.FC = () => {
       <div className="sticky top-0 md:static z-20 md:z-auto bg-[#FCFAF5]/95 backdrop-blur-md border-b border-[#EBE7DF] px-3.5 md:px-6 pt-3 pb-3 shadow-xs">
         <div className="w-full max-w-md md:max-w-5xl lg:max-w-7xl mx-auto">
           {/* Row 1: Title, Week Info & Action Buttons */}
-          <div className="flex items-center justify-between mb-2.5">
-            <div>
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-2.5">
+            <div className="min-w-fit">
               <div className="flex items-center gap-1.5 text-[11px] font-bold text-emerald-900 uppercase tracking-wider">
                 <span>Vecka {currentWeekNumber}</span>
                 <span>•</span>
@@ -811,7 +811,7 @@ export const MealPlanView: React.FC = () => {
                   {/* Interactive Controls below Dinner Banner */}
                   <div className="p-3.5 space-y-2.5 bg-white">
                     {/* Servings Stepper & Change Recipe Button */}
-                    <div className="flex items-center justify-between gap-2">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
                       <div className="flex items-center gap-2 bg-[#FCFAF5] border border-[#EBE7DF] rounded-2xl px-3 py-1.5">
                         <span className="text-xs font-semibold text-stone-700">Portioner:</span>
                         <div className="flex items-center gap-1.5">
@@ -888,7 +888,7 @@ export const MealPlanView: React.FC = () => {
                     </p>
                   </div>
 
-                  <div className="flex items-center justify-between gap-2 pt-2 border-t border-[#EBE7DF]">
+                  <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-[#EBE7DF]">
                     <div className="flex items-center gap-2 bg-[#FCFAF5] border border-[#EBE7DF] rounded-2xl px-3 py-1.5">
                       <span className="text-xs font-semibold text-stone-700">Portioner:</span>
                       <div className="flex items-center gap-1.5">

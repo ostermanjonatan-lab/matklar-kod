@@ -557,7 +557,7 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
 
           <div className="p-4 sm:p-5 space-y-4 sm:space-y-5">
             {/* Quick Meta Row */}
-            <div className="grid grid-cols-2 gap-2.5 w-full max-w-full">
+            <div className="grid grid-cols-1 min-[360px]:grid-cols-2 gap-2.5 w-full max-w-full">
               <div className="bg-white p-3.5 rounded-3xl border border-[#EBE7DF] shadow-xs flex items-center gap-2.5 min-w-0">
                 <div className="w-9 h-9 rounded-2xl bg-[#FCFAF5] text-stone-700 flex items-center justify-center shrink-0">
                   <Clock className="w-4 h-4 text-stone-600" />

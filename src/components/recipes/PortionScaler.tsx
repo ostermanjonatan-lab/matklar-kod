@@ -35,8 +35,8 @@ export const PortionScaler: React.FC<PortionScalerProps> = ({
   const isScaled = currentServings !== baseServings;
 
   return (
-    <div className="bg-stone-50 border border-stone-200 rounded-2xl p-3 sm:p-3.5 flex items-center justify-between shadow-xs w-full max-w-full gap-2 min-w-0">
-      <div className="flex items-center gap-2.5 min-w-0 flex-1">
+    <div className="bg-stone-50 border border-stone-200 rounded-2xl p-3 sm:p-3.5 flex flex-wrap items-center justify-between shadow-xs w-full max-w-full gap-2 min-w-0">
+      <div className="flex items-center gap-2.5 min-w-[9rem] flex-1">
         <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-800 flex items-center justify-center shrink-0">
           <Users className="w-5 h-5" />
         </div>
@@ -62,7 +62,7 @@ export const PortionScaler: React.FC<PortionScalerProps> = ({
         </div>
       </div>
 
-      <div className="flex items-center gap-1.5 bg-white border border-stone-200 p-1 rounded-2xl shadow-xs shrink-0">
+      <div className="flex items-center gap-1.5 bg-white border border-stone-200 p-1 rounded-2xl shadow-xs shrink-0 ml-auto">
         <button
           type="button"
           onClick={handleDecrement}

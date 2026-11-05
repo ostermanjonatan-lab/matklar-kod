@@ -699,9 +699,9 @@ export const ShoppingListView: React.FC = () => {
 
             {activeSubTab === 'list' && (
               <>
-                <div className="flex items-center justify-between mb-2.5 gap-2 min-w-0">
-                  <div className="min-w-0 flex-1">
-                    <h1 className="font-serif text-xl font-bold text-stone-900 leading-tight truncate">Inköpslista</h1>
+                <div className="flex flex-wrap items-center justify-between mb-2.5 gap-2 min-w-0">
+                  <div className="min-w-fit flex-1">
+                    <h1 className="font-serif text-xl font-bold text-stone-900 leading-tight">Inköpslista</h1>
                     <p className="text-[11px] text-stone-500 truncate">
                       <span className="font-semibold text-[#284235]">
                         {checkedCount} av {totalCount} klara
@@ -743,7 +743,7 @@ export const ShoppingListView: React.FC = () => {
                 )}
 
                 {/* Store Profile & Category Tools Bar */}
-                <div className="flex items-center justify-between gap-2 pt-2.5 mt-2 border-t border-[#EBE7DF]/80 text-xs w-full">
+                <div className="flex flex-wrap items-center justify-between gap-2 pt-2.5 mt-2 border-t border-[#EBE7DF]/80 text-xs w-full">
                   {/* Active Store Button with Dropdown */}
                   <div className="relative">
                     <button
@@ -1061,7 +1061,7 @@ export const ShoppingListView: React.FC = () => {
                         type="button"
                         onClick={() => handleMoveAisle(group.aisleName, 'up')}
                         disabled={groupIdx === 0}
-                        className="w-7 h-7 rounded-lg text-stone-400 hover:text-stone-800 hover:bg-stone-200/70 disabled:opacity-20 disabled:pointer-events-none flex items-center justify-center transition-all touch-manipulation active:scale-90"
+                        className="w-7 h-7 rounded-lg text-stone-400 hover:text-stone-800 hover:bg-stone-200/70 disabled:opacity-20 disabled:pointer-events-none flex max-[359px]:hidden items-center justify-center transition-all touch-manipulation active:scale-90"
                         title={`Flytta upp ${group.aisleName}`}
                         aria-label={`Flytta upp ${group.aisleName}`}
                       >
@@ -1072,7 +1072,7 @@ export const ShoppingListView: React.FC = () => {
                         type="button"
                         onClick={() => handleMoveAisle(group.aisleName, 'down')}
                         disabled={groupIdx === groupedByAisle.length - 1}
-                        className="w-7 h-7 rounded-lg text-stone-400 hover:text-stone-800 hover:bg-stone-200/70 disabled:opacity-20 disabled:pointer-events-none flex items-center justify-center transition-all touch-manipulation active:scale-90"
+                        className="w-7 h-7 rounded-lg text-stone-400 hover:text-stone-800 hover:bg-stone-200/70 disabled:opacity-20 disabled:pointer-events-none flex max-[359px]:hidden items-center justify-center transition-all touch-manipulation active:scale-90"
                         title={`Flytta ner ${group.aisleName}`}
                         aria-label={`Flytta ner ${group.aisleName}`}
                       >
@@ -1107,14 +1107,14 @@ export const ShoppingListView: React.FC = () => {
                       <div
                         key={item.id}
                         onClick={() => toggleShoppingItem(item.id)}
-                        className={`px-4 py-3.5 flex items-center justify-between cursor-pointer transition-colors active:bg-stone-50 touch-manipulation w-full gap-2 ${
+                        className={`px-4 py-3.5 flex flex-wrap items-center justify-between cursor-pointer transition-colors active:bg-stone-50 touch-manipulation w-full gap-x-2 gap-y-1 ${
                           item.checked
                             ? 'bg-stone-50/60 text-stone-400'
                             : 'text-stone-900 hover:bg-stone-50/40'
                         }`}
                         style={{ minHeight: '56px' }}
                       >
-                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <div className="flex items-center gap-3 flex-1 min-w-[10rem]">
                           <button
                             type="button"
                             onClick={(e) => {
@@ -1172,7 +1172,7 @@ export const ShoppingListView: React.FC = () => {
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-1 shrink-0 ml-2">
+                        <div className="flex items-center gap-1 shrink-0 ml-auto">
                           {formattedAmt && (
                             <span
                               className={`text-sm font-bold tabular-nums whitespace-nowrap mr-1 ${
