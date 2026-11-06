@@ -35,7 +35,7 @@ export const PortionScaler: React.FC<PortionScalerProps> = ({
       <div className="min-w-0">
         <div className="text-sm font-semibold text-stone-900">Portioner</div>
         {isScaled && (
-          <div className="text-xs text-stone-500 mt-0.5">Receptet är för {baseServings}</div>
+          <div className="text-xs text-stone-500 mt-0.5">Original: {baseServings} port</div>
         )}
       </div>
 
