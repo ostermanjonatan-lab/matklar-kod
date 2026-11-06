@@ -3,6 +3,13 @@ import type { ReactNode } from 'react';
 import type { Recipe, MealPlanDay, ShoppingItem, TabType, UserProfile, Household, PantryItem, HouseholdJoinRequest, PendingJoinState } from '../types/recipe';
 import { getRecipeSubcategories, NON_FOOD_SUBCATEGORIES } from '../types/recipe';
 import { INITIAL_RECIPES, INITIAL_MEAL_PLAN } from '../data/mockRecipes';
+import {
+  WEEKDAY_NAMES,
+  dayNameForDate,
+  getWeekDates,
+  getWeekStart,
+  isISODate,
+} from '../utils/mealPlanDates';
 import { isCommonPantryStaple, detectAisle, resolveSavedAisle } from '../utils/ingredientParser';
 
 // Auto-repair known broken or duplicate images for starter demo recipes
@@ -13,38 +20,68 @@ const STARTER_IMAGE_FIXES: Record<string, string> = {
   'rec-21': 'https://images.unsplash.com/photo-1592417817098-8f3d6910985a?auto=format&fit=crop&w=1200&q=80',
 };
 
-const DAYS_OF_WEEK_NAMES: MealPlanDay['dayName'][] = [
-  'Måndag',
-  'Tisdag',
-  'Onsdag',
-  'Torsdag',
-  'Fredag',
-  'Lördag',
-  'Söndag',
-];
+function hasMeal(d: MealPlanDay): boolean {
+  return Boolean(d.dinnerRecipeId || d.lunchRecipeId || d.customDinner?.trim() || d.customLunch?.trim());
+}
 
+function emptyPlanDay(dateStr: string): MealPlanDay {
+  return {
+    dayName: dayNameForDate(dateStr),
+    dateStr,
+    dinnerRecipeId: null,
+    dinnerServings: 4,
+    lunchRecipeId: null,
+    lunchServings: 2,
+    customDinner: '',
+    customLunch: '',
+  };
+}
+
+/**
+ * Cleans the stored meal plan. Every day has a date. Days saved by older versions only have a
+ * weekday name; they are placed in the current week, unless that date already has its own entry.
+ * Days without any meal are dropped, and recipe ids that no longer exist are removed.
+ */
 function normalizeMealPlan(
   rawPlan: MealPlanDay[] | null | undefined,
   currentRecipes?: Recipe[]
 ): MealPlanDay[] {
   const recipeIdSet = currentRecipes ? new Set(currentRecipes.map((r) => r.id)) : null;
-  const list = Array.isArray(rawPlan) ? rawPlan : [];
+  const list = Array.isArray(rawPlan) ? rawPlan.filter(Boolean) : [];
+  const currentWeek = getWeekDates(getWeekStart());
+  const byDate = new Map<string, MealPlanDay>();
 
-  return DAYS_OF_WEEK_NAMES.map((dayName) => {
-    const existing = list.find((d) => d && d.dayName === dayName);
-    const dinnerId = existing?.dinnerRecipeId || null;
-    const lunchId = existing?.lunchRecipeId || null;
-
-    return {
-      dayName,
-      dinnerRecipeId: recipeIdSet ? (dinnerId && recipeIdSet.has(dinnerId) ? dinnerId : null) : dinnerId,
-      dinnerServings: existing?.dinnerServings && existing.dinnerServings > 0 ? existing.dinnerServings : 4,
-      lunchRecipeId: recipeIdSet ? (lunchId && recipeIdSet.has(lunchId) ? lunchId : null) : lunchId,
-      lunchServings: existing?.lunchServings && existing.lunchServings > 0 ? existing.lunchServings : 2,
-      customDinner: existing?.customDinner || '',
-      customLunch: existing?.customLunch || '',
-    };
+  list.forEach((d) => {
+    if (isISODate(d.dateStr)) byDate.set(d.dateStr, d);
   });
+  list.forEach((d) => {
+    if (isISODate(d.dateStr)) return;
+    const idx = WEEKDAY_NAMES.indexOf(d.dayName);
+    if (idx === -1) return;
+    const date = currentWeek[idx];
+    if (!byDate.has(date)) byDate.set(date, { ...d, dateStr: date });
+  });
+
+  const cleanId = (id?: string | null) => (id ? (recipeIdSet ? (recipeIdSet.has(id) ? id : null) : id) : null);
+
+  return Array.from(byDate.entries())
+    .map(([dateStr, d]) => ({
+      dayName: dayNameForDate(dateStr),
+      dateStr,
+      dinnerRecipeId: cleanId(d.dinnerRecipeId),
+      dinnerServings: d.dinnerServings && d.dinnerServings > 0 ? d.dinnerServings : 4,
+      lunchRecipeId: cleanId(d.lunchRecipeId),
+      lunchServings: d.lunchServings && d.lunchServings > 0 ? d.lunchServings : 2,
+      customDinner: d.customDinner || '',
+      customLunch: d.customLunch || '',
+    }))
+    .filter(hasMeal)
+    .sort((x, y) => x.dateStr.localeCompare(y.dateStr));
+}
+
+/** The seven days of a week, with empty days filled in. */
+function buildWeek(plan: MealPlanDay[], weekStart: string): MealPlanDay[] {
+  return getWeekDates(weekStart).map((date) => plan.find((d) => d.dateStr === date) || emptyPlanDay(date));
 }
 
 function sanitizeRecipe(recipe: Recipe): Recipe {
@@ -135,7 +172,12 @@ interface RecipeContextType {
   recipes: Recipe[];
   selectedRecipe: Recipe | null;
   activeTab: TabType;
+  /** The seven days of the week shown in the meal plan (planWeekStart). */
   mealPlan: MealPlanDay[];
+  /** Monday of the week shown in the meal plan, YYYY-MM-DD. */
+  planWeekStart: string;
+  setPlanWeekStart: (weekStart: string) => void;
+  getMealPlanForDate: (dateStr: string) => MealPlanDay | undefined;
   shoppingList: ShoppingItem[];
   household: Household | null;
   households: Household[];
@@ -162,6 +204,12 @@ interface RecipeContextType {
     dayName: MealPlanDay['dayName'],
     mealType: 'lunch' | 'dinner',
     servings: number
+  ) => void;
+  setMealPlanForDate: (
+    dateStr: string,
+    mealType: 'lunch' | 'dinner',
+    recipeId: string | null,
+    customText?: string
   ) => void;
   clearMealPlan: () => void;
   generateShoppingListFromWeek: (skipPantryStaples: boolean) => number;
@@ -374,6 +422,16 @@ export const RecipeProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       return normalizeMealPlan(INITIAL_MEAL_PLAN, recipes);
     }
   });
+
+  const [planWeekStart, setPlanWeekStartState] = useState<string>(() => getWeekStart());
+  const setPlanWeekStart = useCallback((weekStart: string) => {
+    setPlanWeekStartState(getWeekStart(weekStart));
+  }, []);
+  const weekMealPlan = useMemo(() => buildWeek(mealPlan, planWeekStart), [mealPlan, planWeekStart]);
+  const getMealPlanForDate = useCallback(
+    (dateStr: string) => mealPlan.find((d) => d.dateStr === dateStr),
+    [mealPlan]
+  );
 
   const [shoppingList, setShoppingList] = useState<ShoppingItem[]>(() => {
     try {
@@ -1332,93 +1390,85 @@ export const RecipeProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     broadcastLocalChange({ type: 'RECIPES_SYNC', payload: [] });
   }, [isLiveSupabase, household?.id, isHouseholdAdmin]);
 
+  // Saves the plan, tells other tabs and sends the changed week to Supabase
+  const commitMealPlan = useCallback((updated: MealPlanDay[], changedWeekStart: string) => {
+    try {
+      localStorage.setItem(MEAL_PLAN_STORAGE_KEY, JSON.stringify(updated));
+    } catch (e) {
+      console.error('Save mealPlan error', e);
+    }
+    broadcastLocalChange({ type: 'MEALPLAN_UPDATE', payload: updated });
+    if (isLiveSupabase && household?.id) {
+      pushMealPlanToSupabase(buildWeek(updated, changedWeekStart), household.id);
+    }
+  }, [isLiveSupabase, household?.id]);
+
+  const updatePlanDay = useCallback((dateStr: string, change: (day: MealPlanDay) => MealPlanDay) => {
+    setMealPlan((prev) => {
+      const current = prev.find((d) => d.dateStr === dateStr) || emptyPlanDay(dateStr);
+      const updated = normalizeMealPlan([...prev.filter((d) => d.dateStr !== dateStr), change(current)]);
+      commitMealPlan(updated, getWeekStart(dateStr));
+      return updated;
+    });
+  }, [commitMealPlan]);
+
+  const setMealPlanForDate = useCallback((
+    dateStr: string,
+    mealType: 'lunch' | 'dinner',
+    recipeId: string | null,
+    customText?: string
+  ) => {
+    updatePlanDay(dateStr, (item) =>
+      mealType === 'dinner'
+        ? {
+            ...item,
+            dinnerRecipeId: recipeId,
+            customDinner: customText !== undefined ? customText : (recipeId ? '' : item.customDinner || ''),
+          }
+        : {
+            ...item,
+            lunchRecipeId: recipeId,
+            customLunch: customText !== undefined ? customText : (recipeId ? '' : item.customLunch || ''),
+          }
+    );
+  }, [updatePlanDay]);
+
   const setMealPlanForDay = useCallback((
     dayName: MealPlanDay['dayName'],
     mealType: 'lunch' | 'dinner',
     recipeId: string | null,
     customText?: string
   ) => {
-    setMealPlan((prev) => {
-      const safeBase = normalizeMealPlan(prev);
-      const updated = safeBase.map((item) => {
-        if (item.dayName === dayName) {
-          if (mealType === 'dinner') {
-            return {
-              ...item,
-              dinnerRecipeId: recipeId,
-              customDinner: customText !== undefined ? customText : (recipeId ? '' : item.customDinner || ''),
-              dinnerServings: item.dinnerServings || 4,
-            };
-          } else {
-            return {
-              ...item,
-              lunchRecipeId: recipeId,
-              customLunch: customText !== undefined ? customText : (recipeId ? '' : item.customLunch || ''),
-              lunchServings: item.lunchServings || 2,
-            };
-          }
-        }
-        return item;
-      });
-      try {
-        localStorage.setItem(MEAL_PLAN_STORAGE_KEY, JSON.stringify(updated));
-      } catch (e) {
-        console.error('Save mealPlan error', e);
-      }
-      broadcastLocalChange({ type: 'MEALPLAN_UPDATE', payload: updated });
-      if (isLiveSupabase && household?.id) {
-        pushMealPlanToSupabase(updated, household.id);
-      }
-      return updated;
-    });
-  }, [isLiveSupabase, household?.id]);
+    const date = getWeekDates(planWeekStart)[WEEKDAY_NAMES.indexOf(dayName)];
+    if (date) setMealPlanForDate(date, mealType, recipeId, customText);
+  }, [planWeekStart, setMealPlanForDate]);
 
   const setMealPlanServings = useCallback((
     dayName: MealPlanDay['dayName'],
     mealType: 'lunch' | 'dinner',
     servings: number
   ) => {
+    const date = getWeekDates(planWeekStart)[WEEKDAY_NAMES.indexOf(dayName)];
+    if (!date) return;
+    updatePlanDay(date, (item) =>
+      mealType === 'dinner'
+        ? { ...item, dinnerServings: Math.max(1, servings) }
+        : { ...item, lunchServings: Math.max(1, servings) }
+    );
+  }, [planWeekStart, updatePlanDay]);
+
+  // Empties the week shown in the meal plan. Other weeks are kept.
+  const clearMealPlan = useCallback(() => {
+    const weekDates = new Set(getWeekDates(planWeekStart));
     setMealPlan((prev) => {
-      const safeBase = normalizeMealPlan(prev);
-      const updated = safeBase.map((item) => {
-        if (item.dayName === dayName) {
-          if (mealType === 'dinner') {
-            return { ...item, dinnerServings: Math.max(1, servings) };
-          } else {
-            return { ...item, lunchServings: Math.max(1, servings) };
-          }
-        }
-        return item;
-      });
-      try {
-        localStorage.setItem(MEAL_PLAN_STORAGE_KEY, JSON.stringify(updated));
-      } catch (e) {
-        console.error('Save mealPlan error', e);
-      }
-      broadcastLocalChange({ type: 'MEALPLAN_UPDATE', payload: updated });
-      if (isLiveSupabase && household?.id) {
-        pushMealPlanToSupabase(updated, household.id);
-      }
+      const updated = prev.filter((d) => !weekDates.has(d.dateStr || ''));
+      commitMealPlan(updated, planWeekStart);
       return updated;
     });
-  }, [isLiveSupabase, household?.id]);
-
-  const clearMealPlan = useCallback(() => {
-    const cleared = normalizeMealPlan([]);
-    setMealPlan(cleared);
-    try {
-      localStorage.setItem(MEAL_PLAN_STORAGE_KEY, JSON.stringify(cleared));
-    } catch (e) {
-      console.error('Save mealPlan error on clearMealPlan', e);
-    }
-    broadcastLocalChange({ type: 'MEALPLAN_UPDATE', payload: cleared });
-    if (isLiveSupabase && household?.id) {
-      pushMealPlanToSupabase(cleared, household.id);
-    }
-  }, [isLiveSupabase, household?.id]);
+  }, [planWeekStart, commitMealPlan]);
 
   const generateShoppingListFromWeek = useCallback((skipPantryStaples: boolean): number => {
-    const { items } = generateShoppingListFromMealPlan(mealPlan, recipes, {
+    const { items } = generateShoppingListFromMealPlan(weekMealPlan, recipes, {
       skipPantryStaples,
     });
 
@@ -1434,7 +1484,7 @@ export const RecipeProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       return mergedList;
     });
     return items.length;
-  }, [mealPlan, recipes, isLiveSupabase, household?.id]);
+  }, [weekMealPlan, recipes, isLiveSupabase, household?.id]);
 
   const addIngredientsToShoppingList = useCallback((
     ingredients: Array<{ name: string; amount: number | null; unit: string; aisle: string; isPantryStaple: boolean }>,
@@ -2553,7 +2603,10 @@ export const RecipeProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         recipes,
         selectedRecipe,
         activeTab,
-        mealPlan,
+        mealPlan: weekMealPlan,
+        planWeekStart,
+        setPlanWeekStart,
+        getMealPlanForDate,
         shoppingList,
         household,
         households,
@@ -2580,6 +2633,7 @@ export const RecipeProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         deleteRecipe,
         clearAllRecipes,
         setMealPlanForDay,
+        setMealPlanForDate,
         setMealPlanServings,
         clearMealPlan,
         generateShoppingListFromWeek,

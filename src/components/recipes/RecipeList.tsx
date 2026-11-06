@@ -19,8 +19,7 @@ import {
   Dices,
 } from 'lucide-react';
 import { formatCookingTime, formatRecipeTitle } from '../../utils/formatters';
-
-const WEEKDAY_NAMES = ['Måndag', 'Tisdag', 'Onsdag', 'Torsdag', 'Fredag', 'Lördag', 'Söndag'] as const;
+import { todayISO } from '../../utils/mealPlanDates';
 
 
 type SortOption = 'default' | 'oldest' | 'time_asc' | 'time_desc' | 'name_asc' | 'name_desc';
@@ -78,19 +77,18 @@ export const RecipeList: React.FC = () => {
     shoppingList,
     searchQuery,
     setSearchQuery,
-    mealPlan,
+    getMealPlanForDate,
   } = useRecipes();
 
   // Tonight's dinner from the meal plan, if any
   const tonight = useMemo(() => {
-    const todayName = WEEKDAY_NAMES[(new Date().getDay() + 6) % 7];
-    const day = mealPlan.find((d) => d.dayName === todayName);
+    const day = getMealPlanForDate(todayISO());
     if (!day) return null;
     const recipe = day.dinnerRecipeId ? recipes.find((r) => r.id === day.dinnerRecipeId) : undefined;
     if (recipe) return { recipe, text: formatRecipeTitle(recipe.title) };
     if (day.customDinner?.trim()) return { recipe: undefined, text: day.customDinner.trim() };
     return null;
-  }, [mealPlan, recipes]);
+  }, [getMealPlanForDate, recipes]);
 
   const deferredSearchQuery = useDeferredValue(searchQuery);
 

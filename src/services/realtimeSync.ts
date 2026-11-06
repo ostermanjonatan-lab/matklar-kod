@@ -1,5 +1,6 @@
 import { getSupabase } from './supabaseClient';
 import type { Recipe, MealPlanDay, ShoppingItem, Household, UserProfile, PantryItem, HouseholdJoinRequest } from '../types/recipe';
+import { WEEKDAY_NAMES, getWeekDates, getWeekStart, isISODate } from '../utils/mealPlanDates';
 import { getRecipeSubcategories } from '../types/recipe';
 import {
   getAisleOverride,
@@ -203,8 +204,9 @@ export async function pushMealPlanToSupabase(mealPlan: MealPlanDay[], householdI
   if (!supabase) return;
 
   try {
-    const rows = mealPlan.map((m) => ({
-      id: `${householdId}_${m.dayName.toLowerCase()}`,
+    // One row per date. The date is part of the id, so the table needs no new column.
+    const rows = mealPlan.filter((m) => isISODate(m.dateStr)).map((m) => ({
+      id: mealPlanRowId(householdId, m.dateStr as string),
       household_id: householdId,
       day_name: m.dayName,
       lunch_recipe_id: m.lunchRecipeId || null,
@@ -214,10 +216,83 @@ export async function pushMealPlanToSupabase(mealPlan: MealPlanDay[], householdI
       updated_at: new Date().toISOString(),
     }));
 
-    await supabase.from('meal_plans').upsert(rows);
+    if (rows.length === 0) return;
+    const { error } = await supabase.from('meal_plans').upsert(rows);
+    if (error) console.warn('Failed to push meal plan to Supabase:', error);
   } catch (err) {
     console.warn('Failed to push meal plan to Supabase:', err);
   }
+}
+
+function mealPlanRowId(householdId: string, dateStr: string): string {
+  return `${householdId}_${dateStr}`;
+}
+
+/** The date in a meal plan row id, or null for rows saved by older versions (one row per weekday). */
+function dateFromMealPlanRowId(id: unknown): string | null {
+  if (typeof id !== 'string') return null;
+  const match = id.match(/_(\d{4}-\d{2}-\d{2})$/);
+  return match ? match[1] : null;
+}
+
+/**
+ * Older versions saved seven rows named after the weekdays. They are moved to dated rows in the
+ * current week (unless that week already has dated rows) and then removed, so they do not come
+ * back every week. The old rows are only removed once the new ones are saved.
+ */
+async function migrateLegacyMealPlanRows(householdId: string, rows: any[]): Promise<MealPlanDay[]> {
+  const supabase = getSupabase();
+  const legacy = rows.filter((r) => !dateFromMealPlanRowId(r.id));
+  if (!supabase || legacy.length === 0) return [];
+
+  const weekDates = getWeekDates(getWeekStart());
+  const weekHasDatedRows = rows.some((r) => {
+    const date = dateFromMealPlanRowId(r.id);
+    return date !== null && weekDates.includes(date);
+  });
+
+  const migrated: MealPlanDay[] = [];
+  if (!weekHasDatedRows) {
+    legacy.forEach((row) => {
+      const idx = WEEKDAY_NAMES.indexOf(row.day_name);
+      if (idx === -1) return;
+      migrated.push({
+        dayName: row.day_name,
+        dateStr: weekDates[idx],
+        lunchRecipeId: row.lunch_recipe_id || null,
+        dinnerRecipeId: row.dinner_recipe_id || null,
+        customLunch: row.custom_lunch || '',
+        customDinner: row.custom_dinner || '',
+        dinnerServings: 4,
+        lunchServings: 2,
+      });
+    });
+  }
+
+  try {
+    if (migrated.length > 0) {
+      const { error } = await supabase.from('meal_plans').upsert(
+        migrated.map((m) => ({
+          id: mealPlanRowId(householdId, m.dateStr as string),
+          household_id: householdId,
+          day_name: m.dayName,
+          lunch_recipe_id: m.lunchRecipeId || null,
+          dinner_recipe_id: m.dinnerRecipeId || null,
+          custom_lunch: m.customLunch || '',
+          custom_dinner: m.customDinner || '',
+          updated_at: new Date().toISOString(),
+        }))
+      );
+      if (error) {
+        console.warn('Failed to move old meal plan rows:', error);
+        return migrated;
+      }
+    }
+    await supabase.from('meal_plans').delete().in('id', legacy.map((r) => r.id));
+  } catch (err) {
+    console.warn('Failed to move old meal plan rows:', err);
+  }
+  return migrated;
 }
 
 /**
@@ -538,15 +613,20 @@ export async function fetchHouseholdDataFromSupabase(householdId: string): Promi
     }
 
     if (mealPlansRes.data && mealPlansRes.data.length > 0) {
-      result.mealPlan = mealPlansRes.data.map((row: any) => ({
-        dayName: row.day_name,
-        lunchRecipeId: row.lunch_recipe_id || null,
-        dinnerRecipeId: row.dinner_recipe_id || null,
-        customLunch: row.custom_lunch || '',
-        customDinner: row.custom_dinner || '',
-        dinnerServings: 4,
-        lunchServings: 2,
-      }));
+      const dated: MealPlanDay[] = mealPlansRes.data
+        .filter((row: any) => dateFromMealPlanRowId(row.id))
+        .map((row: any) => ({
+          dayName: row.day_name,
+          dateStr: dateFromMealPlanRowId(row.id) as string,
+          lunchRecipeId: row.lunch_recipe_id || null,
+          dinnerRecipeId: row.dinner_recipe_id || null,
+          customLunch: row.custom_lunch || '',
+          customDinner: row.custom_dinner || '',
+          dinnerServings: 4,
+          lunchServings: 2,
+        }));
+      const migrated = await migrateLegacyMealPlanRows(householdId, mealPlansRes.data);
+      result.mealPlan = [...dated, ...migrated];
     }
 
     if (shoppingRes.data && shoppingRes.data.length > 0) {

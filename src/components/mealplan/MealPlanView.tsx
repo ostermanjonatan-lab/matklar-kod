@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef, useLayoutEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import type { MealPlanDay } from '../../types/recipe';
 import { getRecipeSubcategories } from '../../types/recipe';
 import { useRecipes } from '../../context/RecipeContext';
@@ -14,16 +14,23 @@ import {
   Clock,
   ChevronLeft,
   ChevronRight,
-  Layers,
-  View,
   Utensils,
   X,
   AlertCircle,
-  Columns2,
   ChefHat
 } from 'lucide-react';
 import { LunchboxIcon } from '../icons/LunchboxIcon';
 import { formatCookingTime, scaleIngredientAmount, formatAmount, formatRecipeTitle } from '../../utils/formatters';
+import {
+  addDaysISO,
+  dayOfMonth,
+  formatDayMonth,
+  formatWeekRange,
+  getISOWeekNumber,
+  getWeekDates,
+  getWeekStart,
+  todayISO,
+} from '../../utils/mealPlanDates';
 
 const DAYS_OF_WEEK: MealPlanDay['dayName'][] = [
   'Måndag',
@@ -36,23 +43,14 @@ const DAYS_OF_WEEK: MealPlanDay['dayName'][] = [
 ];
 
 const DAY_ABBR: Record<MealPlanDay['dayName'], string> = {
-  'Måndag': 'MÅN',
-  'Tisdag': 'TIS',
-  'Onsdag': 'ONS',
-  'Torsdag': 'TOR',
-  'Fredag': 'FRE',
-  'Lördag': 'LÖR',
-  'Söndag': 'SÖN',
+  'Måndag': 'Mån',
+  'Tisdag': 'Tis',
+  'Onsdag': 'Ons',
+  'Torsdag': 'Tor',
+  'Fredag': 'Fre',
+  'Lördag': 'Lör',
+  'Söndag': 'Sön',
 };
-
-// Compute ISO week number
-function getISOWeekNumber(d: Date = new Date()): number {
-  const target = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
-  const dayNr = target.getUTCDay() || 7;
-  target.setUTCDate(target.getUTCDate() + 4 - dayNr);
-  const yearStart = new Date(Date.UTC(target.getUTCFullYear(), 0, 1));
-  return Math.ceil(((target.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
-}
 
 export const MealPlanView: React.FC = () => {
   const {
@@ -64,11 +62,23 @@ export const MealPlanView: React.FC = () => {
     generateShoppingListFromWeek,
     openRecipeDetail,
     setActiveTab,
+    planWeekStart,
+    setPlanWeekStart,
   } = useRecipes();
 
-  const currentWeekNumber = useMemo(() => getISOWeekNumber(), []);
+  const today = todayISO();
+  const thisWeekStart = getWeekStart();
+  const isThisWeek = planWeekStart === thisWeekStart;
+  const weekDates = useMemo(() => getWeekDates(planWeekStart), [planWeekStart]);
+  const weekNumber = getISOWeekNumber(planWeekStart);
+  // Index of today in the week shown, or -1 when another week is shown
+  const todayIndex = weekDates.indexOf(today);
 
-  const todayIndex = useMemo(() => (new Date().getDay() + 6) % 7, []);
+  const goToWeek = (weekStart: string) => {
+    setPlanWeekStart(weekStart);
+    const idx = getWeekDates(weekStart).indexOf(today);
+    setSelectedDayIndex(idx === -1 ? 0 : idx);
+  };
 
   // State: selected day index (0 = Måndag, 6 = Söndag), defaults to today's weekday
   const [selectedDayIndex, setSelectedDayIndex] = useState<number>(() => {
@@ -127,6 +137,21 @@ export const MealPlanView: React.FC = () => {
   }, [mealPlan, recipes]);
 
   const totalPlannedMeals = plannedDinnerCount + plannedLunchCount;
+
+  // "7 middagar, 1 lunch"
+  const plannedSummary = [
+    plannedDinnerCount > 0 ? `${plannedDinnerCount} ${plannedDinnerCount === 1 ? 'middag' : 'middagar'}` : '',
+    plannedLunchCount > 0 ? `${plannedLunchCount} ${plannedLunchCount === 1 ? 'lunch' : 'luncher'}` : '',
+  ].filter(Boolean).join(', ');
+
+  const openGenerate = () => {
+    if (totalPlannedMeals === 0) {
+      setGeneratedToast('Planera in minst en måltid i veckan först');
+      setTimeout(() => setGeneratedToast(null), 2500);
+      return;
+    }
+    setShowGenerateModal(true);
+  };
 
   // Recipe selection
   const handleSelectRecipe = (recipeId: string) => {
@@ -216,14 +241,14 @@ export const MealPlanView: React.FC = () => {
   const handleConfirmClearWeek = () => {
     clearMealPlan();
     setShowClearWeekModal(false);
-    setGeneratedToast('Veckomenyn har nollställts');
+    setGeneratedToast(`Vecka ${weekNumber} är tömd`);
     setTimeout(() => setGeneratedToast(null), 2500);
   };
 
   const handleConfirmGenerateShoppingList = () => {
     generateShoppingListFromWeek(skipPantryStaples);
     setShowGenerateModal(false);
-    setGeneratedToast('Inköpslistan har skapats från veckans menyer!');
+    setGeneratedToast('Veckans ingredienser är tillagda i inköpslistan');
     setTimeout(() => {
       setGeneratedToast(null);
       setActiveTab('shopping');
@@ -270,43 +295,8 @@ export const MealPlanView: React.FC = () => {
     return Array.from(set);
   }, [recipes]);
 
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [containerBounds, setContainerBounds] = useState<{ left: number; width: number } | null>(() => {
-    if (typeof document !== 'undefined') {
-      const mainEl = document.querySelector('main');
-      if (mainEl) {
-        const rect = mainEl.getBoundingClientRect();
-        return { left: rect.left, width: rect.width };
-      }
-    }
-    return null;
-  });
-
-  useLayoutEffect(() => {
-    const updateBounds = () => {
-      const target = containerRef.current || document.querySelector('main');
-      if (target) {
-        const rect = target.getBoundingClientRect();
-        setContainerBounds({ left: rect.left, width: rect.width });
-      }
-    };
-
-    updateBounds();
-    window.addEventListener('resize', updateBounds);
-    const target = containerRef.current || document.querySelector('main');
-    const ro = new ResizeObserver(updateBounds);
-    if (target) {
-      ro.observe(target);
-    }
-
-    return () => {
-      window.removeEventListener('resize', updateBounds);
-      ro.disconnect();
-    };
-  }, []);
-
   return (
-    <div ref={containerRef} className="min-h-screen bg-[#FCFAF5] pb-48 w-full max-w-full overflow-x-hidden font-sans">
+    <div className="min-h-screen bg-[#FCFAF5] pb-28 w-full max-w-full overflow-x-hidden font-sans">
       {/* Toast Notification */}
       {generatedToast && (
         <div className="fixed top-16 left-4 right-4 z-50 max-w-md mx-auto bg-stone-900 text-white px-4 py-3 rounded-2xl shadow-2xl flex items-center gap-2.5 animate-slide-down text-xs font-semibold border border-white/10">
@@ -318,120 +308,74 @@ export const MealPlanView: React.FC = () => {
       {/* HEADER & THUMBNAIL STRIP (Sticky top-0 on mobile, static on desktop) */}
       <div className="sticky top-0 md:static z-20 md:z-auto bg-[#FCFAF5]/95 backdrop-blur-md border-b border-[#EBE7DF] px-3.5 md:px-6 pt-3 pb-3 shadow-xs">
         <div className="w-full max-w-md md:max-w-5xl lg:max-w-7xl mx-auto">
-          {/* Row 1: Title, Week Info & Action Buttons */}
-          <div className="flex flex-wrap items-center justify-between gap-2 mb-2.5">
-            <div className="min-w-fit">
-              <div className="flex items-center gap-1.5 text-[11px] font-bold text-emerald-900 uppercase tracking-wider">
-                <span>Vecka {currentWeekNumber}</span>
-                <span>•</span>
-                <span className="text-stone-500 font-medium lowercase">
-                  {plannedDinnerCount} av 7 middagar
-                </span>
+          {/* Row 1: Week with arrows, and Day / Week view */}
+          <h1 className="sr-only">Veckoplan</h1>
+          <div className="flex items-center justify-between gap-2 mb-2.5">
+            <div className="flex items-center gap-1 min-w-0">
+              <button
+                type="button"
+                onClick={() => goToWeek(addDaysISO(planWeekStart, -7))}
+                className="w-9 h-9 -ml-1.5 rounded-full flex items-center justify-center text-stone-600 hover:bg-stone-100 active:bg-stone-200 touch-manipulation shrink-0"
+                aria-label="Förra veckan"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+              <div className="min-w-0 text-center">
+                <div className="text-[15px] font-semibold text-stone-900 whitespace-nowrap">
+                  Vecka {weekNumber}, {formatWeekRange(planWeekStart)}
+                </div>
+                {!isThisWeek && (
+                  <button
+                    type="button"
+                    onClick={() => goToWeek(thisWeekStart)}
+                    className="text-xs text-[#284235] font-semibold underline underline-offset-2 touch-manipulation"
+                  >
+                    Till denna vecka
+                  </button>
+                )}
               </div>
-              <h1 className="font-serif text-2xl font-bold text-stone-900 leading-tight">
-                Veckoplanering
-              </h1>
+              <button
+                type="button"
+                onClick={() => goToWeek(addDaysISO(planWeekStart, 7))}
+                className="w-9 h-9 rounded-full flex items-center justify-center text-stone-600 hover:bg-stone-100 active:bg-stone-200 touch-manipulation shrink-0"
+                aria-label="Nästa vecka"
+              >
+                <ChevronRight className="w-5 h-5" />
+              </button>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 shrink-0">
               {/* Desktop Create Shopping List Button */}
               <button
                 type="button"
-                onClick={() => {
-                  if (totalPlannedMeals === 0) {
-                    setGeneratedToast('Planera in minst en måltid i veckan först');
-                    setTimeout(() => setGeneratedToast(null), 2500);
-                    return;
-                  }
-                  setShowGenerateModal(true);
-                }}
+                onClick={openGenerate}
                 className="hidden md:flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#284235] hover:bg-black text-white text-xs font-bold transition-all shadow-xs active:scale-95 cursor-pointer min-h-[38px]"
-                title="Skapa inköpslista från veckans måltider"
               >
                 <ShoppingCart className="w-3.5 h-3.5 text-emerald-300" />
                 <span>Skapa inköpslista</span>
-                {totalPlannedMeals > 0 && (
-                  <span className="bg-emerald-900 text-emerald-200 text-[10px] font-extrabold px-1.5 py-0.2 rounded-full">
-                    {totalPlannedMeals}
-                  </span>
-                )}
               </button>
 
-              {/* Clear Week button if any meals are planned */}
-              {totalPlannedMeals > 0 && (
-                <button
-                  type="button"
-                  onClick={() => setShowClearWeekModal(true)}
-                  className="px-2.5 py-2 rounded-xl bg-white hover:bg-rose-50 border border-[#EBE7DF] hover:border-rose-200 text-stone-500 hover:text-rose-600 text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 shadow-xs touch-manipulation min-h-[38px] cursor-pointer"
-                  title="Rensa hela veckomenyn"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">Rensa</span>
-                </button>
-              )}
-
-            {/* View Mode Toggle: Mobile (Story vs Overview) */}
-            {/* View Mode Toggle: Mobile (Story vs Overview) */}
-            <div className="flex md:hidden items-center bg-white border border-[#EBE7DF] p-0.5 rounded-xl shadow-xs">
-              <button
-                type="button"
-                onClick={() => setViewMode('split')}
-                className={`p-1.5 rounded-lg text-xs font-bold transition-all touch-manipulation min-h-[34px] min-w-[34px] flex items-center justify-center ${
-                  viewMode === 'split'
-                    ? 'bg-[#284235] text-white shadow-xs'
-                    : 'text-stone-400 hover:text-stone-700'
-                }`}
-                title="Kortvy (Dag för dag)"
-                aria-label="Kortvy"
-              >
-                <Layers className="w-4 h-4" />
-              </button>
-              <button
-                type="button"
-                onClick={() => setViewMode('overview')}
-                className={`p-1.5 rounded-lg text-xs font-bold transition-all touch-manipulation min-h-[34px] min-w-[34px] flex items-center justify-center ${
-                  viewMode === 'overview'
-                    ? 'bg-[#284235] text-white shadow-xs'
-                    : 'text-stone-400 hover:text-stone-700'
-                }`}
-                title="Veckoöversikt"
-                aria-label="Veckoöversikt"
-              >
-                <View className="w-4 h-4" />
-              </button>
-            </div>
-
-            {/* View Mode Toggle: Desktop (Delad vy vs Veckoöversikt) */}
-            <div className="hidden md:flex items-center bg-white border border-[#EBE7DF] p-0.5 rounded-xl shadow-xs">
-              <button
-                type="button"
-                onClick={() => setViewMode('split')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                  viewMode === 'split'
-                    ? 'bg-[#284235] text-white shadow-xs'
-                    : 'text-stone-500 hover:text-stone-900'
-                }`}
-                title="Delad vy (Veckolista till vänster, receptpanel till höger)"
-              >
-                <Columns2 className="w-3.5 h-3.5" />
-                <span>Delad vy</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setViewMode('overview')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                  viewMode === 'overview'
-                    ? 'bg-[#284235] text-white shadow-xs'
-                    : 'text-stone-500 hover:text-stone-900'
-                }`}
-                title="Veckoöversikt (Kompakt översikt över hela veckan)"
-              >
-                <View className="w-3.5 h-3.5" />
-                <span>Veckoöversikt</span>
-              </button>
+              {/* Day / Week view */}
+              <div className="flex items-center bg-white border border-[#EBE7DF] p-0.5 rounded-xl shadow-xs" role="group" aria-label="Vy">
+                {([
+                  ['split', 'Dag'],
+                  ['overview', 'Vecka'],
+                ] as const).map(([mode, label]) => (
+                  <button
+                    key={mode}
+                    type="button"
+                    onClick={() => setViewMode(mode)}
+                    aria-pressed={viewMode === mode}
+                    className={`px-3 rounded-lg text-xs font-semibold transition-all touch-manipulation min-h-[34px] cursor-pointer ${
+                      viewMode === mode ? 'bg-[#284235] text-white shadow-xs' : 'text-stone-600 hover:text-stone-900'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
-        </div>
 
         {/* Row 2: Visual 7-Day Thumbnail Strip (Mobile only - Desktop has left master list) */}
         <div className="flex md:hidden items-center justify-between gap-1 pt-1">
@@ -459,23 +403,14 @@ export const MealPlanView: React.FC = () => {
                   isSelected ? 'bg-stone-200/50' : 'hover:bg-stone-100/60'
                 }`}
               >
-                {/* Day name abbreviation */}
-                <div className="flex items-center gap-0.5">
-                  <span
-                    className={`text-[10px] tracking-tight ${
-                      isSelected
-                        ? 'font-bold text-[#284235]'
-                        : isToday
-                        ? 'font-bold text-emerald-800'
-                        : 'font-semibold text-stone-500'
-                    }`}
-                  >
-                    {DAY_ABBR[day]}
-                  </span>
-                  {isToday && (
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 shrink-0" title="Idag" />
-                  )}
-                </div>
+                {/* Day name */}
+                <span
+                  className={`text-[11px] ${
+                    isSelected || isToday ? 'font-bold text-[#284235]' : 'font-medium text-stone-500'
+                  }`}
+                >
+                  {DAY_ABBR[day]}
+                </span>
 
                 {/* Circular thumbnail with active ring */}
                 <div
@@ -521,14 +456,15 @@ export const MealPlanView: React.FC = () => {
                   )}
                 </div>
 
-                {/* Bottom status indicator dot */}
+                {/* Date, marked when it is today */}
                 <span
-                  className={`w-1.5 h-1.5 rounded-full transition-all ${
-                    hasDinner
-                      ? 'bg-emerald-600/70'
-                      : 'bg-transparent'
+                  className={`text-[11px] tabular-nums leading-none px-1.5 py-0.5 rounded-full ${
+                    isToday ? 'bg-[#284235] text-white font-bold' : 'text-stone-500'
                   }`}
-                />
+                  aria-label={isToday ? `I dag, ${formatDayMonth(weekDates[idx])}` : formatDayMonth(weekDates[idx])}
+                >
+                  {dayOfMonth(weekDates[idx])}
+                </span>
               </button>
             );
           })}
@@ -551,8 +487,8 @@ export const MealPlanView: React.FC = () => {
                 <span className="font-serif font-bold text-base text-stone-900">
                   Veckans menyer
                 </span>
-                <span className="text-[11px] font-semibold text-emerald-800 bg-emerald-100/80 px-2 py-0.5 rounded-full">
-                  {plannedDinnerCount} av 7
+                <span className="text-xs text-stone-500">
+                  {plannedDinnerCount} av 7 middagar
                 </span>
               </div>
 
@@ -629,11 +565,11 @@ export const MealPlanView: React.FC = () => {
                               isSelected ? 'text-[#284235]' : 'text-stone-900'
                             }`}
                           >
-                            {day}
+                            {day} {formatDayMonth(weekDates[idx])}
                           </span>
                           {isToday && (
-                            <span className="bg-emerald-100 text-emerald-800 text-[9px] font-extrabold px-1.5 py-0.2 rounded-full">
-                              Idag
+                            <span className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-1.5 py-0.2 rounded-full">
+                              I dag
                             </span>
                           )}
                         </div>
@@ -643,7 +579,7 @@ export const MealPlanView: React.FC = () => {
                             recipe || hasCustomDinner ? 'text-stone-800' : 'text-stone-400 italic'
                           }`}
                         >
-                          {recipe ? recipe.title : hasCustomDinner ? dayData?.customDinner : 'Ingen middag planerad'}
+                          {recipe ? formatRecipeTitle(recipe.title) : hasCustomDinner ? dayData?.customDinner : 'Ingen middag planerad'}
                         </div>
 
                         <div className="flex items-center gap-1.5 text-[10px] text-stone-400 mt-0.5">
@@ -653,10 +589,10 @@ export const MealPlanView: React.FC = () => {
                                 {formatCookingTime(recipe.prepTimeMinutes, recipe.cookTimeMinutes)}
                               </span>
                               <span>•</span>
-                              <span>{dayData?.dinnerServings || 4} port</span>
+                              <span>{dayData?.dinnerServings || 4} portioner</span>
                             </>
                           ) : hasCustomDinner ? (
-                            <span>{dayData?.dinnerServings || 4} port</span>
+                            <span>{dayData?.dinnerServings || 4} portioner</span>
                           ) : (
                             <span className="text-emerald-800 font-medium">+ Välj middag</span>
                           )}
@@ -691,34 +627,10 @@ export const MealPlanView: React.FC = () => {
             {/* RIGHT DETAIL PANEL: VALD DAG (Mobile & Desktop)                 */}
             {/* =============================================================== */}
             <div className="w-full flex-1 min-w-0 max-w-xl mx-auto md:max-w-none space-y-4">
-            {/* Day Bar with Navigation Arrows */}
-            <div className="flex items-center justify-between px-1">
-              <div className="flex items-center gap-2">
-                <h2 className="font-serif text-2xl font-bold text-stone-900 leading-none">
-                  {activeDayName}
-                </h2>
-              </div>
-
-              {/* Prev / Next day switcher */}
-              <div className="flex items-center gap-1">
-                <button
-                  type="button"
-                  onClick={() => setSelectedDayIndex((prev) => (prev > 0 ? prev - 1 : 6))}
-                  className="w-9 h-9 rounded-full bg-white border border-[#EBE7DF] text-stone-700 font-bold flex items-center justify-center hover:bg-stone-50 active:scale-90 touch-manipulation shadow-xs transition-all"
-                  aria-label="Föregående dag"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSelectedDayIndex((prev) => (prev < 6 ? prev + 1 : 0))}
-                  className="w-9 h-9 rounded-full bg-white border border-[#EBE7DF] text-stone-700 font-bold flex items-center justify-center hover:bg-stone-50 active:scale-90 touch-manipulation shadow-xs transition-all"
-                  aria-label="Nästa dag"
-                >
-                  <ChevronRight className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
+            {/* Day heading (desktop, the phone shows the day strip instead) */}
+            <h2 className="hidden md:block font-serif text-2xl font-bold text-stone-900 leading-none px-1">
+              {activeDayName} {formatDayMonth(weekDates[selectedDayIndex])}
+            </h2>
 
             {/* ===================== DINNER HERO CARD ===================== */}
             <div className="bg-white rounded-3xl border border-[#EBE7DF] shadow-md overflow-hidden transition-all">
@@ -803,7 +715,7 @@ export const MealPlanView: React.FC = () => {
                     {/* Servings Stepper & Change Recipe Button */}
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <div className="flex items-center gap-2 bg-[#FCFAF5] border border-[#EBE7DF] rounded-2xl px-3 py-1.5">
-                        <span className="text-xs font-semibold text-stone-700">Portioner:</span>
+                        <span className="text-xs font-semibold text-stone-700">Portioner</span>
                         <div className="flex items-center gap-1.5">
                           <button
                             type="button"
@@ -880,7 +792,7 @@ export const MealPlanView: React.FC = () => {
 
                   <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-[#EBE7DF]">
                     <div className="flex items-center gap-2 bg-[#FCFAF5] border border-[#EBE7DF] rounded-2xl px-3 py-1.5">
-                      <span className="text-xs font-semibold text-stone-700">Portioner:</span>
+                      <span className="text-xs font-semibold text-stone-700">Portioner</span>
                       <div className="flex items-center gap-1.5">
                         <button
                           type="button"
@@ -1011,21 +923,20 @@ export const MealPlanView: React.FC = () => {
               </div>
             )}
 
-            {/* ===================== LUNCH SECTION (COMPACT & SLEEK) ===================== */}
-            <div className="bg-white rounded-3xl border border-[#EBE7DF] shadow-xs p-3.5 space-y-2.5">
-              <div className="flex items-center justify-between">
-                <div className="text-stone-900 font-bold text-xs">
-                  Lunch / Matlåda
-                </div>
+            {/* ===================== LUNCH ===================== */}
+            <div className="px-1 space-y-2">
+              <div className="flex items-center justify-between min-h-[28px]">
+                <div className="text-stone-900 font-semibold text-sm">Lunch</div>
 
                 {(lunchRecipe || activeDayData.customLunch?.trim()) && (
                   <button
                     type="button"
                     onClick={() => handleClearMeal(activeDayName, 'lunch')}
-                    className="w-7 h-7 flex items-center justify-center text-stone-400 hover:text-rose-600 transition-colors touch-manipulation"
+                    className="w-9 h-9 -mr-2 flex items-center justify-center text-stone-400 hover:text-rose-600 transition-colors touch-manipulation"
+                    aria-label="Ta bort lunch"
                     title="Ta bort lunch"
                   >
-                    <Trash2 className="w-3.5 h-3.5" />
+                    <Trash2 className="w-4 h-4" />
                   </button>
                 )}
               </div>
@@ -1170,24 +1081,14 @@ export const MealPlanView: React.FC = () => {
                   </div>
                 </div>
               ) : (
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => openPickerModal(activeDayName, 'lunch')}
-                    className="flex-1 py-2.5 px-3 rounded-2xl bg-[#FCFAF5] hover:bg-stone-100 border border-dashed border-stone-300 text-stone-600 font-semibold text-xs flex items-center justify-center transition-all touch-manipulation min-h-[40px]"
-                  >
-                    Lägg till lunch
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => handleRandomPickForDay(activeDayName, 'lunch')}
-                    className="py-2.5 px-3.5 rounded-2xl bg-[#FCFAF5] hover:bg-stone-100 border border-[#EBE7DF] text-stone-600 font-semibold text-xs flex items-center justify-center transition-all touch-manipulation min-h-[40px]"
-                    title="Slumpa lunch"
-                  >
-                    Slumpa
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => openPickerModal(activeDayName, 'lunch')}
+                  className="text-sm font-semibold text-[#284235] flex items-center gap-1.5 py-2 touch-manipulation min-h-[40px]"
+                >
+                  <Plus className="w-4 h-4" />
+                  Lägg till lunch
+                </button>
               )}
             </div>
           </div>
@@ -1198,29 +1099,31 @@ export const MealPlanView: React.FC = () => {
         {/* MODE 2: OVERVIEW MATRIX (ALL 7 DAYS IN BEAUTIFUL COMPACT ROWS)     */}
         {/* =================================================================== */}
         {viewMode === 'overview' && (
-          <div className="space-y-2.5 md:space-y-0 md:grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-7 md:gap-3.5 animate-fade-in">
+          <div className="divide-y divide-[#EBE7DF] border-b border-[#EBE7DF] md:border-0 md:divide-y-0 md:grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-7 md:gap-3.5 animate-fade-in">
             {DAYS_OF_WEEK.map((day, idx) => {
               const dayData = mealPlan.find((d) => d.dayName === day);
               const dRecipe = recipes.find((r) => r.id === dayData?.dinnerRecipeId);
               const lRecipe = recipes.find((r) => r.id === dayData?.lunchRecipeId);
               const hasCustomDinner = Boolean(dayData?.customDinner?.trim());
               const hasCustomLunch = Boolean(dayData?.customLunch?.trim());
+              const isToday = idx === todayIndex;
 
               return (
-                <div
+                <button
+                  type="button"
                   key={day}
                   onClick={() => {
                     setSelectedDayIndex(idx);
                     setViewMode('split');
                   }}
-                  className="bg-white rounded-2xl border border-[#EBE7DF] p-3 flex items-center gap-3 shadow-xs cursor-pointer hover:border-emerald-700/50 transition-all touch-manipulation"
+                  className="w-full text-left py-3 flex items-center gap-3 cursor-pointer touch-manipulation active:bg-stone-100/60 md:bg-white md:rounded-2xl md:border md:border-[#EBE7DF] md:p-3 md:shadow-xs md:hover:border-emerald-700/50 transition-colors"
                 >
                   {/* Thumbnail */}
-                  <div className="relative w-14 h-14 rounded-xl overflow-hidden bg-stone-100 shrink-0 border border-[#EBE7DF]">
+                  <div className="relative w-12 h-12 rounded-xl overflow-hidden bg-stone-100 shrink-0">
                     {dRecipe ? (
                       <img
                         src={dRecipe.coverImageUrl}
-                        alt={dRecipe.title}
+                        alt=""
                         onError={(e) => {
                           const el = e.currentTarget;
                           el.onerror = null;
@@ -1229,101 +1132,72 @@ export const MealPlanView: React.FC = () => {
                         className="w-full h-full object-cover"
                       />
                     ) : hasCustomDinner ? (
-                      <div className="w-full h-full bg-amber-100 flex items-center justify-center text-amber-900" title={dayData?.customDinner}>
+                      <div className="w-full h-full bg-amber-100 flex items-center justify-center">
                         <Utensils className="w-5 h-5 text-amber-800" />
                       </div>
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center text-stone-400 font-bold text-lg">
-                        +
+                      <div className="w-full h-full flex items-center justify-center text-stone-400">
+                        <Plus className="w-4 h-4" />
                       </div>
                     )}
                   </div>
 
-                  {/* Day and Recipe details */}
+                  {/* Day, dinner and lunch */}
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5 mb-0.5">
-                      <span className="font-serif font-bold text-sm text-stone-900">
-                        {day}
-                      </span>
+                    <div className={`text-xs ${isToday ? 'font-bold text-[#284235]' : 'text-stone-500'}`}>
+                      {day} {formatDayMonth(weekDates[idx])}{isToday ? ', i dag' : ''}
                     </div>
 
-                    <div className="font-medium text-xs text-stone-800 truncate">
-                      {dRecipe ? dRecipe.title : hasCustomDinner ? dayData?.customDinner : 'Ingen middag planerad'}
+                    <div className={`text-sm truncate ${dRecipe || hasCustomDinner ? 'font-semibold text-stone-900' : 'text-stone-400'}`}>
+                      {dRecipe ? formatRecipeTitle(dRecipe.title) : hasCustomDinner ? dayData?.customDinner : 'Ingen middag'}
                     </div>
 
-                    <div className="text-[11px] text-stone-400 flex items-center gap-2 mt-0.5">
-                      {dRecipe ? (
-                        <>
-                          <span className="inline-flex items-center gap-1">
-                            <Clock className="w-3 h-3 text-stone-400" />
-                            {formatCookingTime(dRecipe.prepTimeMinutes, dRecipe.cookTimeMinutes)}
-                          </span>
-                          <span>•</span>
-                          <span>{dayData?.dinnerServings || 4} port</span>
-                        </>
-                      ) : hasCustomDinner ? (
-                        <>
-                          <span className="text-amber-800 font-medium">Egen middag</span>
-                          <span>•</span>
-                          <span>{dayData?.dinnerServings || 4} port</span>
-                        </>
-                      ) : (
-                        <span className="text-emerald-800 font-semibold">+ Klicka för att välja</span>
-                      )}
+                    {(dRecipe || hasCustomDinner) && (
+                      <div className="text-xs text-stone-500 whitespace-nowrap">
+                        {dRecipe ? `${formatCookingTime(dRecipe.prepTimeMinutes, dRecipe.cookTimeMinutes)}, ` : ''}
+                        {dayData?.dinnerServings || 4} portioner
+                      </div>
+                    )}
 
-                      {(lRecipe || hasCustomLunch) && (
-                        <>
-                          <span>•</span>
-                          <span className="text-amber-700 font-medium inline-flex items-center gap-1">
-                            <LunchboxIcon className="w-3 h-3 text-amber-700 shrink-0" />
-                            Lunch: {lRecipe ? lRecipe.title : dayData?.customLunch}
-                          </span>
-                        </>
-                      )}
-                    </div>
+                    {(lRecipe || hasCustomLunch) && (
+                      <div className="text-xs text-stone-500 truncate">
+                        Lunch: {lRecipe ? formatRecipeTitle(lRecipe.title) : dayData?.customLunch}
+                      </div>
+                    )}
                   </div>
 
-                  <ArrowRight className="w-4 h-4 text-stone-300 shrink-0" />
-                </div>
+                  <ChevronRight className="w-4 h-4 text-stone-300 shrink-0" />
+                </button>
               );
             })}
           </div>
         )}
-      </div>
 
-      {/* FLOATING PRIMARY BUTTON: SKAPA INKÖPSLISTA (Mobile only) */}
-      <div
-        className="fixed bottom-24 pointer-events-none z-20 flex justify-center md:hidden"
-        style={{
-          bottom: 'calc(max(1.25rem, env(safe-area-inset-bottom, 0px)) + 4.65rem)',
-          left: containerBounds ? `${containerBounds.left}px` : '50%',
-          width: containerBounds ? `${containerBounds.width}px` : '100%',
-          maxWidth: '28rem',
-          transform: containerBounds ? undefined : 'translateX(-50%)',
-        }}
-      >
-        <div className="w-full max-w-md mx-auto px-4">
+        {/* Shopping list from the week, and emptying the week. At the end of the page, not floating. */}
+        <div className="md:hidden pt-2 space-y-1">
           <button
             type="button"
-            onClick={() => {
-              if (totalPlannedMeals === 0) {
-                setGeneratedToast('Planera in minst en måltid i veckan först');
-                setTimeout(() => setGeneratedToast(null), 2500);
-                return;
-              }
-              setShowGenerateModal(true);
-            }}
-            className="w-full min-h-[58px] py-4 px-5 rounded-2xl bg-[#284235] hover:bg-stone-900 active:scale-[0.98] text-white font-bold text-sm sm:text-base flex items-center justify-center gap-2.5 shadow-2xl shadow-emerald-950/45 transition-all touch-manipulation pointer-events-auto border border-emerald-500/30"
+            onClick={openGenerate}
+            className="w-full min-h-[52px] py-3 px-5 rounded-2xl bg-[#284235] hover:bg-stone-900 active:scale-[0.98] text-white flex items-center justify-center gap-2.5 transition-all touch-manipulation"
           >
             <ShoppingCart className="w-5 h-5 text-emerald-300 shrink-0" />
-            <span>Skapa inköpslista från veckan</span>
-            {totalPlannedMeals > 0 && (
-              <span className="bg-emerald-900/90 text-emerald-200 text-xs font-bold px-2.5 py-0.5 rounded-full border border-emerald-600/40">
-                {totalPlannedMeals}
-              </span>
-            )}
+            <span className="font-semibold text-sm">Skapa inköpslista</span>
+            {plannedSummary && <span className="text-xs text-emerald-200/90">{plannedSummary}</span>}
           </button>
         </div>
+
+        {totalPlannedMeals > 0 && (
+          <div className="flex justify-center">
+            <button
+              type="button"
+              onClick={() => setShowClearWeekModal(true)}
+              className="text-xs font-semibold text-stone-500 hover:text-rose-700 flex items-center gap-1.5 py-2 px-3 touch-manipulation min-h-[40px]"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              Töm vecka {weekNumber}
+            </button>
+          </div>
+        )}
       </div>
 
       {/* =================================================================== */}
@@ -1338,17 +1212,31 @@ export const MealPlanView: React.FC = () => {
                   Välj {pickerState.mealType === 'dinner' ? 'middag' : 'lunch'}
                 </h3>
                 <p className="text-xs text-stone-500">
-                  Till {pickerState.dayName}
+                  {pickerState.dayName} {formatDayMonth(weekDates[DAYS_OF_WEEK.indexOf(pickerState.dayName)])}
                 </p>
               </div>
 
-              <button
-                type="button"
-                onClick={() => setPickerState(null)}
-                className="w-9 h-9 rounded-full bg-[#FCFAF5] flex items-center justify-center text-stone-600 hover:text-stone-900 transition-colors touch-manipulation"
-              >
-                <X className="w-5 h-5" />
-              </button>
+              <div className="flex items-center gap-1.5 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleRandomPickForDay(pickerState.dayName, pickerState.mealType);
+                    setPickerState(null);
+                  }}
+                  className="px-3 h-9 rounded-xl bg-[#FCFAF5] border border-[#EBE7DF] flex items-center gap-1.5 text-xs font-semibold text-stone-700 hover:bg-stone-100 touch-manipulation"
+                >
+                  <Dices className="w-4 h-4" />
+                  Slumpa
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPickerState(null)}
+                  className="w-9 h-9 rounded-full bg-[#FCFAF5] flex items-center justify-center text-stone-600 hover:text-stone-900 transition-colors touch-manipulation"
+                  aria-label="Stäng"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
             </div>
 
             {/* Mode Switcher: Recept ur samlingen / Egen måltid */}
@@ -1588,10 +1476,10 @@ export const MealPlanView: React.FC = () => {
             </div>
             <div>
               <h3 className="font-serif font-bold text-lg text-stone-900">
-                Rensa veckomenyn?
+                Töm vecka {weekNumber}?
               </h3>
               <p className="text-xs text-stone-500 mt-1">
-                Är du säker på att du vill ta bort alla planerade luncher och middagar för den här veckan?
+                Alla luncher och middagar {formatWeekRange(planWeekStart)} tas bort. Andra veckor påverkas inte.
               </p>
             </div>
             <div className="flex gap-2 pt-1">
@@ -1607,7 +1495,7 @@ export const MealPlanView: React.FC = () => {
                 onClick={handleConfirmClearWeek}
                 className="flex-1 py-3 px-3 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs touch-manipulation min-h-[46px] shadow-sm"
               >
-                Ja, rensa vecka
+                Töm veckan
               </button>
             </div>
           </div>

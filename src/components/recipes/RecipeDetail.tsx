@@ -1,5 +1,14 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import type { Recipe, MealPlanDay } from '../../types/recipe';
+import type { Recipe } from '../../types/recipe';
+import { addDaysISO, dayNameForDate, formatDayMonth, todayISO } from '../../utils/mealPlanDates';
+
+/** "I dag", "I morgon" or "Lördag 7 nov" */
+function upcomingDayLabel(dateStr: string): string {
+  const today = todayISO();
+  if (dateStr === today) return 'I dag';
+  if (dateStr === addDaysISO(today, 1)) return 'I morgon';
+  return `${dayNameForDate(dateStr)} ${formatDayMonth(dateStr)}`;
+}
 import { useRecipes } from '../../context/RecipeContext';
 import {
   Heart,
@@ -44,7 +53,8 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
     toggleFavorite,
     updateNotes,
     addIngredientsToShoppingList,
-    setMealPlanForDay,
+    setMealPlanForDate,
+    getMealPlanForDate,
     setActiveTab,
     deleteRecipe,
   } = useRecipes();
@@ -357,11 +367,11 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
   };
 
   // Add Recipe to Meal Plan
-  const handleAddToDay = (day: MealPlanDay['dayName']) => {
-    setMealPlanForDay(day, mealPlanMealType, recipe.id);
+  const handleAddToDay = (dateStr: string) => {
+    setMealPlanForDate(dateStr, mealPlanMealType, recipe.id);
     setShowMealPlanPicker(false);
     const mealLabel = mealPlanMealType === 'dinner' ? 'middag' : 'lunch';
-    setShoppingToast(`Inlagd som ${mealLabel} på ${day}!`);
+    setShoppingToast(`Inlagd som ${mealLabel} ${upcomingDayLabel(dateStr).toLowerCase()}`);
     setTimeout(() => setShoppingToast(null), 3000);
   };
 
@@ -830,7 +840,7 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
             style={{ minHeight: '48px' }}
           >
             <CalendarPlus className="w-4 h-4 text-stone-600" />
-            <span>Planera in i Veckomenyn</span>
+            <span>Lägg till i veckoplanen</span>
           </button>
 
           <button
@@ -891,7 +901,7 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
           <div className="bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl p-5 shadow-2xl space-y-4 max-h-[85vh] overflow-y-auto">
             <div className="flex items-center justify-between">
               <h3 className="font-serif font-bold text-lg text-stone-900">
-                Planera i veckomenyn
+                Lägg till i veckoplanen
               </h3>
               <button
                 type="button"
@@ -929,26 +939,31 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
             </div>
 
             <p className="text-xs text-stone-500">
-              Välj vilken dag du vill lägga till {formatRecipeTitle(recipe.title)} som {mealPlanMealType === 'dinner' ? 'middag' : 'lunch'}:
+              Välj dag för {formatRecipeTitle(recipe.title)}.
             </p>
 
             <div className="grid grid-cols-1 gap-2">
-              {(['Måndag', 'Tisdag', 'Onsdag', 'Torsdag', 'Fredag', 'Lördag', 'Söndag'] as const).map(
-                (day) => (
+              {Array.from({ length: 7 }, (_, i) => addDaysISO(todayISO(), i)).map((dateStr) => {
+                const planned = getMealPlanForDate(dateStr);
+                const plannedId = mealPlanMealType === 'dinner' ? planned?.dinnerRecipeId : planned?.lunchRecipeId;
+                const plannedCustom = mealPlanMealType === 'dinner' ? planned?.customDinner : planned?.customLunch;
+                const plannedRecipe = plannedId ? recipes.find((r) => r.id === plannedId) : undefined;
+                const plannedText = plannedRecipe ? formatRecipeTitle(plannedRecipe.title) : plannedCustom?.trim();
+                return (
                   <button
-                    key={day}
+                    key={dateStr}
                     type="button"
-                    onClick={() => handleAddToDay(day)}
-                    className="py-3.5 px-4 rounded-2xl border border-[#EBE7DF] hover:border-[#284235] hover:bg-emerald-50/40 text-left font-semibold text-sm text-stone-900 flex items-center justify-between transition-colors touch-manipulation"
+                    onClick={() => handleAddToDay(dateStr)}
+                    className="py-2.5 px-4 rounded-2xl border border-[#EBE7DF] hover:border-[#284235] hover:bg-emerald-50/40 text-left text-sm text-stone-900 flex items-center justify-between gap-3 transition-colors touch-manipulation"
                     style={{ minHeight: '52px' }}
                   >
-                    <span>{day}</span>
-                    <span className="text-xs font-bold text-[#284235]">
-                      Välj som {mealPlanMealType === 'dinner' ? 'middag' : 'lunch'} →
+                    <span className="font-semibold shrink-0">{upcomingDayLabel(dateStr)}</span>
+                    <span className="text-xs text-stone-500 truncate">
+                      {plannedText ? `Ersätter ${plannedText}` : 'Ledig'}
                     </span>
                   </button>
-                )
-              )}
+                );
+              })}
             </div>
           </div>
         </div>
