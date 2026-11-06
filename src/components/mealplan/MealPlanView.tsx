@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
+import { ConfirmSheet } from '../layout/ConfirmSheet';
 import { flushSync } from 'react-dom';
 import type { MealPlanDay } from '../../types/recipe';
 import { useRecipes } from '../../context/RecipeContext';
@@ -16,7 +17,6 @@ import {
   ChevronRight,
   Utensils,
   X,
-  AlertCircle,
   ChefHat,
   Users,
 } from 'lucide-react';
@@ -852,20 +852,10 @@ export const MealPlanView: React.FC = () => {
                 </div>
               ) : (
                 /* Empty state for Dinner */
-                <div className="p-6 text-center space-y-4">
-                  <div className="w-14 h-14 mx-auto rounded-2xl bg-[#FCFAF5] border-2 border-dashed border-stone-300 flex items-center justify-center text-stone-400">
-                    <Utensils className="w-6 h-6 text-stone-400" />
-                  </div>
-                  <div>
-                    <h3 className="font-serif font-bold text-lg text-stone-900">
-                      Ingen middag planerad
-                    </h3>
-                    <p className="text-xs text-stone-500 max-w-xs mx-auto mt-0.5">
-                      Välj ett recept från din samling, skriv en egen måltid eller slumpa fram kvällens middag.
-                    </p>
-                  </div>
+                <div className="p-5 space-y-4">
+                  <h3 className="font-serif font-bold text-lg text-stone-900">Ingen middag än</h3>
 
-                  <div className="flex gap-2 max-w-xs mx-auto">
+                  <div className="flex gap-2">
                     <button
                       type="button"
                       onClick={() => openPickerModal(activeDayName, 'dinner')}
@@ -1446,37 +1436,13 @@ export const MealPlanView: React.FC = () => {
       {/* CLEAR WEEK CONFIRMATION MODAL                                       */}
       {/* =================================================================== */}
       {showClearWeekModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in font-sans">
-          <div className="bg-white w-full max-w-sm rounded-3xl shadow-2xl p-5 space-y-4 text-center">
-            <div className="w-12 h-12 mx-auto rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center">
-              <AlertCircle className="w-6 h-6" />
-            </div>
-            <div>
-              <h3 className="font-serif font-bold text-lg text-stone-900">
-                Töm vecka {weekNumber}?
-              </h3>
-              <p className="text-xs text-stone-500 mt-1">
-                Alla luncher och middagar {formatWeekRange(planWeekStart)} tas bort. Andra veckor påverkas inte.
-              </p>
-            </div>
-            <div className="flex gap-2 pt-1">
-              <button
-                type="button"
-                onClick={() => setShowClearWeekModal(false)}
-                className="flex-1 py-3 px-3 rounded-2xl bg-stone-100 text-stone-700 font-semibold text-xs touch-manipulation min-h-[46px]"
-              >
-                Avbryt
-              </button>
-              <button
-                type="button"
-                onClick={handleConfirmClearWeek}
-                className="flex-1 py-3 px-3 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs touch-manipulation min-h-[46px] shadow-sm"
-              >
-                Töm veckan
-              </button>
-            </div>
-          </div>
-        </div>
+        <ConfirmSheet
+          title={`Töm vecka ${weekNumber}?`}
+          text={`Alla luncher och middagar ${formatWeekRange(planWeekStart)} tas bort. Andra veckor påverkas inte.`}
+          confirmLabel="Töm veckan"
+          onCancel={() => setShowClearWeekModal(false)}
+          onConfirm={handleConfirmClearWeek}
+        />
       )}
     </div>
   );

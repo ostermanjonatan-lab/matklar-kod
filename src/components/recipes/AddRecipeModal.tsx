@@ -88,7 +88,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = ({ onClose, closeGu
     try {
       const uploadedUrl = await uploadRecipePhoto(file);
       setCoverImageUrl(uploadedUrl);
-      setToastMessage('Foto inlagt från telefonen!');
+      setToastMessage('Bilden är tillagd');
       setTimeout(() => setToastMessage(null), 3000);
     } catch (err) {
       console.error('Image upload failed:', err);
@@ -264,7 +264,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = ({ onClose, closeGu
 
       clearInterval(progressTimer);
       setUrlFetchProgress(100);
-      setUrlFetchStatus('Klart! Fyller i recept...');
+      setUrlFetchStatus('Fyller i receptet');
 
       if (scraped.title) setTitle(scraped.title);
       if (scraped.coverImageUrl) setCoverImageUrl(scraped.coverImageUrl);

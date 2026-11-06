@@ -71,9 +71,6 @@ export const DesktopNav: React.FC<DesktopNavProps> = ({
               <span className="font-serif text-2xl font-bold tracking-tight text-stone-900 group-hover:text-[#284235] transition-colors leading-none">
                 MatKlar
               </span>
-              <span className="text-[10px] text-stone-500 font-semibold block mt-0.5 tracking-wider uppercase">
-                Recept & Matsedel
-              </span>
             </div>
           </button>
         </div>

@@ -8,10 +8,7 @@ import { useRecipes } from '../../context/RecipeContext';
 import {
   X,
   Check,
-  Search,
-  SlidersHorizontal,
-  Heart,
-  RotateCcw
+  Search
 } from 'lucide-react';
 
 export interface RecipeFilterModalProps {
@@ -197,22 +194,10 @@ export const RecipeFilterModal: React.FC<RecipeFilterModalProps> = ({
     >
       <div className="bg-white w-full max-w-lg rounded-t-3xl sm:rounded-3xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden animate-slide-up">
         {/* Header */}
-        <div className="px-5 py-4 border-b border-stone-100 flex items-center justify-between bg-[#FCFAF5]/60 shrink-0">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-2xl bg-emerald-50 text-[#284235] flex items-center justify-center shrink-0">
-              <SlidersHorizontal className="w-4 h-4 stroke-[2.2]" />
-            </div>
-            <div>
-              <h2 id="filter-modal-title" className="font-serif font-bold text-lg text-stone-900 leading-tight">
-                Filtrera och sortera
-              </h2>
-              <p className="text-[11px] text-stone-500">
-                {activeFilterCount > 0
-                  ? `${activeFilterCount} aktiva filter`
-                  : 'Anpassa vad du vill se'}
-              </p>
-            </div>
-          </div>
+        <div className="px-5 py-4 border-b border-stone-100 flex items-center justify-between shrink-0">
+          <h2 id="filter-modal-title" className="font-serif font-bold text-lg text-stone-900 leading-tight">
+            Filtrera och sortera
+          </h2>
 
           <div className="flex items-center gap-2">
             {activeFilterCount > 0 && (
@@ -221,7 +206,6 @@ export const RecipeFilterModal: React.FC<RecipeFilterModalProps> = ({
                 onClick={onResetFilters}
                 className="text-xs font-semibold text-rose-600 hover:text-rose-700 px-2.5 py-1.5 rounded-lg hover:bg-rose-50 transition-colors flex items-center gap-1 touch-manipulation"
               >
-                <RotateCcw className="w-3.5 h-3.5" />
                 <span>Rensa alla</span>
               </button>
             )}
@@ -241,9 +225,7 @@ export const RecipeFilterModal: React.FC<RecipeFilterModalProps> = ({
         <div className="p-5 overflow-y-auto space-y-6 divide-y divide-stone-100">
           {/* 1. Huvudkategori (Category) */}
           <div className="space-y-2.5">
-            <label className="text-xs font-bold text-stone-800 uppercase tracking-wider block">
-              Huvudkategori
-            </label>
+            <span className="text-sm font-semibold text-stone-900 block">Kategori</span>
             <div className="flex flex-wrap gap-1.5">
               {categories.map((cat) => {
                 const isSelected = selectedCategory === cat;
@@ -269,19 +251,15 @@ export const RecipeFilterModal: React.FC<RecipeFilterModalProps> = ({
           <div className="pt-5 space-y-3.5">
             <div className="flex items-center justify-between">
               <div>
-                <div className="flex items-center gap-2">
-                  <label className="text-xs font-bold text-stone-800 uppercase tracking-wider">
-                    Underkategorier
-                  </label>
+                <span className="text-sm font-semibold text-stone-900">
+                  Underkategorier
                   {selectedSubcategories.length > 0 && (
-                    <span className="bg-[#284235] text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
-                      {selectedSubcategories.length} valda
-                    </span>
+                    <span className="font-normal text-stone-500"> · {selectedSubcategories.length} valda</span>
                   )}
-                </div>
-                <p className="text-[11px] text-stone-500 mt-0.5">
-                  Kryssa i vad du letar efter (visar recept som innehåller alla valda)
-                </p>
+                </span>
+                {selectedSubcategories.length > 1 && (
+                  <p className="text-xs text-stone-500 mt-0.5">Recepten måste ha alla valda.</p>
+                )}
               </div>
 
               {selectedSubcategories.length > 0 ? (
@@ -310,7 +288,7 @@ export const RecipeFilterModal: React.FC<RecipeFilterModalProps> = ({
                 type="text"
                 value={subcatSearch}
                 onChange={(e) => setSubcatSearch(e.target.value)}
-                placeholder="Sök bland underkategorier..."
+                placeholder="Sök underkategori"
                 className="w-full h-10 bg-[#FCFAF5] text-stone-900 placeholder-stone-400 text-xs rounded-xl pl-9 pr-8 border border-stone-200 focus:outline-none focus:ring-2 focus:ring-[#284235]"
               />
               {subcatSearch && (
@@ -325,7 +303,7 @@ export const RecipeFilterModal: React.FC<RecipeFilterModalProps> = ({
             </div>
 
             {/* Checkbox Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-56 overflow-y-auto pr-1">
+            <div className="max-h-64 overflow-y-auto divide-y divide-stone-100 border-y border-stone-100">
               {filteredSubcategories.length > 0 ? (
                 filteredSubcategories.map((subcat) => {
                   const isChecked = selectedSubcategories.includes(subcat);
@@ -334,11 +312,7 @@ export const RecipeFilterModal: React.FC<RecipeFilterModalProps> = ({
                   return (
                     <label
                       key={subcat}
-                      className={`flex items-center justify-between p-2.5 rounded-xl border transition-all cursor-pointer select-none touch-manipulation min-h-[44px] ${
-                        isChecked
-                          ? 'bg-emerald-50/80 border-emerald-600/50 text-emerald-950 font-bold shadow-xs'
-                          : 'bg-white border-stone-200 text-stone-700 hover:bg-stone-50'
-                      }`}
+                      className="flex items-center justify-between py-2 cursor-pointer select-none touch-manipulation min-h-[44px] text-stone-800"
                     >
                       <div className="flex items-center gap-2.5 min-w-0 pr-1">
                         {/* Custom styled checkbox */}
@@ -360,26 +334,18 @@ export const RecipeFilterModal: React.FC<RecipeFilterModalProps> = ({
                           onChange={() => onToggleSubcategory(subcat)}
                         />
 
-                        <span className="text-xs truncate">{subcat}</span>
+                        <span className={`text-sm truncate ${isChecked ? 'font-semibold text-stone-900' : ''}`}>{subcat}</span>
                       </div>
 
-                      <span
-                        className={`text-[11px] px-2 py-0.5 rounded-full font-semibold shrink-0 ml-1 ${
-                          isChecked
-                            ? 'bg-emerald-200/80 text-emerald-950'
-                            : count > 0
-                            ? 'bg-stone-100 text-stone-600'
-                            : 'bg-stone-50 text-stone-400'
-                        }`}
-                      >
+                      <span className={`text-xs tabular-nums shrink-0 ml-1 ${count > 0 ? 'text-stone-500' : 'text-stone-300'}`}>
                         {count}
                       </span>
                     </label>
                   );
                 })
               ) : (
-                <div className="col-span-full py-4 text-center text-xs text-stone-400">
-                  Inga underkategorier matchar "{subcatSearch}"
+                <div className="py-4 text-sm text-stone-500">
+                  Ingen underkategori heter "{subcatSearch}"
                 </div>
               )}
             </div>
@@ -388,20 +354,8 @@ export const RecipeFilterModal: React.FC<RecipeFilterModalProps> = ({
           {/* 3. Snabbval & Fler Filter */}
           <div className="pt-5 space-y-4">
             {/* Endast favoriter */}
-            <div className="flex items-center justify-between p-3 rounded-2xl bg-[#FCFAF5] border border-stone-200">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
-                  <Heart className={`w-4 h-4 ${onlyFavorites ? 'fill-rose-600' : ''}`} />
-                </div>
-                <div>
-                  <span className="text-xs font-bold text-stone-900 block">
-                    Endast favoriter
-                  </span>
-                  <span className="text-[11px] text-stone-500">
-                    Visa endast dina hjärtmärkta recept
-                  </span>
-                </div>
-              </div>
+            <div className="flex items-center justify-between min-h-[44px]">
+              <span className="text-sm font-semibold text-stone-900">Bara favoriter</span>
 
               <button
                 type="button"
@@ -422,20 +376,20 @@ export const RecipeFilterModal: React.FC<RecipeFilterModalProps> = ({
 
             {/* Max tillagningstid, typed in by hand */}
             <div className="space-y-2">
-              <label htmlFor="filter-max-time" className="block text-xs font-bold text-stone-800">
+              <label htmlFor="filter-max-time" className="block text-sm font-semibold text-stone-900">
                 Max tillagningstid
               </label>
               <MaxTimeInput id="filter-max-time" value={maxCookingTime} onChange={onChangeMaxCookingTime} />
             </div>
 
             <div className="space-y-2">
-              <span className="block text-xs font-bold text-stone-800">Svårighetsgrad</span>
+              <span className="block text-sm font-semibold text-stone-900">Svårighetsgrad</span>
               <DifficultyFilter selected={difficultyFilter} onChange={onChangeDifficultyFilter} className="flex-wrap" />
             </div>
 
             {sortOptions && onChangeSort && (
               <div className="space-y-2">
-                <span className="block text-xs font-bold text-stone-800">Sortera</span>
+                <span className="block text-sm font-semibold text-stone-900">Sortera</span>
                 <div className="flex flex-wrap gap-1.5">
                   {sortOptions.map((opt) => {
                     const isSelected = sortBy === opt.id;

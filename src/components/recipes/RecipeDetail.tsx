@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { ConfirmSheet } from '../layout/ConfirmSheet';
 import { DifficultyDots } from './DifficultyPicker';
 import { DIFFICULTY_LABELS } from '../../utils/recipeDifficulty';
 import type { Recipe } from '../../types/recipe';
@@ -22,7 +21,6 @@ import {
   Circle,
   CalendarPlus,
   Edit3,
-  Trash2,
   Timer,
   Play,
   Pause,
@@ -59,7 +57,6 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
     setMealPlanForDate,
     getMealPlanForDate,
     setActiveTab,
-    deleteRecipe,
   } = useRecipes();
 
   // Always bind to the live recipe from state
@@ -78,7 +75,6 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
   const [showPantryChoice, setShowPantryChoice] = useState<boolean>(false);
   const [showMealPlanPicker, setShowMealPlanPicker] = useState<boolean>(false);
   const [mealPlanMealType, setMealPlanMealType] = useState<'dinner' | 'lunch'>('dinner');
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState<boolean>(false);
   const [shareToast, setShareToast] = useState<boolean>(false);
   const [copiedRecently, setCopiedRecently] = useState<boolean>(false);
 
@@ -153,7 +149,7 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
     } else {
       const ok = await requestWakeLock();
       if (ok) {
-        setWakeLockToast('Skärmen hålls vaken under matlagningen!');
+        setWakeLockToast('Skärmen hålls tänd medan du lagar mat');
       } else {
         setWakeLockToast('Kunde inte aktivera skärmlås.');
       }
@@ -186,25 +182,18 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
     `edit-recipe-${editBackRound}`
   );
   useModalBackHandler(showMealPlanPicker, () => setShowMealPlanPicker(false), 'meal-plan-picker');
-  useModalBackHandler(showDeleteConfirm, () => setShowDeleteConfirm(false), 'delete-confirm');
   useModalBackHandler(showPantryChoice, () => setShowPantryChoice(false), 'pantry-choice');
-
-  const handleDeleteRecipe = () => {
-    deleteRecipe(recipe.id);
-    setShowDeleteConfirm(false);
-    onBack();
-  };
 
   // Close modal on Escape key if no child dialog is active
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !isEditingRecipe && !showMealPlanPicker && !showDeleteConfirm) {
+      if (e.key === 'Escape' && !isEditingRecipe && !showMealPlanPicker) {
         onBack();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onBack, isEditingRecipe, showMealPlanPicker, showDeleteConfirm]);
+  }, [onBack, isEditingRecipe, showMealPlanPicker]);
 
   // Lock body scroll while recipe modal is open
   useEffect(() => {
@@ -375,7 +364,7 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
       amount: scaleIngredientAmount(ing.amount, recipe.servings, servings),
     }));
     addIngredientsToShoppingList(scaledIngredients, recipe.title, excludePantry);
-    setShoppingToast('Tillagt i inköpslistan!');
+    setShoppingToast('Tillagt i inköpslistan');
     setAddedToCart(true);
     setTimeout(() => setAddedToCart(false), 2000);
     setTimeout(() => setShoppingToast(null), 4000);
@@ -497,7 +486,7 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
         {shareToast && (
           <div className="bg-stone-900 text-white px-4 py-2.5 text-xs font-semibold flex items-center gap-2 animate-fade-in shrink-0 border-b border-stone-800">
             <Check className="w-4 h-4 text-emerald-400 shrink-0" />
-            <span>Receptet har kopierats till urklipp i textform!</span>
+            <span>Receptet är kopierat som text</span>
           </div>
         )}
 
@@ -657,13 +646,6 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
                     >
                       {capitalizeFirst(formatIngredientName(ing.name, scaledAmount, ing.unit))}
                     </span>
-                    {ing.isPantryStaple && (
-                      <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                        <span className="text-[10px] bg-[#FCFAF5] text-stone-600 border border-[#EBE7DF] font-medium px-2 py-0.5 rounded-md shrink-0">
-                          Basvara
-                        </span>
-                      </div>
-                    )}
                   </div>
                 </div>
 
@@ -691,31 +673,24 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
               Gör så här
             </h2>
 
-          <div className="space-y-3 w-full">
+          <ol className="w-full divide-y divide-[#EBE7DF] border-y border-[#EBE7DF]">
             {recipe.instructions.map((inst) => {
               const isStepDone = !!completedSteps[inst.stepNumber];
               const segments = splitTextIntoTimerSegments(inst.text);
 
               return (
-                <div
+                <li
                   key={inst.stepNumber}
                   onClick={() => toggleStepComplete(inst.stepNumber)}
-                  className={`p-4 rounded-3xl border transition-all cursor-pointer touch-manipulation w-full ${
-                    isStepDone
-                      ? 'bg-stone-50 border-[#EBE7DF] text-stone-400'
-                      : 'bg-white border-[#EBE7DF] text-stone-900 shadow-xs hover:border-[#284235]'
-                  }`}
-                  style={{ minHeight: '56px' }}
+                  className="py-3.5 cursor-pointer touch-manipulation w-full"
                 >
                   <div className="flex items-start gap-3 min-w-0">
                     <div
-                      className={`w-7 h-7 rounded-xl flex items-center justify-center font-bold text-xs shrink-0 transition-colors ${
-                        isStepDone
-                          ? 'bg-[#284235] text-white'
-                          : 'bg-[#FCFAF5] border border-[#EBE7DF] text-stone-800'
+                      className={`w-6 pt-px font-serif font-bold text-base leading-snug shrink-0 tabular-nums ${
+                        isStepDone ? 'text-[#284235]' : 'text-stone-400'
                       }`}
                     >
-                      {isStepDone ? <Check className="w-4 h-4 stroke-[3]" /> : inst.stepNumber}
+                      {isStepDone ? <Check className="w-4 h-4 mt-0.5 stroke-[3]" aria-label="Klart" /> : inst.stepNumber}
                     </div>
 
                     <div
@@ -765,26 +740,24 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
                       )}
                     </div>
                   </div>
-                </div>
+                </li>
               );
             })}
-          </div>
+          </ol>
         </div>
 
         {/* Household Notes Section */}
-        <div className="bg-white border border-[#EBE7DF] rounded-3xl p-4 space-y-3 w-full shadow-xs">
+        <div className="space-y-2 w-full">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-stone-900 uppercase tracking-wider">
-              Hushållets anteckningar
-            </span>
+            <h2 className="font-serif text-lg font-bold text-stone-900">Anteckningar</h2>
 
             {!isEditingNotes && (
               <button
                 type="button"
                 onClick={() => setIsEditingNotes(true)}
-                className="text-xs text-stone-700 font-semibold hover:text-black bg-[#FCFAF5] border border-[#EBE7DF] px-3 py-1.5 rounded-xl touch-manipulation min-h-[36px] shrink-0"
+                className="text-sm text-[#284235] font-semibold min-h-[40px] px-1 touch-manipulation shrink-0"
               >
-                Ändra
+                {recipe.notes ? 'Ändra' : 'Skriv anteckning'}
               </button>
             )}
           </div>
@@ -794,7 +767,7 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
               <textarea
                 value={notesDraft}
                 onChange={(e) => setNotesDraft(e.target.value)}
-                placeholder="Skriv hushållets tips & variationer..."
+                placeholder="Till exempel mindre salt, eller dubbel sats sås"
                 className="w-full h-24 p-3 bg-[#FCFAF5] border border-[#EBE7DF] rounded-2xl text-xs text-stone-900 focus:outline-none focus:ring-2 focus:ring-[#284235]"
               />
               <div className="flex gap-2 justify-end">
@@ -820,13 +793,9 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
           ) : (
             <div>
               {recipe.notes ? (
-                <p className="text-xs text-stone-700 italic leading-relaxed bg-[#FCFAF5] p-3 rounded-2xl border border-[#EBE7DF]">
-                  "{recipe.notes}"
-                </p>
+                <p className="text-sm text-stone-700 leading-relaxed whitespace-pre-line">{recipe.notes}</p>
               ) : (
-                <p className="text-xs text-stone-400 italic">
-                  Inga anteckningar ännu. Skriv in era tips och modifikationer!
-                </p>
+                <p className="text-sm text-stone-400">Inga anteckningar. De syns för hela hushållet.</p>
               )}
             </div>
           )}
@@ -834,7 +803,7 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
           {showNotesSavedToast && (
             <div className="text-[11px] font-semibold text-emerald-800 flex items-center gap-1 animate-fade-in">
               <Check className="w-3.5 h-3.5" />
-              Anteckning sparad för hela hushållet!
+              Sparad för hela hushållet
             </div>
           )}
         </div>
@@ -852,7 +821,7 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
             ) : (
               <ShoppingCart className="w-5 h-5 text-emerald-300" />
             )}
-            <span>{addedToCart ? 'Tillagt i inköpslistan!' : 'Lägg till i inköpslistan'}</span>
+            <span>{addedToCart ? 'Tillagt i inköpslistan' : 'Lägg till i inköpslistan'}</span>
           </button>
 
           <button
@@ -865,37 +834,18 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
             <span>Lägg till i veckoplanen</span>
           </button>
 
-          <button
-            type="button"
-            onClick={() => setIsEditingRecipe(true)}
-            className="w-full py-3.5 px-4 rounded-2xl bg-white border border-[#EBE7DF] hover:bg-stone-50 active:scale-[0.98] text-stone-800 font-semibold text-xs flex items-center justify-center gap-2 transition-all touch-manipulation"
-            style={{ minHeight: '48px' }}
-          >
-            <Edit3 className="w-4 h-4" />
-            <span>Redigera receptet</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setShowDeleteConfirm(true)}
-            className="w-full py-3.5 px-4 rounded-2xl bg-rose-50/70 hover:bg-rose-100/80 border border-rose-200 active:scale-[0.98] text-rose-700 font-semibold text-xs flex items-center justify-center gap-2 transition-all touch-manipulation"
-            style={{ minHeight: '48px' }}
-          >
-            <Trash2 className="w-4 h-4 text-rose-600" />
-            <span>Ta bort recept</span>
-          </button>
         </div>
 
         {/* Source link if URL */}
         {recipe.sourceUrl && (
-          <div className="text-center pt-2">
+          <div>
             <a
               href={recipe.sourceUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-xs text-stone-400 hover:text-stone-800 inline-flex items-center gap-1 underline py-2 touch-manipulation truncate max-w-full"
+              className="text-sm text-stone-500 hover:text-stone-800 inline-flex items-center gap-1.5 py-2 touch-manipulation truncate max-w-full"
             >
-              <span>Källa: {new URL(recipe.sourceUrl).hostname}</span>
+              <span>Receptet kommer från {new URL(recipe.sourceUrl).hostname.replace(/^www\./, '')}</span>
               <ExternalLink className="w-3.5 h-3.5 shrink-0" />
             </a>
           </div>
@@ -1014,7 +964,7 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
               <div className="text-lg font-bold font-mono tracking-wider text-amber-300 flex items-center gap-1.5">
                 {activeTimer.secondsLeft === 0 ? (
                   <>
-                    <span>Klart!</span>
+                    <span>Klart</span>
                     <Bell className="w-4 h-4 text-amber-300 animate-bounce shrink-0" />
                   </>
                 ) : (
@@ -1061,15 +1011,6 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
         </div>
       )}
 
-      {showDeleteConfirm && (
-        <ConfirmSheet
-          title="Ta bort receptet?"
-          text={`${formatRecipeTitle(recipe.title)} tas bort för hela hushållet.`}
-          confirmLabel="Ta bort receptet"
-          onCancel={() => setShowDeleteConfirm(false)}
-          onConfirm={handleDeleteRecipe}
-        />
-      )}
       </div>
     </div>
   );

@@ -42,7 +42,7 @@ export const JoinRequestNotification: React.FC = () => {
       try {
         if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
           const latest = joinRequests[joinRequests.length - 1];
-          new Notification('Ny förfrågan till hushållet!', {
+          new Notification('Någon vill gå med i hushållet', {
             body: `${latest.displayName} vill gå med i ${household?.name || 'hushållet'}`,
             icon: '/icon-192.png',
           });
@@ -63,7 +63,7 @@ export const JoinRequestNotification: React.FC = () => {
     const ok = await approveJoinRequest(id);
     setProcessingId(null);
     if (ok) {
-      setToastMessage(`${name} godkändes och är nu med i hushållet!`);
+      setToastMessage(`${name} är nu med i hushållet`);
       setTimeout(() => setToastMessage(null), 3000);
     }
   };

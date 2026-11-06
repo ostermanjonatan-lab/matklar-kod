@@ -1,4 +1,5 @@
 ﻿import React, { useState, useMemo, useRef } from 'react';
+import { ParsedItemPreview } from './ParsedItemPreview';
 import { ConfirmSheet } from '../layout/ConfirmSheet';
 import { useRecipes } from '../../context/RecipeContext';
 import type { PantryItem } from '../../types/recipe';
@@ -53,20 +54,7 @@ export const AlltidHemmaView: React.FC<AlltidHemmaViewProps> = ({ onNavigateToSh
   const addInputRef = useRef<HTMLInputElement>(null);
 
   // Tip banner state (dismissible)
-  const [showTip, setShowTip] = useState(() => {
-    try {
-      return localStorage.getItem('receptapp_pantry_tip_dismissed') !== 'true';
-    } catch {
-      return true;
-    }
-  });
 
-  const handleDismissTip = () => {
-    setShowTip(false);
-    try {
-      localStorage.setItem('receptapp_pantry_tip_dismissed', 'true');
-    } catch {}
-  };
 
   // Edit Item Modal State
   const [editingItem, setEditingItem] = useState<PantryItem | null>(null);
@@ -155,9 +143,9 @@ export const AlltidHemmaView: React.FC<AlltidHemmaViewProps> = ({ onNavigateToSh
     });
 
     if (newIsOutOfStock) {
-      showToast(`"${parsed.name}" lades till och sattes på inköpslistan!`);
+      showToast(`${capitalizeFirst(parsed.name)} lades till i Hemmet och på inköpslistan`);
     } else {
-      showToast(`"${parsed.name}" lades till i Hemmet!`);
+      showToast(`${capitalizeFirst(parsed.name)} lades till i Hemmet`);
     }
 
     setSmartInput('');
@@ -209,7 +197,7 @@ export const AlltidHemmaView: React.FC<AlltidHemmaViewProps> = ({ onNavigateToSh
     togglePantryItemStock(item.id, nextStock);
 
     if (nextStock) {
-      showToast(`"${item.name}" är slut – lades till på inköpslistan!`);
+      showToast(`${capitalizeFirst(item.name)} är slut och står på inköpslistan`);
     } else {
       showToast(`"${item.name}" markerades som hemma`);
     }
@@ -291,24 +279,6 @@ export const AlltidHemmaView: React.FC<AlltidHemmaViewProps> = ({ onNavigateToSh
         </div>
       )}
 
-      {/* Tool Description Header (Dismissible) */}
-      {showTip && (
-        <div className="bg-[#FCFAF5] border border-[#EBE7DF] rounded-2xl p-3 shadow-2xs flex items-start justify-between gap-3 animate-fade-in">
-          <p className="text-xs leading-relaxed text-stone-600 flex-1">
-            Här samlar du basvaror du alltid vill ha hemma. Markera när något tar slut så flyttas det automatiskt till inköpslistan.
-          </p>
-          <button
-            type="button"
-            onClick={handleDismissTip}
-            className="w-6 h-6 rounded-full text-stone-400 hover:text-stone-700 hover:bg-stone-200/60 flex items-center justify-center shrink-0 transition-colors touch-manipulation mt-0.5"
-            title="Stäng tips"
-            aria-label="Stäng tips"
-          >
-            <X className="w-3.5 h-3.5" />
-          </button>
-        </div>
-      )}
-
       {/* Add Item Button or Form */}
       {showAddForm ? (
         <form
@@ -334,14 +304,7 @@ export const AlltidHemmaView: React.FC<AlltidHemmaViewProps> = ({ onNavigateToSh
 
           {/* Smart Natural Language Input */}
           <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <label className="block text-xs font-bold text-stone-700 uppercase tracking-wider">
-                Vad vill du alltid ha hemma?
-              </label>
-              <span className="text-[10px] text-stone-600 bg-stone-100 px-2 py-0.5 rounded-full font-medium">
-                Skriv t.ex. 1 kg mjöl
-              </span>
-            </div>
+            <label className="block text-sm font-semibold text-stone-900 mb-1.5">Vad vill du alltid ha hemma?</label>
 
             <div className="relative">
               <input
@@ -349,7 +312,7 @@ export const AlltidHemmaView: React.FC<AlltidHemmaViewProps> = ({ onNavigateToSh
                 type="text"
                 value={smartInput}
                 onChange={(e) => setSmartInput(e.target.value)}
-                placeholder="T.ex. 1 kg vetemjöl, 2 st mjölk, 500g smör, kaffe..."
+                placeholder="Till exempel olivolja eller 1 kg vetemjöl"
                 className="w-full h-12 bg-[#FCFAF5] border border-[#EBE7DF] focus:border-[#284235] rounded-2xl px-4 pr-10 text-sm text-stone-900 focus:outline-none focus:ring-2 focus:ring-[#284235]/20 font-medium placeholder:text-stone-400 shadow-2xs"
               />
               {smartInput && (
@@ -366,28 +329,13 @@ export const AlltidHemmaView: React.FC<AlltidHemmaViewProps> = ({ onNavigateToSh
 
           {/* Live Parsing Preview */}
           {parsedPreview && parsedPreview.name && (
-            <div className="flex items-center gap-2 p-2.5 bg-emerald-50/60 border border-emerald-200/70 rounded-2xl text-xs text-stone-800 animate-fade-in flex-wrap">
-              <span className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider">
-                Tolkas som:
-              </span>
-              <span className="font-bold text-stone-900 bg-white px-2 py-0.5 rounded-lg border border-emerald-100 shadow-2xs">
-                {parsedPreview.name}
-              </span>
-              {parsedPreview.amount !== null && (
-                <span className="bg-emerald-100/80 text-emerald-950 font-bold px-2 py-0.5 rounded-lg text-[11px] tabular-nums">
-                  {formatAmount(parsedPreview.amount)} {formatUnit(parsedPreview.unit, parsedPreview.amount)}
-                </span>
-              )}
-              <span className="bg-white border border-stone-200/80 text-stone-600 px-2 py-0.5 rounded-lg text-[11px] flex items-center gap-1.5 shadow-2xs">
-                {renderAisleIcon(showAdvanced && manualAisle ? manualAisle : parsedPreview.aisle)}
-                <span>{showAdvanced && manualAisle ? manualAisle : parsedPreview.aisle}</span>
-              </span>
-              {((showAdvanced && manualComment.trim()) || parsedPreview.comment) && (
-                <span className="text-amber-800 bg-amber-50 border border-amber-200/80 px-2 py-0.5 rounded-lg text-[10px] italic">
-                  {(showAdvanced && manualComment.trim()) || parsedPreview.comment}
-                </span>
-              )}
-            </div>
+            <ParsedItemPreview
+              name={parsedPreview.name}
+              amountText={parsedPreview.amount !== null ? `${formatAmount(parsedPreview.amount)} ${formatUnit(parsedPreview.unit, parsedPreview.amount)}`.trim() : null}
+              aisle={showAdvanced && manualAisle ? manualAisle : parsedPreview.aisle}
+              aisleIcon={renderAisleIcon(showAdvanced && manualAisle ? manualAisle : parsedPreview.aisle)}
+              comment={(showAdvanced && manualComment.trim()) || parsedPreview.comment || undefined}
+            />
           )}
 
           {/* Out of Stock Checkbox */}
@@ -521,28 +469,17 @@ export const AlltidHemmaView: React.FC<AlltidHemmaViewProps> = ({ onNavigateToSh
             const outCount = group.items.filter((i) => i.isOutOfStock).length;
 
             return (
-              <div
-                key={group.aisleName}
-                className="bg-white rounded-3xl border border-[#EBE7DF] shadow-xs overflow-hidden"
-              >
+              <div key={group.aisleName}>
                 {/* Category Header */}
-                <div className="bg-[#FCFAF5] px-4 py-2.5 border-b border-[#EBE7DF] flex items-center justify-between">
+                <div className="py-2 border-b border-[#EBE7DF] flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-lg bg-white border border-[#EBE7DF] flex items-center justify-center shrink-0">
-                      {renderAisleIcon(group.aisleName)}
-                    </div>
-                    <span className="font-semibold text-xs text-stone-800 uppercase tracking-wider">
-                      {group.aisleName}
-                    </span>
-                    <span className="text-[11px] font-semibold text-stone-400">
-                      ({group.items.length})
-                    </span>
+                    {renderAisleIcon(group.aisleName)}
+                    <span className="font-semibold text-base text-stone-900">{group.aisleName}</span>
+                    <span className="text-sm text-stone-400 tabular-nums">{group.items.length}</span>
                   </div>
 
                   {outCount > 0 && (
-                    <span className="text-[10px] font-bold text-rose-700 bg-rose-50 border border-rose-200/80 px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
-                      {outCount}
-                    </span>
+                    <span className="text-xs text-rose-700">{outCount} slut</span>
                   )}
                 </div>
 
@@ -554,9 +491,7 @@ export const AlltidHemmaView: React.FC<AlltidHemmaViewProps> = ({ onNavigateToSh
                     return (
                       <div
                         key={item.id}
-                        className={`px-3.5 sm:px-4 py-3 flex items-center justify-between transition-colors gap-2 ${
-                          item.isOutOfStock ? 'bg-rose-50/30' : 'hover:bg-stone-50/40'
-                        }`}
+                        className="py-3 flex items-center justify-between gap-2"
                       >
                         {/* Left: Stock status toggle button */}
                         <div className="flex items-center gap-2.5 min-w-0 flex-1">
@@ -607,19 +542,11 @@ export const AlltidHemmaView: React.FC<AlltidHemmaViewProps> = ({ onNavigateToSh
                             </div>
 
                             {(item.isOutOfStock || item.comment) && (
-                              <div className="flex items-center gap-1.5 mt-0.5 flex-wrap text-[10px]">
-                                {item.isOutOfStock && (
-                                  <span className="text-rose-700 font-bold bg-rose-100/70 px-1.5 py-0.2 rounded-md">
-                                    Ligger på inköpslistan
-                                  </span>
-                                )}
-
-                                {item.comment && (
-                                  <span className="text-amber-800 bg-amber-50 border border-amber-200/60 px-1.5 py-0.2 rounded-md truncate max-w-[160px]">
-                                    {item.comment}
-                                  </span>
-                                )}
-                              </div>
+                              <p className="mt-0.5 text-xs text-stone-500 truncate">
+                                {item.isOutOfStock && <span className="text-rose-700">På inköpslistan</span>}
+                                {item.isOutOfStock && item.comment && ' · '}
+                                {item.comment}
+                              </p>
                             )}
                           </div>
                         </div>
@@ -655,41 +582,23 @@ export const AlltidHemmaView: React.FC<AlltidHemmaViewProps> = ({ onNavigateToSh
           })}
         </div>
       ) : (
-        <div className="text-center py-12 bg-white rounded-3xl border border-[#EBE7DF] p-6 shadow-xs space-y-3">
-          <div className="w-12 h-12 rounded-2xl bg-[#FCFAF5] text-stone-400 flex items-center justify-center mx-auto">
-            <Wheat className="w-6 h-6 stroke-[1.8] text-[#284235]" />
-          </div>
-
+        <div className="py-8 space-y-2">
           {searchQuery ? (
             <>
-              <h3 className="font-serif text-base font-bold text-stone-900">Inga varor matchade sökningen</h3>
-              <p className="text-xs text-stone-500 max-w-xs mx-auto">
-                Testa att söka på något annat eller rensa sökningen.
-              </p>
+              <h3 className="font-serif text-lg font-bold text-stone-900">Ingen vara heter så</h3>
               <button
                 type="button"
                 onClick={() => setSearchQuery('')}
-                className="mt-2 px-4 py-2 rounded-xl bg-stone-100 text-stone-700 text-xs font-semibold"
+                className="min-h-[44px] text-sm font-semibold text-[#284235] touch-manipulation"
               >
-                Rensa sökning
+                Rensa sökningen
               </button>
             </>
           ) : (
             <>
-              <h3 className="font-serif text-base font-bold text-stone-900">Inga varor inlagda än</h3>
-              <p className="text-xs text-stone-500 max-w-xs mx-auto">
-                Lägg till ingredienser och varor du alltid vill ha hemma.
-              </p>
-              <div className="pt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowAddForm(true)}
-                  className="px-5 py-2.5 rounded-2xl bg-[#284235] hover:bg-black text-white font-bold text-xs shadow-xs touch-manipulation flex items-center justify-center gap-1.5 mx-auto active:scale-95 transition-all min-h-[44px]"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>Lägg till vara</span>
-                </button>
-              </div>
+              <h3 className="font-serif text-lg font-bold text-stone-900">Inga varor i Hemmet</h3>
+              <p className="text-sm text-stone-600">Lägg in det ni alltid vill ha hemma. När något tar slut hamnar det på inköpslistan.</p>
+
             </>
           )}
         </div>
@@ -714,7 +623,7 @@ export const AlltidHemmaView: React.FC<AlltidHemmaViewProps> = ({ onNavigateToSh
 
             <form onSubmit={handleSaveEdit} className="space-y-3">
               <div>
-                <label className="block text-[11px] font-bold text-stone-600 uppercase mb-1">Namn</label>
+                <label className="block text-sm font-semibold text-stone-900 mb-1">Namn</label>
                 <input
                   type="text"
                   value={editName}

@@ -1,4 +1,5 @@
 ﻿import React, { useState, useMemo, useRef } from 'react';
+import { ParsedItemPreview } from './ParsedItemPreview';
 import { useRecipes } from '../../context/RecipeContext';
 import { FrequentItems } from './FrequentItems';
 import { parseSmartItemInput } from '../../utils/ingredientParser';
@@ -6,7 +7,6 @@ import { DEFAULT_AISLE_ORDER, loadStoreLayouts, loadActiveStoreId } from '../../
 import { formatAmount, formatUnit } from '../../utils/formatters';
 import {
   X,
-  ShoppingCart,
   Plus,
   Check,
   Wheat,
@@ -139,24 +139,13 @@ export const AddShoppingItemModal: React.FC<AddShoppingItemModalProps> = ({ onCl
 
         {/* Header */}
         <div className="px-5 py-4 flex items-center justify-between border-b border-[#EBE7DF]">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-amber-100 text-amber-900 flex items-center justify-center shrink-0">
-              <ShoppingCart className="w-5 h-5" />
-            </div>
-            <div>
-              <h2 className="font-serif font-bold text-base text-stone-900 leading-tight">
-                Vara för inköpslistan
-              </h2>
-              <p className="text-[11px] text-stone-500">
-                {justAddedFeedback ? (
-                  <span className="text-emerald-600 font-semibold flex items-center gap-1">
-                    <Check className="w-3 h-3" /> Varan lades till!
-                  </span>
-                ) : (
-                  'Skriv t.ex. 1 kg mjöl eller 2 st mjölk'
-                )}
-              </p>
-            </div>
+          <div className="flex items-baseline gap-2.5 min-w-0">
+            <h2 className="font-serif font-bold text-lg text-stone-900 leading-tight">Lägg till vara</h2>
+            {justAddedFeedback && (
+              <span className="text-xs text-emerald-700 font-semibold flex items-center gap-1 animate-fade-in">
+                <Check className="w-3 h-3" /> Tillagd
+              </span>
+            )}
           </div>
 
           <button
@@ -174,9 +163,7 @@ export const AddShoppingItemModal: React.FC<AddShoppingItemModalProps> = ({ onCl
           {/* Smart Natural Input */}
           <div>
             <div className="mb-1.5">
-              <label className="block text-xs font-bold text-stone-700 uppercase tracking-wider">
-                Vad vill du handla? <span className="text-rose-500">*</span>
-              </label>
+              <label className="block text-sm font-semibold text-stone-900">Vad vill du handla?</label>
             </div>
 
             <div className="relative">
@@ -185,7 +172,7 @@ export const AddShoppingItemModal: React.FC<AddShoppingItemModalProps> = ({ onCl
                 type="text"
                 value={smartInput}
                 onChange={(e) => setSmartInput(e.target.value)}
-                placeholder="T.ex. 1 kg vetemjöl, 2 st mjölk, 500g smör, kaffe..."
+                placeholder="Till exempel 2 l mjölk eller kaffe"
                 className="w-full h-12 bg-[#FCFAF5] border border-[#EBE7DF] rounded-2xl px-4 pr-10 text-sm text-stone-900 focus:outline-none focus:ring-2 focus:ring-[#284235] focus:border-transparent placeholder:text-stone-400"
               />
               {smartInput && (
@@ -205,28 +192,13 @@ export const AddShoppingItemModal: React.FC<AddShoppingItemModalProps> = ({ onCl
 
           {/* Live Parsing Preview */}
           {parsedPreview && parsedPreview.name && (
-            <div className="flex items-center gap-2 p-2.5 bg-emerald-50/60 border border-emerald-200/70 rounded-2xl text-xs text-stone-800 animate-fade-in flex-wrap">
-              <span className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider flex items-center gap-1">
-                Tolkas som:
-              </span>
-              <span className="font-bold text-stone-900 bg-white px-2 py-0.5 rounded-lg border border-emerald-100 shadow-2xs">
-                {parsedPreview.name}
-              </span>
-              {parsedPreview.amount !== null && (
-                <span className="bg-emerald-100/80 text-emerald-950 font-bold px-2 py-0.5 rounded-lg text-[11px] tabular-nums">
-                  {formatAmount(parsedPreview.amount)} {formatUnit(parsedPreview.unit, parsedPreview.amount)}
-                </span>
-              )}
-              <span className="bg-white border border-stone-200/80 text-stone-600 px-2 py-0.5 rounded-lg text-[11px] flex items-center gap-1.5 shadow-2xs">
-                {renderAisleIcon(showAdvanced && manualAisle ? manualAisle : parsedPreview.aisle)}
-                <span>{showAdvanced && manualAisle ? manualAisle : parsedPreview.aisle}</span>
-              </span>
-              {((showAdvanced && manualComment.trim()) || parsedPreview.comment) && (
-                <span className="text-amber-800 bg-amber-50 border border-amber-200/80 px-2 py-0.5 rounded-lg text-[10px] italic">
-                  {(showAdvanced && manualComment.trim()) || parsedPreview.comment}
-                </span>
-              )}
-            </div>
+            <ParsedItemPreview
+              name={parsedPreview.name}
+              amountText={parsedPreview.amount !== null ? `${formatAmount(parsedPreview.amount)} ${formatUnit(parsedPreview.unit, parsedPreview.amount)}`.trim() : null}
+              aisle={showAdvanced && manualAisle ? manualAisle : parsedPreview.aisle}
+              aisleIcon={renderAisleIcon(showAdvanced && manualAisle ? manualAisle : parsedPreview.aisle)}
+              comment={(showAdvanced && manualComment.trim()) || parsedPreview.comment || undefined}
+            />
           )}
 
           {/* Optional Advanced Settings Toggle */}

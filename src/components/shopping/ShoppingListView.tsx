@@ -1,4 +1,5 @@
 ﻿import React, { useState, useMemo, useRef } from 'react';
+import { ParsedItemPreview } from './ParsedItemPreview';
 import { ConfirmSheet } from '../layout/ConfirmSheet';
 import type { ShoppingItem } from '../../types/recipe';
 import { useRecipes } from '../../context/RecipeContext';
@@ -39,7 +40,7 @@ import {
   Tag,
   MoreVertical,
 } from 'lucide-react';
-import { formatShoppingAmount, capitalizeFirst, formatUnit, formatIngredientName, stripPreparation } from '../../utils/formatters';
+import { formatShoppingAmount, capitalizeFirst, formatUnit, formatIngredientName, stripPreparation, formatRecipeTitle } from '../../utils/formatters';
 import { parseSmartItemInput } from '../../utils/ingredientParser';
 import { normalizeRecipeSource } from '../../utils/shoppingAggregator';
 import { copyTextToClipboard } from '../../utils/recipeShare';
@@ -547,7 +548,7 @@ export const ShoppingListView: React.FC = () => {
 
                     {showStoreDropdown && (
                       <div className="absolute top-full right-0 mt-1.5 w-56 bg-white rounded-2xl shadow-xl border border-[#EBE7DF] py-1.5 z-30 animate-scale-up">
-                        <div className="px-3 py-1 text-[10px] font-bold text-stone-400 uppercase tracking-wider">
+                        <div className="px-3 py-1 text-xs text-stone-500">
                           Välj butik
                         </div>
                         {storeLayouts.map((store) => (
@@ -759,7 +760,7 @@ export const ShoppingListView: React.FC = () => {
                     {/* Store Dropdown Menu */}
                     {showStoreDropdown && (
                       <div className="absolute top-full left-0 mt-1 w-56 bg-white rounded-2xl shadow-xl border border-[#EBE7DF] py-1.5 z-30 animate-scale-up">
-                        <div className="px-3 py-1 text-[10px] font-bold text-stone-400 uppercase tracking-wider">
+                        <div className="px-3 py-1 text-xs text-stone-500">
                           Välj butik
                         </div>
                         {storeLayouts.map((store) => (
@@ -835,7 +836,7 @@ export const ShoppingListView: React.FC = () => {
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5">
-                    <h3 className="font-serif font-bold text-base text-stone-900">Lägg till extra vara</h3>
+                    <h3 className="font-serif font-bold text-base text-stone-900">Lägg till vara</h3>
                   </div>
                   <button
                     type="button"
@@ -851,14 +852,7 @@ export const ShoppingListView: React.FC = () => {
                 </div>
 
                 <div>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <label className="block text-xs font-bold text-stone-700 uppercase tracking-wider">
-                      Vad vill du köpa?
-                    </label>
-                    <span className="text-[10px] text-stone-600 bg-stone-100 px-2 py-0.5 rounded-full font-medium">
-                      Skriv t.ex. 1 kg mjöl
-                    </span>
-                  </div>
+                  <label className="block text-sm font-semibold text-stone-900 mb-1.5">Vad vill du handla?</label>
 
                   <div className="relative">
                     <input
@@ -866,7 +860,7 @@ export const ShoppingListView: React.FC = () => {
                       type="text"
                       value={manualSmartInput}
                       onChange={(e) => setManualSmartInput(e.target.value)}
-                      placeholder="T.ex. 1 kg vetemjöl, 2 st mjölk, 500g smör, kaffe..."
+                      placeholder="Till exempel 2 l mjölk eller kaffe"
                       className="w-full h-12 bg-[#FCFAF5] border border-[#EBE7DF] focus:border-[#284235] rounded-2xl px-4 pr-10 text-sm text-stone-900 focus:outline-none focus:ring-2 focus:ring-[#284235]/20 font-medium placeholder:text-stone-400 shadow-2xs"
                     />
                     {manualSmartInput && (
@@ -886,29 +880,14 @@ export const ShoppingListView: React.FC = () => {
 
                 {/* Live Parsing Preview */}
                 {parsedManualPreview && parsedManualPreview.name && (
-                  <div className="flex items-center gap-2 p-2.5 bg-emerald-50/60 border border-emerald-200/70 rounded-2xl text-xs text-stone-800 animate-fade-in flex-wrap">
-                    <span className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider">
-                      Tolkas som:
-                    </span>
-                    <span className="font-bold text-stone-900 bg-white px-2 py-0.5 rounded-lg border border-emerald-100 shadow-2xs">
-                      {parsedManualPreview.name}
-                    </span>
-                    {parsedManualPreview.amount !== null && (
-                      <span className="bg-emerald-100/80 text-emerald-950 font-bold px-2 py-0.5 rounded-lg text-[11px] tabular-nums">
-                        {formatShoppingAmount(parsedManualPreview.amount)} {formatUnit(parsedManualPreview.unit, parsedManualPreview.amount)}
-                      </span>
-                    )}
-                    <span className="bg-white border border-stone-200/80 text-stone-600 px-2 py-0.5 rounded-lg text-[11px] flex items-center gap-1.5 shadow-2xs">
-                      {renderAisleIcon(showManualAdvanced && manualAisle ? manualAisle : parsedManualPreview.aisle)}
-                      <span>{showManualAdvanced && manualAisle ? manualAisle : parsedManualPreview.aisle}</span>
-                    </span>
-                    {((showManualAdvanced && manualComment.trim()) || parsedManualPreview.comment) && (
-                      <span className="text-amber-800 bg-amber-50 border border-amber-200/80 px-2 py-0.5 rounded-lg text-[10px] italic">
-                        {(showManualAdvanced && manualComment.trim()) || parsedManualPreview.comment}
-                      </span>
-                    )}
-                  </div>
-                )}
+            <ParsedItemPreview
+              name={parsedManualPreview.name}
+              amountText={parsedManualPreview.amount !== null ? `${formatShoppingAmount(parsedManualPreview.amount)} ${formatUnit(parsedManualPreview.unit, parsedManualPreview.amount)}`.trim() : null}
+              aisle={showManualAdvanced && manualAisle ? manualAisle : parsedManualPreview.aisle}
+              aisleIcon={renderAisleIcon(showManualAdvanced && manualAisle ? manualAisle : parsedManualPreview.aisle)}
+              comment={(showManualAdvanced && manualComment.trim()) || parsedManualPreview.comment || undefined}
+            />
+          )}
 
                 {/* Optional Advanced Settings Toggle */}
                 <div>
@@ -1020,7 +999,7 @@ export const ShoppingListView: React.FC = () => {
                     // Recipe names without the portion count, e.g. "Köttbullar (4 port)" -> "Köttbullar"
                     const sourceParts = (normalizeRecipeSource(item.recipeSource) || '')
                       .split(' + ')
-                      .map((part) => part.replace(/\s*\(\s*\d+(?:[,.]\d+)?\s*port(?:ioner)?\.?\s*\)/gi, '').trim())
+                      .map((part) => formatRecipeTitle(part.replace(/\s*\(\s*\d+(?:[,.]\d+)?\s*port(?:ioner)?\.?\s*\)/gi, '').trim()))
                       .filter(Boolean);
                     const displaySource = sourceParts.length > 0 ? Array.from(new Set(sourceParts)).join(' + ') : undefined;
 
@@ -1154,21 +1133,18 @@ export const ShoppingListView: React.FC = () => {
             </div>
           </>
         ) : (
-          <div className="text-center py-16 bg-white rounded-3xl border border-[#EBE7DF] p-6 shadow-xs">
-            <div className="w-14 h-14 rounded-2xl bg-[#FCFAF5] text-stone-500 flex items-center justify-center mx-auto mb-3">
-              <CheckCircle2 className="w-7 h-7 stroke-[1.5] text-[#284235]" />
-            </div>
+          <div className="py-8 space-y-2">
             <h3 className="font-serif text-lg font-bold text-stone-900">Inköpslistan är tom</h3>
-            <p className="text-xs text-stone-500 mt-1 max-w-xs mx-auto leading-relaxed">
-              Gå till dina recept eller veckoplanen och tryck på "Köp ingredienser", eller lägg till manuellt.
-            </p>
-            <button
-              type="button"
-              onClick={() => setShowAddForm(true)}
-              className="mt-4 px-5 py-3 rounded-2xl bg-[#284235] text-white font-bold text-xs shadow-xs touch-manipulation min-h-[44px]"
-            >
-              Lägg till vara
-            </button>
+            <p className="text-sm text-stone-600">Lägg till varor här, eller ingredienser från ett recept eller veckoplanen.</p>
+            <div className="pt-2">
+              <button
+                type="button"
+                onClick={() => setShowAddForm(true)}
+                className="px-5 rounded-2xl bg-[#284235] text-white font-semibold text-sm touch-manipulation min-h-[46px]"
+              >
+                Lägg till vara
+              </button>
+            </div>
           </div>
         )}
           </>

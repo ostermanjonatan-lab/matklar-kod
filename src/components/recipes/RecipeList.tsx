@@ -185,7 +185,7 @@ export const RecipeList: React.FC = () => {
     }
     setShoppingToast(null);
 
-    setUndoToastMessage(`Inköpet för "${recipeTitle}" ångrades!`);
+    setUndoToastMessage(`Varorna från ${recipeTitle} togs bort från inköpslistan`);
     undoToastTimeoutRef.current = setTimeout(() => {
       setUndoToastMessage(null);
     }, 3000);
@@ -416,7 +416,7 @@ export const RecipeList: React.FC = () => {
         <div className="fixed top-16 left-4 right-4 z-50 max-w-md mx-auto bg-stone-900 text-white px-4 py-3 rounded-2xl shadow-xl flex items-center justify-between animate-slide-down text-xs font-semibold">
           <div className="flex items-center gap-2 min-w-0">
             <Check className="w-4 h-4 text-emerald-400 shrink-0" />
-            <span className="truncate">"{shareToastRecipe}" har kopierats till urklipp i textform!</span>
+            <span className="truncate">{shareToastRecipe} är kopierat som text</span>
           </div>
         </div>
       )}
@@ -761,20 +761,14 @@ export const RecipeList: React.FC = () => {
               )}
           </div>
         ) : (
-          <div className="text-center py-12 bg-white rounded-3xl border border-[#EBE7DF] p-6 shadow-xs">
-            <div className="w-12 h-12 rounded-2xl bg-[#FCFAF5] text-stone-600 flex items-center justify-center mx-auto mb-3">
-              <SlidersHorizontal className="w-5 h-5 stroke-[1.75]" />
-            </div>
-            <h3 className="font-serif text-base font-bold text-stone-900">Inga recept matchar filtren</h3>
-            <p className="text-xs text-stone-500 mt-1 max-w-xs mx-auto">
-              Testa att kryssa för andra underkategorier eller återställ dina filter.
-            </p>
+          <div className="py-8 space-y-2">
+            <h3 className="font-serif text-lg font-bold text-stone-900">Inga recept med de här filtren</h3>
             <button
               type="button"
               onClick={clearFilters}
-              className="mt-4 px-4 py-2.5 rounded-xl bg-stone-900 text-white font-semibold text-xs touch-manipulation"
+              className="min-h-[44px] text-sm font-semibold text-[#284235] touch-manipulation"
             >
-              Återställ filter
+              Rensa filtren
             </button>
           </div>
         )}
