@@ -20,9 +20,7 @@ import {
   Check,
   CheckCircle2,
   Circle,
-  CalendarPlus,
   Edit3,
-  Trash2,
   Play,
   X,
   ChevronDown,
@@ -810,11 +808,6 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
             className="w-full py-4 px-4 rounded-2xl bg-[#284235] hover:bg-black active:scale-[0.98] text-white font-bold text-sm flex items-center justify-center gap-2 shadow-md transition-all touch-manipulation"
             style={{ minHeight: '54px' }}
           >
-            {addedToCart ? (
-              <Check className="w-5 h-5 text-emerald-300 stroke-[2.5]" />
-            ) : (
-              <ShoppingCart className="w-5 h-5 text-emerald-300" />
-            )}
             <span>{addedToCart ? 'Tillagt i inköpslistan' : 'Lägg till i inköpslistan'}</span>
           </button>
 
@@ -824,7 +817,6 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
             className="w-full py-3.5 px-4 rounded-2xl bg-white border border-[#EBE7DF] hover:bg-stone-50 active:scale-[0.98] text-stone-800 font-semibold text-xs flex items-center justify-center gap-2 transition-all touch-manipulation shadow-xs"
             style={{ minHeight: '48px' }}
           >
-            <CalendarPlus className="w-4 h-4 text-stone-600" />
             <span>Lägg till i veckoplanen</span>
           </button>
 
@@ -834,7 +826,6 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
             className="w-full py-3.5 px-4 rounded-2xl bg-white border border-[#EBE7DF] hover:bg-stone-50 active:scale-[0.98] text-stone-800 font-semibold text-xs flex items-center justify-center gap-2 transition-all touch-manipulation"
             style={{ minHeight: '48px' }}
           >
-            <Edit3 className="w-4 h-4" />
             <span>Redigera receptet</span>
           </button>
 
@@ -844,7 +835,6 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
             className="w-full py-3.5 px-4 rounded-2xl bg-rose-50/70 hover:bg-rose-100/80 border border-rose-200 active:scale-[0.98] text-rose-700 font-semibold text-xs flex items-center justify-center gap-2 transition-all touch-manipulation"
             style={{ minHeight: '48px' }}
           >
-            <Trash2 className="w-4 h-4 text-rose-600" />
             <span>Ta bort recept</span>
           </button>
 
