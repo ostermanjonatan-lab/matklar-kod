@@ -16,7 +16,7 @@ import {
   Beef,
   Fish,
   Wheat,
-  Flame,
+  Droplet,
   ShoppingCart,
   Croissant,
   Snowflake,
@@ -168,30 +168,21 @@ export const ShoppingListView: React.FC = () => {
   // Copy toast
   const [copyToast, setCopyToast] = useState<boolean>(false);
 
-  // Aisle icons
-  const renderAisleIcon = (aisle: string) => {
-    switch (aisle) {
-      case 'Frukt & Grönt':
-        return <Carrot className="w-4 h-4 text-stone-500" />;
-      case 'Mejeri':
-        return <Milk className="w-4 h-4 text-stone-500" />;
-      case 'Kött & Chark':
-        return <Beef className="w-4 h-4 text-stone-500" />;
-      case 'Fisk & Skaldjur':
-        return <Fish className="w-4 h-4 text-stone-500" />;
-      case 'Skafferi':
-        return <Wheat className="w-4 h-4 text-stone-500" />;
-      case 'Kryddor & Olja':
-        return <Flame className="w-4 h-4 text-stone-500" />;
-      case 'Bröd & Bageri':
-        return <Croissant className="w-4 h-4 text-stone-500" />;
-      case 'Fryst':
-        return <Snowflake className="w-4 h-4 text-stone-500" />;
-      case 'Drycker':
-        return <CupSoda className="w-4 h-4 text-stone-500" />;
-      default:
-        return <Package className="w-4 h-4 text-stone-500" />;
-    }
+  // Aisle icons: thin, grey and the same size, so they support the name without taking over
+  const AISLE_ICONS: Record<string, typeof Carrot> = {
+    'Frukt & Grönt': Carrot,
+    'Mejeri': Milk,
+    'Kött & Chark': Beef,
+    'Fisk & Skaldjur': Fish,
+    'Skafferi': Wheat,
+    'Kryddor & Olja': Droplet,
+    'Bröd & Bageri': Croissant,
+    'Fryst': Snowflake,
+    'Drycker': CupSoda,
+  };
+  const renderAisleIcon = (aisle: string, className: string = 'w-4 h-4 text-stone-500') => {
+    const Icon = AISLE_ICONS[aisle] || Package;
+    return <Icon className={className} strokeWidth={1.75} aria-hidden="true" />;
   };
 
   // Live parsed preview for shopping list manual item input
@@ -1000,6 +991,7 @@ export const ShoppingListView: React.FC = () => {
                       aria-expanded={!isCollapsed}
                       className="w-full min-h-[44px] pt-3 pb-1.5 flex items-center gap-2 text-left border-b border-stone-300/70 select-none touch-manipulation"
                     >
+                      {renderAisleIcon(group.aisleName, `w-[18px] h-[18px] shrink-0 ${remainingInAisle === 0 ? 'text-stone-300' : 'text-stone-500'}`)}
                       <span className={`font-semibold text-[15px] truncate ${remainingInAisle === 0 ? 'text-stone-400' : 'text-stone-900'}`}>
                         {group.aisleName}
                       </span>
