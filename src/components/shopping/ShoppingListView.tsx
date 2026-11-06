@@ -1136,7 +1136,7 @@ export const ShoppingListView: React.FC = () => {
                         <div className="min-w-0 flex-1">
                           <div className="flex items-baseline justify-between gap-3">
                             <span
-                              className={`text-[15px] leading-snug hyphens-auto break-words min-w-0 ${
+                              className={`text-[15px] leading-snug hyphens-auto [hyphenate-limit-chars:14_6_6] break-words min-w-0 ${
                                 item.checked ? 'line-through text-stone-400' : 'text-stone-900'
                               }`}
                             >
