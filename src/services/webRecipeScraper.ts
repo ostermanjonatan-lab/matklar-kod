@@ -1,5 +1,6 @@
 import type { Ingredient, Instruction, RecipeCategory } from '../types/recipe';
-import { parseIngredientLine, parseRawRecipeText } from '../utils/ingredientParser';
+import { isIngredientSubheading, parseIngredientLine, parseRawRecipeText } from '../utils/ingredientParser';
+import { DEFAULT_SUBCATEGORIES } from '../data/categories';
 import { detectCategory, detectSubcategory, detectSubcategories } from '../utils/categoryDetector';
 
 export interface ScrapedRecipe {
@@ -12,6 +13,8 @@ export interface ScrapedRecipe {
   subcategories?: string[];
   prepTimeMinutes?: number;
   cookTimeMinutes?: number;
+  /** 1 = lätt, 2 = medel, 3 = svår, when the page says so */
+  difficulty?: 1 | 2 | 3;
   ingredients: Ingredient[];
   instructions: Instruction[];
   sourceUrl: string;
@@ -106,6 +109,23 @@ function cleanHtmlText(text?: string): string {
     .replace(/&quot;/g, '"')
     .replace(/&#39;/g, "'")
     .replace(/&nbsp;/g, ' ')
+    .replace(/&auml;/g, 'ä')
+    .replace(/&ouml;/g, 'ö')
+    .replace(/&aring;/g, 'å')
+    .replace(/&Auml;/g, 'Ä')
+    .replace(/&Ouml;/g, 'Ö')
+    .replace(/&Aring;/g, 'Å')
+    .replace(/&eacute;/g, 'é')
+    .replace(/&egrave;/g, 'è')
+    .replace(/&uuml;/g, 'ü')
+    .replace(/&ndash;/g, '–')
+    .replace(/&mdash;/g, '—')
+    .replace(/&hellip;/g, '…')
+    .replace(/&rsquo;|&lsquo;/g, "'")
+    .replace(/&rdquo;|&ldquo;/g, '"')
+    .replace(/&times;/g, '×')
+    .replace(/&frac13;/g, '⅓')
+    .replace(/&frac23;/g, '⅔')
     .replace(/&frac12;/g, '½')
     .replace(/&frac14;/g, '¼')
     .replace(/&frac34;/g, '¾')
@@ -523,7 +543,17 @@ function extractInstructionsFromJsonLd(rawInstructions: any): Instruction[] {
     flatSteps.push(...parsedSteps);
   }
 
-  return flatSteps.map((text, idx) => ({
+  // Steps written as one block of several sentences become one step per sentence
+  let stepTexts = flatSteps;
+  if (stepTexts.length === 1) {
+    const sentences = stepTexts[0]
+      .split(/(?<=[.!?])\s+(?=[A-ZÅÄÖÉ0-9])/)
+      .map((t) => t.trim())
+      .filter(Boolean);
+    if (sentences.length >= 3) stepTexts = sentences;
+  }
+
+  return stepTexts.map((text, idx) => ({
     stepNumber: idx + 1,
     text: cleanLeadingStepNumber(text),
   }));
@@ -932,9 +962,9 @@ function extractIngredientsFromDom(doc: Document): Ingredient[] {
       const elements = doc.querySelectorAll(selector);
       if (elements && elements.length >= 2) {
         const ingredients: Ingredient[] = [];
-        elements.forEach((el) => {
-          const text = cleanHtmlText(el.textContent || '');
-          if (text && text.length > 1) {
+        const texts = Array.from(elements).map((el) => cleanHtmlText(el.textContent || ''));
+        texts.forEach((text, idx) => {
+          if (text && text.length > 1 && !isIngredientSubheading(text, texts[idx + 1] || '')) {
             const parsed = parseIngredientLine(text);
             if (parsed) ingredients.push(parsed);
           }
@@ -1878,13 +1908,9 @@ function parseMarkdownRecipe(markdown: string, sourceUrl: string): ScrapedRecipe
     category: detectCategory(title),
     subcategory: detectSubcategory(title, detectCategory(title), ingredients, description),
     prepTimeMinutes: 0,
-    cookTimeMinutes: cookTimeMinutes || prepTimeMinutes || 30,
-    ingredients: ingredients.length > 0 ? ingredients : [
-      { name: 'Huvudingrediens', amount: 400, unit: 'g', aisle: 'Skafferi', isPantryStaple: false },
-    ],
-    instructions: instructions.length > 0 ? instructions : [
-      { stepNumber: 1, text: `Se fullständiga instruktioner på ${sourceUrl}` },
-    ],
+    cookTimeMinutes: cookTimeMinutes || prepTimeMinutes || 0,
+    ingredients,
+    instructions,
     sourceUrl,
     engineUsed: 'Jina AI Reader (Markdown)',
   };
@@ -1896,6 +1922,17 @@ function parseMarkdownRecipe(markdown: string, sourceUrl: string): ScrapedRecipe
 /**
  * Parse schema.org/Recipe JSON-LD structure with smart DOM enhancement
  */
+/** "Svårighetsgrad: Enkel" or "Nivå: Medel" somewhere on the page. */
+function extractDifficultyFromDom(doc: Document): 1 | 2 | 3 | undefined {
+  const text = (doc.body?.textContent || '').replace(/\s+/g, ' ');
+  const m = text.match(/(?:svårighetsgrad|svårighet|nivå)\s*:?\s*(lätt|enkel|enkelt|lättlagad|medel|medelsvår|svår|avancerad)/i);
+  if (!m) return undefined;
+  const w = m[1].toLowerCase();
+  if (/^(lätt|enkel|enkelt|lättlagad)/.test(w)) return 1;
+  if (/^(medel|medelsvår)/.test(w)) return 2;
+  return 3;
+}
+
 function parseJsonLdRecipe(schema: any, sourceUrl: string, doc: Document, engineName = 'JSON-LD'): ScrapedRecipe | null {
   const rawTitle = cleanHtmlText(schema.name || schema.headline || doc.title || 'Hämtat webbrecept');
   const title = cleanRecipeTitle(rawTitle);
@@ -1919,27 +1956,31 @@ function parseJsonLdRecipe(schema: any, sourceUrl: string, doc: Document, engine
   const parsedPrep = parseRecipeTimeString(schema.prepTime);
   const domTime = extractCookingTimeFromDom(doc);
   const prepTimeMinutes = 0;
-  const cookTimeMinutes = parsedTotal || parsedCook || domTime || parsedPrep || 30;
+  // 0 when the page gives no time; the form then keeps its own value
+  const cookTimeMinutes = parsedTotal || parsedCook || domTime || parsedPrep || 0;
 
   const rawCat = Array.isArray(schema.recipeCategory)
     ? schema.recipeCategory[0]
     : schema.recipeCategory;
-  const category = detectCategory(rawCat || schema.keywords || title);
+  // The site's own category ("Bakning", "Huvudrätt") is often too wide, so the name counts too
+  const keywordText = Array.isArray(schema.keywords) ? schema.keywords.join(' ') : (schema.keywords || '');
+  const category = detectCategory([rawCat, title, keywordText].filter(Boolean).join(' '));
 
   // 1. Parse Ingredients from JSON-LD
   let ingredients: Ingredient[] = [];
   const rawIngredients = schema.recipeIngredient || schema.ingredients || [];
 
   if (Array.isArray(rawIngredients)) {
-    for (const item of rawIngredients) {
-      if (typeof item === 'string') {
-        const cleaned = cleanHtmlText(item);
-        if (cleaned) {
-          const parsed = parseIngredientLine(cleaned);
-          if (parsed) ingredients.push(parsed);
-        }
-      }
-    }
+    const lines = rawIngredients
+      .filter((item: unknown): item is string => typeof item === 'string')
+      .map((item: string) => cleanHtmlText(item))
+      .filter(Boolean);
+    lines.forEach((cleaned: string, idx: number) => {
+      // Sub-headings like "Deg", "Fyllning:" or "Till pensling" are not ingredients
+      if (isIngredientSubheading(cleaned, lines[idx + 1] || '')) return;
+      const parsed = parseIngredientLine(cleaned);
+      if (parsed) ingredients.push(parsed);
+    });
   }
 
   // Fallback to DOM ingredients if JSON-LD had none or too few (e.g. Brinken Bakar, blogs with empty schema)
@@ -1976,9 +2017,11 @@ function parseJsonLdRecipe(schema: any, sourceUrl: string, doc: Document, engine
   let finalSubcategories = [...deducedSubcats];
   if (schema.recipeCuisine) {
     const cuisine = Array.isArray(schema.recipeCuisine) ? schema.recipeCuisine[0] : schema.recipeCuisine;
-    if (cuisine && !cuisine.includes('.se') && !cuisine.includes('.com') && !cuisine.includes('http')) {
-      if (!finalSubcategories.includes(cuisine)) {
-        finalSubcategories.unshift(cuisine);
+    // Only when it is one of the app's own subcategories, so "Svensk" or "Internationell" do not pile up
+    const known = Object.values(DEFAULT_SUBCATEGORIES).flat().find((sub) => sub.toLowerCase() === String(cuisine).toLowerCase());
+    if (known) {
+      if (!finalSubcategories.includes(known)) {
+        finalSubcategories.unshift(known);
       }
     }
   }
@@ -1993,12 +2036,9 @@ function parseJsonLdRecipe(schema: any, sourceUrl: string, doc: Document, engine
     subcategories: finalSubcategories,
     prepTimeMinutes,
     cookTimeMinutes,
-    ingredients: ingredients.length > 0 ? ingredients : [
-      { name: 'Ingredienser enligt recept', amount: 400, unit: 'g', aisle: 'Skafferi', isPantryStaple: false },
-    ],
-    instructions: instructions.length > 0 ? instructions : [
-      { stepNumber: 1, text: `Följ instruktionerna på ${sourceUrl}` },
-    ],
+    ingredients,
+    instructions,
+    difficulty: extractDifficultyFromDom(doc),
     sourceUrl,
     engineUsed: engineName,
   };
@@ -2008,8 +2048,6 @@ function parseJsonLdRecipe(schema: any, sourceUrl: string, doc: Document, engine
  * Fallback parser using HTML microdata, OpenGraph tags, and DOM queries
  */
 function parseHtmlFallback(doc: Document, sourceUrl: string, engineName = 'DOM Parser'): ScrapedRecipe | null {
-  const host = new URL(sourceUrl).hostname.replace('www.', '');
-
   const ogTitle = doc.querySelector('meta[property="og:title"]')?.getAttribute('content');
   const rawTitle = cleanHtmlText(ogTitle || doc.querySelector('h1')?.textContent || doc.title || 'Webbrecept');
   const title = cleanRecipeTitle(rawTitle);
@@ -2038,13 +2076,10 @@ function parseHtmlFallback(doc: Document, sourceUrl: string, engineName = 'DOM P
     subcategory: subcategories.join(', '),
     subcategories,
     prepTimeMinutes: 0,
-    cookTimeMinutes: domTime || 30,
-    ingredients: ingredients.length > 0 ? ingredients : [
-      { name: 'Ingredienser enligt recept', amount: null, unit: 'st', aisle: 'Skafferi', isPantryStaple: false },
-    ],
-    instructions: instructions.length > 0 ? instructions : [
-      { stepNumber: 1, text: `Följ receptets anvisningar på ${host}.` },
-    ],
+    cookTimeMinutes: domTime || 0,
+    ingredients,
+    instructions,
+    difficulty: extractDifficultyFromDom(doc),
     sourceUrl,
     engineUsed: engineName,
   };
@@ -2053,7 +2088,7 @@ function parseHtmlFallback(doc: Document, sourceUrl: string, engineName = 'DOM P
 /**
  * Parse HTML document for recipes (JSON-LD or DOM)
  */
-function parseHtmlRecipe(html: string, targetUrl: string, engineName: string): ScrapedRecipe | null {
+export function parseHtmlRecipe(html: string, targetUrl: string, engineName: string): ScrapedRecipe | null {
   if (!html || html.length < 200 || isSpaFallbackHtml(html) || isAntiBotBlockPage(html)) return null;
 
   const parser = new DOMParser();
@@ -2103,6 +2138,14 @@ export async function scrapeRecipeFromUrl(
 ): Promise<ScrapedRecipe> {
   onProgress?.(15, 'Ansluter till receptsidan...');
   let targetUrl = rawUrl.trim();
+  // A link shared from another app often comes with text around it ("Kolla in det här https://…")
+  const linkInText = targetUrl.match(/https?:\/\/[^\s<>"']+/i);
+  if (linkInText) {
+    targetUrl = linkInText[0].replace(/[).,!?]+$/, '');
+  } else {
+    const domainInText = targetUrl.match(/(?:www\.)?[a-z0-9-]+(?:\.[a-z0-9-]+)*\.(?:se|com|nu|net|org|dk|no|fi)(?:\/[^\s<>"']*)?/i);
+    if (domainInText) targetUrl = domainInText[0].replace(/[).,!?]+$/, '');
+  }
   if (!targetUrl.startsWith('http://') && !targetUrl.startsWith('https://')) {
     targetUrl = `https://${targetUrl}`;
   }

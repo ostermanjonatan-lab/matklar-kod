@@ -17,6 +17,29 @@ export default async function handler(req: any, res: any) {
     });
   }
 
+  // Only ordinary web pages. Addresses inside a network (localhost, 10.x, 192.168.x and the like)
+  // are refused, so the function cannot be used to reach the server's own surroundings.
+  let parsedUrl: URL;
+  try {
+    parsedUrl = new URL(targetUrl);
+  } catch {
+    return sendError(res, 400, 'Ogiltig adress');
+  }
+  const host = parsedUrl.hostname.toLowerCase();
+  const isPrivateHost =
+    host === 'localhost' ||
+    host.endsWith('.local') ||
+    host.endsWith('.internal') ||
+    host === '::1' ||
+    host === '[::1]' ||
+    /^(127|10|0)\./.test(host) ||
+    /^192\.168\./.test(host) ||
+    /^169\.254\./.test(host) ||
+    /^172\.(1[6-9]|2\d|3[01])\./.test(host);
+  if (!/^https?:$/.test(parsedUrl.protocol) || isPrivateHost) {
+    return sendError(res, 400, 'Adressen går inte att hämta');
+  }
+
   try {
     // Check if target requires crawler/prerender user agent (e.g. Coop.se SPA dynamic rendering)
     const isPrerenderTarget = targetUrl.toLowerCase().includes('coop.se');
@@ -26,6 +49,8 @@ export default async function handler(req: any, res: any) {
 
     const response = await fetch(targetUrl, {
       redirect: 'follow',
+      // The app gives up after 8 seconds, so there is no point waiting longer here
+      signal: AbortSignal.timeout(7000),
       headers: {
         'User-Agent': userAgent,
         'Accept':
@@ -123,4 +148,14 @@ export default async function handler(req: any, res: any) {
       headers: { 'Content-Type': 'application/json' },
     });
   }
+}
+
+function sendError(res: any, status: number, message: string) {
+  if (res?.status) {
+    return res.status(status).json({ error: message });
+  }
+  return new Response(JSON.stringify({ error: message }), {
+    status,
+    headers: { 'Content-Type': 'application/json' },
+  });
 }

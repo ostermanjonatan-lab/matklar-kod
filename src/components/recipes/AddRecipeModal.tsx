@@ -268,6 +268,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = ({ onClose, closeGu
       if (scraped.title) setTitle(scraped.title);
       if (scraped.coverImageUrl) setCoverImageUrl(scraped.coverImageUrl);
       if (scraped.servings) setServings(scraped.servings);
+      if (scraped.difficulty) setDifficulty(scraped.difficulty);
       if (scraped.category) setCategory(scraped.category);
       if ((scraped as any).subcategories && (scraped as any).subcategories.length > 0) {
         setSubcategories((scraped as any).subcategories);
@@ -287,7 +288,9 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = ({ onClose, closeGu
       setTimeout(() => {
         setActiveImportMode('manual');
         setToastMessage(
-          `Recept inläst! ${scraped.ingredients.length} ingredienser och ${scraped.instructions.length} steg hittades.`
+          scraped.ingredients.length === 0 || scraped.instructions.length === 0
+            ? `${scraped.ingredients.length} ingredienser och ${scraped.instructions.length} steg hittades. Fyll i resten själv.`
+            : `${scraped.ingredients.length} ingredienser och ${scraped.instructions.length} steg hittades`
         );
         setTimeout(() => setToastMessage(null), 4500);
       }, 300);

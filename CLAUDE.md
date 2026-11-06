@@ -8,6 +8,7 @@ Svensk app för recept, veckoplan och inköpslista. React, TypeScript och Vite, 
 - Höj versionen vid varje ändring, både i `src/version.ts` och `package.json`.
 - Typkontroll: `npx tsc -p tsconfig.app.json --noEmit`.
 - Tolkningen av inklistrad recepttext kontrolleras mot 18 recepttexter med `npx tsx scripts/check-recipe-parser.ts`. Kör den när `parseRawRecipeText` ändras, och lägg till nya texter i `scripts/recipe-parser-cases.ts` när ett recept tolkas fel.
+- Hämtning av recept från webblänk kontrolleras mot 9 testsidor med `npx tsx scripts/check-web-scraper.mts`. Kör den när `src/services/webRecipeScraper.ts` ändras. Sidorna finns i `scripts/web-recipe-pages.ts`.
 - Kör appen utan Supabase när du testar, så att riktiga hushållsdata inte ändras.
 - `.env.local` och `supabase-config.json` innehåller nycklar och ska inte läggas i Git.
 - Tangentbordet ska aldrig öppnas av sig självt när en ruta visas. Använd inte `autoFocus` och fokusera inte textfält när en ruta öppnas.

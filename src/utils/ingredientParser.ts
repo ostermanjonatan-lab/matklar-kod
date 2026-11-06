@@ -1223,6 +1223,15 @@ export const VALID_UNITS = [
  * Parse a raw text ingredient line into amount, unit, and name.
  */
 export function parseIngredientLine(rawLine: string): Ingredient | null {
+  const result = parseIngredientLineInner(rawLine);
+  if (result) {
+    // "(à 400 g )" -> "(à 400 g)"
+    result.name = result.name.replace(/\(\s+/g, '(').replace(/\s+\)/g, ')').replace(/\s{2,}/g, ' ').trim();
+  }
+  return result;
+}
+
+function parseIngredientLineInner(rawLine: string): Ingredient | null {
   if (!rawLine) return null;
 
   // 1. Strip markdown images, HTML tags, markdown links, and checkbox markers anywhere in line
@@ -2076,6 +2085,26 @@ function startsWithStepVerb(line: string): boolean {
 
 const QUANTITY_START = /^(ca\.?\s+|cirka\s+|c:a\s+)?(\d+([.,]\d+)?|\d+\s*[-–]\s*\d+|\d+\/\d+|[½¼¾⅓⅔⅛])\s*/i;
 const SENTENCE_END = /[.!?:)]$/;
+
+/**
+ * Whether a line in an ingredient list is a sub-heading ("Sås", "Fyllning:", "Till pensling",
+ * or a short capitalised word right before an amount). Used for lists from web pages too.
+ */
+export function isIngredientSubheading(line: string, next: string = ''): boolean {
+  const l = line.trim();
+  if (!l || l.length > 30 || /\d/.test(l)) return false;
+  const words = l.split(/\s+/).length;
+  if (INGREDIENT_SUBHEADER.test(l)) return true;
+  if (/:$/.test(l) && words <= 4) return true;
+  if (/^till\s+[a-zåäö]+$/i.test(l)) return true;
+  return (
+    QUANTITY_START.test(next.trim()) &&
+    words <= 2 &&
+    /^[A-ZÅÄÖ]/.test(l) &&
+    !isLikelyIngredientLine(l, false) &&
+    !/(salt|peppar|olja|smör|vatten|socker|citron|lime)/i.test(l)
+  );
+}
 
 function stripBullet(line: string): string {
   return line
