@@ -34,9 +34,6 @@ import {
   ArrowDown,
   ArrowUpDown,
   Store,
-  RotateCcw,
-  GripVertical,
-  Edit3,
   Home,
   Tag,
   MoreVertical,
@@ -91,7 +88,6 @@ export const ShoppingListView: React.FC = () => {
   const [newStoreNameInput, setNewStoreNameInput] = useState<string>('');
   const [isRenamingStore, setIsRenamingStore] = useState<boolean>(false);
   const [renameStoreInput, setRenameStoreInput] = useState<string>('');
-  const [draggedModalAisleIndex, setDraggedModalAisleIndex] = useState<number | null>(null);
 
   // Long press on a row opens its menu (comment, category, remove)
   const longPressTimerRef = useRef<number | null>(null);
@@ -311,6 +307,9 @@ export const ShoppingListView: React.FC = () => {
     saveStoreLayouts(updated);
     setIsRenamingStore(false);
   };
+
+  // Asks before the order is reset or a store is removed
+  const [storeConfirm, setStoreConfirm] = useState<'reset' | 'delete' | null>(null);
 
   const handleDeleteActiveStore = () => {
     if (storeLayouts.length <= 1) return;
@@ -1326,269 +1325,227 @@ export const ShoppingListView: React.FC = () => {
         />
       )}
 
-      {/* REORDER & STORE SETTINGS MODAL */}
+      {/* REORDER & STORE SETTINGS MODAL: a sheet from the bottom, as high as the screen */}
       {showReorderModal && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4 animate-fade-in"
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 animate-fade-in font-sans"
           role="dialog"
           aria-modal="true"
           aria-labelledby="reorder-store-title"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowReorderModal(false);
+          }}
         >
-          <div className="bg-white w-full max-w-lg rounded-3xl p-5 sm:p-6 shadow-2xl space-y-4 animate-scale-up border border-[#EBE7DF] max-h-[90vh] flex flex-col">
-            {/* Header */}
-            <div className="flex items-center justify-between pb-1 border-b border-[#EBE7DF]/70 shrink-0">
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-2xl bg-[#284235]/10 text-[#284235] flex items-center justify-center shrink-0">
-                  <Store className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 id="reorder-store-title" className="font-serif font-bold text-base sm:text-lg text-stone-900 leading-tight">
-                    Ordna butik & avdelningar
-                  </h3>
-                  <p className="text-[11px] text-stone-500">
-                    Anpassa gångordningen efter hur du rör dig i butiken
-                  </p>
-                </div>
-              </div>
+          <div className="bg-white w-full sm:max-w-lg rounded-t-3xl sm:rounded-3xl flex flex-col h-[calc(100dvh-0.75rem)] sm:h-auto sm:max-h-[90vh] overflow-hidden">
+            <div className="px-5 pt-4 pb-3 border-b border-[#EBE7DF] flex items-center justify-between shrink-0">
+              <h3 id="reorder-store-title" className="font-serif font-bold text-lg text-stone-900 leading-tight">
+                Avdelningarnas ordning
+              </h3>
               <button
                 type="button"
                 onClick={() => setShowReorderModal(false)}
-                className="w-8 h-8 rounded-full bg-[#FCFAF5] text-stone-500 hover:text-stone-900 flex items-center justify-center transition-colors touch-manipulation shrink-0"
+                className="w-10 h-10 -mr-2 rounded-full flex items-center justify-center text-stone-500 hover:bg-stone-100 touch-manipulation"
                 aria-label="Stäng"
               >
-                <X className="w-4 h-4" />
+                <X className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Store Profiles Section */}
-            <div className="bg-[#FCFAF5] rounded-2xl p-3 border border-[#EBE7DF]/80 space-y-2.5 shrink-0">
-              <div className="flex items-center justify-between text-xs">
-                <span className="font-semibold text-stone-700">Mataffär / profil:</span>
-                {!isCreatingStore && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsCreatingStore(true);
-                      setNewStoreNameInput('');
-                    }}
-                    className="text-[11px] font-bold text-[#284235] hover:underline flex items-center gap-1 touch-manipulation"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                    <span>Ny butik</span>
-                  </button>
-                )}
-              </div>
-
-              {/* Form to create new store */}
-              {isCreatingStore ? (
-                <form onSubmit={handleCreateNewStore} className="flex gap-2 items-center">
-                  <input
-                    type="text"
-                    value={newStoreNameInput}
-                    onChange={(e) => setNewStoreNameInput(e.target.value)}
-                    placeholder="T.ex. Willys, ICA Maxi..."
-                    className="flex-1 h-9 bg-white border border-[#EBE7DF] rounded-xl px-3 text-xs text-stone-900 focus:outline-none focus:ring-2 focus:ring-[#284235]"
-                  />
-                  <button
-                    type="submit"
-                    disabled={!newStoreNameInput.trim()}
-                    className="h-9 px-3 bg-[#284235] hover:bg-black text-white text-xs font-bold rounded-xl disabled:opacity-40 transition-all shrink-0 touch-manipulation"
-                  >
-                    Spara
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setIsCreatingStore(false)}
-                    className="h-9 px-2.5 bg-stone-200 text-stone-700 text-xs font-semibold rounded-xl hover:bg-stone-300 transition-colors shrink-0 touch-manipulation"
-                  >
-                    Avbryt
-                  </button>
-                </form>
-              ) : (
-                <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
-                  {storeLayouts.map((store) => (
+            <div className="flex-1 overflow-y-auto px-5">
+              {/* The store: its name, then rename and new store as text */}
+              <div className="py-3 border-b border-[#EBE7DF] space-y-2">
+                {isCreatingStore ? (
+                  <form onSubmit={handleCreateNewStore} className="flex gap-2 items-center">
+                    <input
+                      type="text"
+                      value={newStoreNameInput}
+                      onChange={(e) => setNewStoreNameInput(e.target.value)}
+                      placeholder="Till exempel Willys"
+                      aria-label="Namn på ny butik"
+                      className="flex-1 min-w-0 h-11 bg-stone-50 border border-stone-300 rounded-xl px-3 text-sm text-stone-900 focus:outline-none focus:ring-2 focus:ring-[#284235]"
+                    />
                     <button
-                      key={store.id}
-                      type="button"
-                      onClick={() => handleSelectStore(store.id)}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all shrink-0 touch-manipulation ${
-                        store.id === activeStore.id
-                          ? 'bg-[#284235] text-white shadow-xs'
-                          : 'bg-white border border-[#EBE7DF] text-stone-700 hover:bg-stone-100'
-                      }`}
+                      type="submit"
+                      disabled={!newStoreNameInput.trim()}
+                      className="h-11 px-4 bg-[#284235] text-white text-sm font-semibold rounded-xl disabled:opacity-40 shrink-0 touch-manipulation"
                     >
-                      {store.name}
+                      Spara
                     </button>
-                  ))}
-                </div>
-              )}
-
-              {/* Active Store Actions (Rename / Delete) */}
-              {!isCreatingStore && (
-                <div className="flex items-center justify-between pt-1 text-[11px] text-stone-500 border-t border-[#EBE7DF]/60">
-                  {isRenamingStore ? (
-                    <form onSubmit={handleRenameActiveStore} className="flex gap-1.5 items-center w-full">
-                      <input
-                        type="text"
-                        value={renameStoreInput}
-                        onChange={(e) => setRenameStoreInput(e.target.value)}
-                        className="flex-1 h-8 bg-white border border-[#EBE7DF] rounded-lg px-2.5 text-xs text-stone-900 focus:outline-none focus:ring-2 focus:ring-[#284235]"
-                      />
+                    <button
+                      type="button"
+                      onClick={() => setIsCreatingStore(false)}
+                      className="h-11 px-2 text-sm text-stone-600 shrink-0 touch-manipulation"
+                    >
+                      Avbryt
+                    </button>
+                  </form>
+                ) : isRenamingStore ? (
+                  <form onSubmit={handleRenameActiveStore} className="flex gap-2 items-center">
+                    <input
+                      type="text"
+                      value={renameStoreInput}
+                      onChange={(e) => setRenameStoreInput(e.target.value)}
+                      aria-label="Butikens namn"
+                      className="flex-1 min-w-0 h-11 bg-stone-50 border border-stone-300 rounded-xl px-3 text-sm text-stone-900 focus:outline-none focus:ring-2 focus:ring-[#284235]"
+                    />
+                    <button
+                      type="submit"
+                      disabled={!renameStoreInput.trim()}
+                      className="h-11 px-4 bg-[#284235] text-white text-sm font-semibold rounded-xl disabled:opacity-40 shrink-0 touch-manipulation"
+                    >
+                      Spara
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIsRenamingStore(false)}
+                      className="h-11 px-2 text-sm text-stone-600 shrink-0 touch-manipulation"
+                    >
+                      Avbryt
+                    </button>
+                  </form>
+                ) : (
+                  <>
+                    {storeLayouts.length > 1 ? (
+                      <div className="flex gap-1.5 overflow-x-auto no-scrollbar -mx-1 px-1" role="radiogroup" aria-label="Butik">
+                        {storeLayouts.map((store) => (
+                          <button
+                            key={store.id}
+                            type="button"
+                            role="radio"
+                            aria-checked={store.id === activeStore.id}
+                            onClick={() => handleSelectStore(store.id)}
+                            className={`px-3.5 min-h-[40px] rounded-xl text-sm font-semibold whitespace-nowrap shrink-0 touch-manipulation ${
+                              store.id === activeStore.id
+                                ? 'bg-[#284235] text-white'
+                                : 'bg-stone-100 text-stone-700'
+                            }`}
+                          >
+                            {store.name}
+                          </button>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-base font-semibold text-stone-900">{activeStore.name}</p>
+                    )}
+                    <div className="flex items-center gap-4 text-sm">
                       <button
-                        type="submit"
-                        disabled={!renameStoreInput.trim()}
-                        className="h-8 px-2.5 bg-[#284235] text-white text-[11px] font-bold rounded-lg touch-manipulation"
+                        type="button"
+                        onClick={() => {
+                          setRenameStoreInput(activeStore.name);
+                          setIsRenamingStore(true);
+                        }}
+                        className="min-h-[36px] font-semibold text-[#284235] touch-manipulation"
                       >
-                        OK
+                        Byt namn
                       </button>
                       <button
                         type="button"
-                        onClick={() => setIsRenamingStore(false)}
-                        className="h-8 px-2 bg-stone-200 text-stone-700 text-[11px] font-semibold rounded-lg touch-manipulation"
+                        onClick={() => {
+                          setIsCreatingStore(true);
+                          setNewStoreNameInput('');
+                        }}
+                        className="min-h-[36px] font-semibold text-[#284235] touch-manipulation"
                       >
-                        Avbryt
+                        Ny butik
                       </button>
-                    </form>
-                  ) : (
-                    <>
-                      <div className="flex items-center gap-2">
-                        <span>Aktiv butik: <strong className="text-stone-800">{activeStore.name}</strong></span>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setRenameStoreInput(activeStore.name);
-                            setIsRenamingStore(true);
-                          }}
-                          className="text-stone-400 hover:text-stone-700 flex items-center gap-0.5 touch-manipulation"
-                          title="Byt namn på butik"
-                        >
-                          <Edit3 className="w-3 h-3" />
-                          <span>Byt namn</span>
-                        </button>
-                      </div>
                       {storeLayouts.length > 1 && (
                         <button
                           type="button"
-                          onClick={handleDeleteActiveStore}
-                          className="text-rose-600 hover:text-rose-700 font-medium touch-manipulation"
+                          onClick={() => setStoreConfirm('delete')}
+                          className="min-h-[36px] ml-auto text-rose-700 touch-manipulation"
                         >
-                          Ta bort butik
+                          Ta bort butiken
                         </button>
                       )}
-                    </>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Reorder List of Aisles */}
-            <div className="flex-1 overflow-y-auto space-y-1.5 pr-1 min-h-[220px]">
-              {activeStore.aisleOrder.map((aisle, idx) => {
-                const countInCurrentList = shoppingList.filter((item) => (item.aisle || 'Övrigt') === aisle).length;
-
-                return (
-                  <div
-                    key={aisle}
-                    draggable
-                    onDragStart={() => setDraggedModalAisleIndex(idx)}
-                    onDragOver={(e) => {
-                      e.preventDefault();
-                      if (draggedModalAisleIndex === null || draggedModalAisleIndex === idx) return;
-                      const newOrder = reorderAisleByIndex(activeStore.aisleOrder, draggedModalAisleIndex, idx);
-                      const updatedLayouts = storeLayouts.map((l) =>
-                        l.id === activeStore.id ? { ...l, aisleOrder: newOrder } : l
-                      );
-                      setStoreLayouts(updatedLayouts);
-                      saveStoreLayouts(updatedLayouts);
-                      setDraggedModalAisleIndex(idx);
-                    }}
-                    onDragEnd={() => setDraggedModalAisleIndex(null)}
-                    className={`flex items-center justify-between p-2.5 rounded-2xl border transition-all duration-150 ${
-                      draggedModalAisleIndex === idx
-                        ? 'bg-emerald-50 border-[#284235] opacity-60'
-                        : 'bg-white border-[#EBE7DF] hover:border-stone-300'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                      {/* Drag Grip Handle */}
-                      <div
-                        className="text-stone-300 hover:text-stone-600 active:text-stone-900 cursor-grab active:cursor-grabbing p-1 -ml-1 touch-none"
-                        title="Dra för att flytta"
-                      >
-                        <GripVertical className="w-4 h-4" />
-                      </div>
-
-                      {/* Sequence number */}
-                      <span className="w-5 text-center text-xs font-bold text-stone-400 tabular-nums">
-                        {idx + 1}
-                      </span>
-
-                      {/* Icon */}
-                      <div className="w-7 h-7 rounded-xl bg-[#FCFAF5] border border-[#EBE7DF] flex items-center justify-center shrink-0">
-                        {renderAisleIcon(aisle)}
-                      </div>
-
-                      {/* Name */}
-                      <span className="text-xs font-semibold text-stone-800 truncate">
-                        {aisle}
-                      </span>
-
-                      {/* Active List Badge */}
-                      {countInCurrentList > 0 && (
-                        <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200/70 px-2 py-0.2 rounded-full shrink-0 ml-1">
-                          {countInCurrentList} i lista
-                        </span>
-                      )}
                     </div>
+                  </>
+                )}
+              </div>
 
-                    {/* Move Up/Down Arrow Buttons */}
-                    <div className="flex items-center gap-0.5 shrink-0 ml-2">
+              {/* The aisles, in the order they are walked through */}
+              <ol className="divide-y divide-[#EBE7DF]">
+                {activeStore.aisleOrder.map((aisle, idx) => {
+                  const countInCurrentList = shoppingList.filter((item) => (item.aisle || 'Övrigt') === aisle).length;
+                  return (
+                    <li key={aisle} className="flex items-center gap-3 py-1.5">
+                      <span className="w-5 text-right text-sm text-stone-400 tabular-nums shrink-0">{idx + 1}</span>
+                      <span className="text-stone-400 shrink-0">{renderAisleIcon(aisle)}</span>
+                      <span className="flex-1 min-w-0 text-[15px] text-stone-900 leading-snug">
+                        {aisle}
+                        {countInCurrentList > 0 && (
+                          <span className="text-sm text-stone-400"> · {countInCurrentList} i listan</span>
+                        )}
+                      </span>
                       <button
                         type="button"
                         onClick={() => handleMoveModalAisle(idx, 'up')}
                         disabled={idx === 0}
-                        className="w-7 h-7 rounded-lg text-stone-500 hover:text-stone-900 hover:bg-stone-100 disabled:opacity-20 disabled:pointer-events-none flex items-center justify-center transition-colors touch-manipulation active:scale-90"
-                        title={`Flytta upp ${aisle}`}
+                        className="w-10 h-10 rounded-full text-stone-600 hover:bg-stone-100 disabled:opacity-20 flex items-center justify-center touch-manipulation shrink-0"
+                        aria-label={`Flytta upp ${aisle}`}
                       >
-                        <ArrowUp className="w-3.5 h-3.5" />
+                        <ArrowUp className="w-4 h-4" />
                       </button>
                       <button
                         type="button"
                         onClick={() => handleMoveModalAisle(idx, 'down')}
                         disabled={idx === activeStore.aisleOrder.length - 1}
-                        className="w-7 h-7 rounded-lg text-stone-500 hover:text-stone-900 hover:bg-stone-100 disabled:opacity-20 disabled:pointer-events-none flex items-center justify-center transition-colors touch-manipulation active:scale-90"
-                        title={`Flytta ner ${aisle}`}
+                        className="w-10 h-10 -mr-2 rounded-full text-stone-600 hover:bg-stone-100 disabled:opacity-20 flex items-center justify-center touch-manipulation shrink-0"
+                        aria-label={`Flytta ner ${aisle}`}
                       >
-                        <ArrowDown className="w-3.5 h-3.5" />
+                        <ArrowDown className="w-4 h-4" />
                       </button>
-                    </div>
-                  </div>
-                );
-              })}
+                    </li>
+                  );
+                })}
+              </ol>
+
+              <div className="py-4 border-t border-[#EBE7DF]">
+                <button
+                  type="button"
+                  onClick={() => setStoreConfirm('reset')}
+                  className="min-h-[40px] text-sm text-stone-600 touch-manipulation"
+                >
+                  Återställ ordningen
+                </button>
+              </div>
             </div>
 
-            {/* Modal Bottom Actions */}
-            <div className="flex items-center justify-between gap-3 pt-3 border-t border-[#EBE7DF]/80 shrink-0">
-              <button
-                type="button"
-                onClick={handleResetActiveStoreOrder}
-                className="py-2.5 px-3 rounded-xl border border-stone-200 text-stone-600 hover:bg-stone-50 text-xs font-semibold flex items-center gap-1.5 transition-colors touch-manipulation min-h-[42px]"
-                title="Återställ denna butik till standardordning"
-              >
-                <RotateCcw className="w-3.5 h-3.5 text-stone-500" />
-                <span>Återställ standard</span>
-              </button>
-
+            <div className="px-5 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] border-t border-[#EBE7DF] shrink-0">
               <button
                 type="button"
                 onClick={() => setShowReorderModal(false)}
-                className="py-2.5 px-6 rounded-xl bg-[#284235] hover:bg-black active:scale-95 text-white text-xs font-bold shadow-xs transition-all touch-manipulation min-h-[42px]"
+                className="w-full min-h-[50px] rounded-2xl bg-[#284235] hover:bg-black text-white text-sm font-semibold touch-manipulation"
               >
                 Klar
               </button>
             </div>
           </div>
         </div>
+      )}
+
+      {storeConfirm === 'reset' && (
+        <ConfirmSheet
+          title="Återställ ordningen?"
+          text={`Avdelningarna i ${activeStore.name} får standardordningen igen.`}
+          confirmLabel="Återställ"
+          onCancel={() => setStoreConfirm(null)}
+          onConfirm={() => {
+            handleResetActiveStoreOrder();
+            setStoreConfirm(null);
+          }}
+        />
+      )}
+      {storeConfirm === 'delete' && (
+        <ConfirmSheet
+          title={`Ta bort ${activeStore.name}?`}
+          text="Butikens ordning på avdelningarna tas bort."
+          confirmLabel="Ta bort butiken"
+          onCancel={() => setStoreConfirm(null)}
+          onConfirm={() => {
+            handleDeleteActiveStore();
+            setStoreConfirm(null);
+          }}
+        />
       )}
     </div>
   );
