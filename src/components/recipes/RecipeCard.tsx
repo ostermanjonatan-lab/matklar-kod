@@ -1,4 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
+import { DifficultyDots } from './DifficultyPicker';
+import { DIFFICULTY_LABELS } from '../../utils/recipeDifficulty';
 import type { Recipe } from '../../types/recipe';
 import { isRecipeNew, getRecipeSubcategories } from '../../types/recipe';
 import { useRecipes } from '../../context/RecipeContext';
@@ -327,6 +329,14 @@ export const RecipeCard = React.memo<RecipeCardProps>(
               <Clock className="w-3.5 h-3.5 text-stone-200" />
               <span>{formatCookingTime(recipe.prepTimeMinutes, recipe.cookTimeMinutes)}</span>
             </div>
+
+            {/* Difficulty */}
+            {recipe.difficulty && (
+              <div className="flex items-center gap-1.5 bg-black/60 px-2.5 py-1 rounded-full border border-white/20 shadow-2xs">
+                <DifficultyDots level={recipe.difficulty} />
+                <span>{DIFFICULTY_LABELS[recipe.difficulty]}</span>
+              </div>
+            )}
 
             {/* New badge */}
             {isRecipeNew(recipe) ? (

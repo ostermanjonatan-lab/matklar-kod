@@ -1,6 +1,7 @@
 import { getSupabase } from './supabaseClient';
 import type { Recipe, MealPlanDay, ShoppingItem, Household, UserProfile, PantryItem, HouseholdJoinRequest } from '../types/recipe';
 import { WEEKDAY_NAMES, getWeekDates, getWeekStart, isISODate } from '../utils/mealPlanDates';
+import { splitDifficultyTag, withDifficultyTag } from '../utils/recipeDifficulty';
 import { getRecipeSubcategories } from '../types/recipe';
 import {
   getAisleOverride,
@@ -84,7 +85,9 @@ export function mapRowToRecipe(row: any): Recipe {
     instructions: Array.isArray(row.instructions) ? row.instructions : [],
     prepTimeMinutes: 0,
     cookTimeMinutes: Number(row.cook_time_minutes) > 0 ? Number(row.cook_time_minutes) : (Number(row.prep_time_minutes) || 30),
-    tags: Array.isArray(row.tags) ? row.tags : [],
+    // The difficulty is kept as a hidden tag, see utils/recipeDifficulty.ts
+    tags: splitDifficultyTag(row.tags).tags,
+    difficulty: splitDifficultyTag(row.tags).difficulty,
     createdAt: row.created_at || undefined,
     updatedAt: row.updated_at || undefined,
   };
@@ -122,7 +125,7 @@ export async function pushRecipeToSupabase(recipe: Recipe, householdId: string) 
       instructions: recipe.instructions || [],
       prep_time_minutes: 0,
       cook_time_minutes: Number(recipe.cookTimeMinutes) > 0 ? Number(recipe.cookTimeMinutes) : (Number(recipe.prepTimeMinutes) || 30),
-      tags: recipe.tags || [],
+      tags: withDifficultyTag(recipe.tags, recipe.difficulty),
       created_at: recipe.createdAt || new Date().toISOString(),
       updated_at: new Date().toISOString(),
     });
@@ -163,7 +166,7 @@ export async function pushRecipesToSupabase(recipes: Recipe[], householdId: stri
       instructions: recipe.instructions || [],
       prep_time_minutes: 0,
       cook_time_minutes: Number(recipe.cookTimeMinutes) > 0 ? Number(recipe.cookTimeMinutes) : (Number(recipe.prepTimeMinutes) || 30),
-      tags: recipe.tags || [],
+      tags: withDifficultyTag(recipe.tags, recipe.difficulty),
       created_at: recipe.createdAt || new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };

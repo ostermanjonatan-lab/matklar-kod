@@ -15,6 +15,8 @@ export interface Instruction {
   text: string;
 }
 
+export type RecipeDifficulty = 1 | 2 | 3;
+
 export interface Recipe {
   id: string;
   title: string;
@@ -36,6 +38,8 @@ export interface Recipe {
   prepTimeMinutes?: number;
   cookTimeMinutes?: number;
   tags?: string[];
+  /** 1 = lätt, 2 = medel, 3 = svår. Missing when not set. */
+  difficulty?: RecipeDifficulty;
   createdAt?: string;
   updatedAt?: string;
 }

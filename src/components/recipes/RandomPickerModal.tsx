@@ -1,4 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { DifficultyDots } from './DifficultyPicker';
+import { DIFFICULTY_LABELS } from '../../utils/recipeDifficulty';
 import type { Recipe } from '../../types/recipe';
 import { isRecipeNew } from '../../types/recipe';
 import {
@@ -536,6 +538,12 @@ export const RandomPickerModal: React.FC<RandomPickerModalProps> = ({
                       <div className="flex items-center gap-1.5 font-medium">
                         <Clock className="w-3.5 h-3.5 text-stone-400" />
                         <span>{formatCookingTime(displayedRecipe.prepTimeMinutes, displayedRecipe.cookTimeMinutes)}</span>
+                        {displayedRecipe.difficulty && (
+                          <span className="flex items-center gap-1.5 ml-3">
+                            <DifficultyDots level={displayedRecipe.difficulty} />
+                            {DIFFICULTY_LABELS[displayedRecipe.difficulty]}
+                          </span>
+                        )}
                       </div>
 
                       {isRecipeNew(displayedRecipe) && (

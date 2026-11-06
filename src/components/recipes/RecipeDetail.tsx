@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { DifficultyDots } from './DifficultyPicker';
+import { DIFFICULTY_LABELS } from '../../utils/recipeDifficulty';
 import type { Recipe } from '../../types/recipe';
 import { addDaysISO, dayNameForDate, formatDayMonth, todayISO } from '../../utils/mealPlanDates';
 
@@ -575,6 +577,12 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
             <div className="flex items-center gap-2 text-sm text-stone-600">
               <Clock className="w-4 h-4 text-stone-500" />
               <span>Tillagningstid {formatCookingTime(recipe.prepTimeMinutes, recipe.cookTimeMinutes)}</span>
+              {recipe.difficulty && (
+                <span className="flex items-center gap-1.5 ml-3 text-stone-600">
+                  <DifficultyDots level={recipe.difficulty} />
+                  {DIFFICULTY_LABELS[recipe.difficulty]}
+                </span>
+              )}
             </div>
 
             {/* Ingredients and instructions, side by side on wide screens */}

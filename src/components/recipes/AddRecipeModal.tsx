@@ -1,5 +1,6 @@
 ﻿import React, { useState, useMemo } from 'react';
-import type { Recipe, Instruction, Ingredient, RecipeCategory, RecipeSourceType } from '../../types/recipe';
+import type { Recipe, Instruction, Ingredient, RecipeCategory, RecipeSourceType, RecipeDifficulty } from '../../types/recipe';
+import { DifficultyPicker } from './DifficultyPicker';
 import { useRecipes } from '../../context/RecipeContext';
 import {
   X,
@@ -43,6 +44,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = ({ onClose }) => {
   const [category, setCategory] = useState<RecipeCategory>('Middag');
   const [subcategories, setSubcategories] = useState<string[]>([]);
   const [servings, setServings] = useState<number | string>(4);
+  const [difficulty, setDifficulty] = useState<RecipeDifficulty | undefined>(undefined);
   const [cookingTimeMinutes, setCookingTimeMinutes] = useState<number | string>(30);
   const [coverImageUrl, setCoverImageUrl] = useState(
     'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=1200&q=80'
@@ -342,6 +344,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = ({ onClose }) => {
       householdId: household?.id || 'hh-local',
       prepTimeMinutes: 0,
       cookTimeMinutes: Number(cookingTimeMinutes) || 0,
+      difficulty,
       createdAt: new Date().toISOString(),
     };
 
@@ -894,6 +897,8 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = ({ onClose }) => {
               />
             </div>
           </div>
+
+          <DifficultyPicker value={difficulty} onChange={setDifficulty} />
 
           {/* INGREDIENTS */}
           <div>

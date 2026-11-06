@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { DIFFICULTY_LABELS } from '../../utils/recipeDifficulty';
 import { Check, ChevronLeft, ChevronRight, Search } from 'lucide-react';
 import type { Recipe } from '../../types/recipe';
 import { getRecipeSubcategories } from '../../types/recipe';
@@ -181,6 +182,7 @@ export const DinnerBrowser: React.FC<DinnerBrowserProps> = ({ recipes, mealLabel
                   </span>
                   <span className="block text-xs text-stone-500">
                     {formatCookingTime(recipe.prepTimeMinutes, recipe.cookTimeMinutes)}
+                    {recipe.difficulty ? `, ${DIFFICULTY_LABELS[recipe.difficulty].toLowerCase()}` : ''}
                   </span>
                 </span>
                 {recipe.id === currentRecipeId && (

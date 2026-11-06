@@ -1,5 +1,6 @@
 ﻿import React, { useState, useMemo } from 'react';
-import type { Recipe, Instruction, Ingredient, RecipeCategory } from '../../types/recipe';
+import type { Recipe, Instruction, Ingredient, RecipeCategory, RecipeDifficulty } from '../../types/recipe';
+import { DifficultyPicker } from './DifficultyPicker';
 import { getRecipeSubcategories } from '../../types/recipe';
 import { useRecipes } from '../../context/RecipeContext';
 import {
@@ -36,6 +37,7 @@ export const EditRecipeModal: React.FC<EditRecipeModalProps> = ({
   const [category, setCategory] = useState<RecipeCategory>(recipe.category || 'Middag');
   const [subcategories, setSubcategories] = useState<string[]>(() => getRecipeSubcategories(recipe));
   const [servings, setServings] = useState<number | string>(recipe.servings || 4);
+  const [difficulty, setDifficulty] = useState<RecipeDifficulty | undefined>(recipe.difficulty);
   const [cookingTimeMinutes, setCookingTimeMinutes] = useState<number | string>(() =>
     Number(recipe.cookTimeMinutes) > 0
       ? Number(recipe.cookTimeMinutes)
@@ -122,6 +124,7 @@ export const EditRecipeModal: React.FC<EditRecipeModalProps> = ({
       instructions: parsedInstructions,
       prepTimeMinutes: 0,
       cookTimeMinutes: Number(cookingTimeMinutes) >= 0 ? Number(cookingTimeMinutes) : 0,
+      difficulty,
     };
 
     updateRecipe(updatedRecipe);
@@ -358,6 +361,8 @@ export const EditRecipeModal: React.FC<EditRecipeModalProps> = ({
               />
             </div>
           </div>
+
+          <DifficultyPicker value={difficulty} onChange={setDifficulty} />
 
           {/* INGREDIENTS */}
           <div>
