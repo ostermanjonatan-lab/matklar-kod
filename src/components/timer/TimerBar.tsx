@@ -77,7 +77,14 @@ export const TimerRow: React.FC<{ inDock: boolean }> = ({ inDock }) => {
               {done ? 'Klart' : formatTimerDisplay(timer.secondsLeft)}
             </span>
             <span className={`text-sm truncate ${done ? 'text-emerald-100' : 'text-stone-500'}`}>
-              {!done && !timer.isRunning ? `Pausad · ${caption}` : caption}
+              {/* Above the menu only the time left counts, so the length is left out there */}
+              {inDock
+                ? !done && !timer.isRunning
+                  ? 'Pausad'
+                  : ''
+                : !done && !timer.isRunning
+                ? `Pausad · ${caption}`
+                : caption}
             </span>
           </div>
         </button>
