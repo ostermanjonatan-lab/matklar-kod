@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useLayoutEffect, useRef, useState } from 'react';
 import { X } from 'lucide-react';
 import { useTimer } from '../../context/TimerContext';
 import { useRecipes } from '../../context/RecipeContext';
@@ -13,12 +13,42 @@ function formatTimerDisplay(totalSecs: number): string {
 }
 
 /**
+ * Above the menu the box's bottom edge follows the menu's arc, which rises about 12 px towards
+ * the middle across the width of the box. The shape is drawn for the box's measured size.
+ */
+function useCurvedShape(active: boolean) {
+  const ref = useRef<HTMLDivElement | null>(null);
+  const [path, setPath] = useState<string | null>(null);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!active || !el) return;
+    const update = () => {
+      const w = el.offsetWidth;
+      const h = el.offsetHeight;
+      const r = 16;
+      const rise = 12;
+      setPath(
+        `M ${r} 0 H ${w - r} Q ${w} 0 ${w} ${r} V ${h - r} Q ${w} ${h} ${w - r} ${h} ` +
+          `Q ${w / 2} ${h - rise * 2} ${r} ${h} Q 0 ${h} 0 ${h - r} V ${r} Q 0 0 ${r} 0 Z`
+      );
+    };
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [active]);
+  return { ref, path };
+}
+
+/**
  * The running kitchen timer. Inside a recipe it sits at the bottom of the screen. With the
  * recipe closed it sits above the menu and names the recipe; a tap on the name opens it.
  */
 export const TimerBar: React.FC<{ placement: 'recipe' | 'app' }> = ({ placement }) => {
   const { timer, toggleTimer, restartTimer, clearTimer } = useTimer();
   const { recipes, openRecipeDetail } = useRecipes();
+  const curved = placement === 'app';
+  const shape = useCurvedShape(curved && Boolean(timer));
   if (!timer) return null;
 
   const done = timer.secondsLeft === 0;
@@ -29,17 +59,31 @@ export const TimerBar: React.FC<{ placement: 'recipe' | 'app' }> = ({ placement 
   const elapsed = timer.totalSeconds > 0 ? 1 - timer.secondsLeft / timer.totalSeconds : 1;
   const textButton = 'min-h-[44px] px-3 text-sm font-semibold touch-manipulation';
 
+
+  const progress = !done && (
+    <div className={`h-[3px] bg-stone-100 ${curved ? '' : 'order-last'}`}>
+      <div className="h-full bg-[#284235] transition-[width] duration-300 ease-linear" style={{ width: `${elapsed * 100}%` }} />
+    </div>
+  );
+
   return (
     <div
-      className={`fixed left-4 right-4 max-w-md mx-auto rounded-2xl border overflow-hidden shadow-[0_6px_24px_rgba(28,25,23,0.12)] animate-slide-up ${
-        done ? 'bg-[#284235] border-[#284235] text-white' : 'bg-white border-[#EBE7DF] text-stone-900'
-      } ${
+      className={`fixed left-4 right-4 max-w-md mx-auto ${
         placement === 'recipe'
           ? 'bottom-[max(1rem,env(safe-area-inset-bottom,0px))] z-50'
-          : 'bottom-[calc(6.5rem+env(safe-area-inset-bottom,0px))] z-30'
+          : 'bottom-[calc(95px+env(safe-area-inset-bottom,0px))] z-30'
       }`}
+      style={{ filter: 'drop-shadow(0 6px 16px rgba(28,25,23,0.13))' }}
       role="timer"
     >
+    <div
+      ref={shape.ref}
+      className={`flex flex-col rounded-2xl overflow-hidden animate-slide-up ${
+        done ? 'bg-[#284235] text-white' : 'bg-white text-stone-900'
+      } ${curved ? 'pb-3' : `border ${done ? 'border-[#284235]' : 'border-[#EBE7DF]'}`}`}
+      style={curved && shape.path ? { clipPath: `path('${shape.path}')` } : undefined}
+    >
+      {curved && progress}
       <div className="flex items-center gap-2 pl-4 pr-1.5 py-2">
         <button
           type="button"
@@ -79,11 +123,8 @@ export const TimerBar: React.FC<{ placement: 'recipe' | 'app' }> = ({ placement 
         </button>
       </div>
 
-      {!done && (
-        <div className="h-[3px] bg-stone-100">
-          <div className="h-full bg-[#284235] transition-[width] duration-300 ease-linear" style={{ width: `${elapsed * 100}%` }} />
-        </div>
-      )}
+      {!curved && progress}
+    </div>
     </div>
   );
 };
