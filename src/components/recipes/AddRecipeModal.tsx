@@ -10,9 +10,9 @@ import {
   ScanText,
   CheckCircle2,
   Loader2,
-  RefreshCw,
   FileText,
   PenLine,
+  ClipboardPaste,
 } from 'lucide-react';
 import {
   performClientOCR,
@@ -22,7 +22,7 @@ import {
 import { scrapeRecipeFromUrl } from '../../services/webRecipeScraper';
 import { uploadRecipePhoto, persistRecipeDocument } from '../../utils/imageService';
 import { cleanLeadingStepNumber, formatIngredientsToText } from '../../utils/formatters';
-import { RecipeFormFields } from './RecipeFormFields';
+import { AutoGrowTextarea, RecipeFormFields } from './RecipeFormFields';
 
 interface AddRecipeModalProps {
   onClose: () => void;
@@ -325,10 +325,39 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = ({ onClose, closeGu
       }));
   }, [instructionsText]);
 
+  const footerButton =
+    'w-full min-h-[50px] bg-[#284235] hover:bg-black disabled:opacity-40 text-white font-semibold text-sm rounded-2xl touch-manipulation flex items-center justify-center gap-2';
+  const clipboardButton =
+    'inline-flex items-center gap-1.5 min-h-[40px] px-3 rounded-xl border border-[#EBE7DF] bg-white text-stone-800 font-semibold text-sm touch-manipulation';
+
+  // Reads the clipboard; the phone may ask for permission the first time
+  const readClipboard = async (): Promise<string | null> => {
+    try {
+      return await navigator.clipboard.readText();
+    } catch {
+      setToastMessage('Telefonen gav inte tillgång till urklipp. Håll in i rutan och välj Klistra in.');
+      setTimeout(() => setToastMessage(null), 4000);
+      return null;
+    }
+  };
+
+  const pasteTextFromClipboard = async () => {
+    const text = await readClipboard();
+    if (text && text.trim()) setPastedRecipeText(text);
+  };
+
+  const pasteLinkFromClipboard = async () => {
+    const text = await readClipboard();
+    if (!text || !text.trim()) return;
+    const link = text.match(/https?:\/\/[^\s<>"']+/i)?.[0] || text.trim();
+    setSourceUrl(link);
+    setUrlFetchError(null);
+  };
+
   // Anything filled in that would be lost on close
   const [showDiscardPrompt, setShowDiscardPrompt] = useState<boolean>(false);
   const snapshot = () =>
-    JSON.stringify([title, category, subcategories, servings, difficulty, cookingTimeMinutes, coverImageUrl, notes, ingredientsText, instructionsText]);
+    JSON.stringify([title, category, subcategories, servings, difficulty, cookingTimeMinutes, coverImageUrl, notes, ingredientsText, instructionsText, pastedRecipeText.trim(), sourceUrl.trim(), ocrReviewText.trim()]);
   const initialSnapshotRef = React.useRef<string | null>(null);
   if (initialSnapshotRef.current === null) initialSnapshotRef.current = snapshot();
   const isDirty = snapshot() !== initialSnapshotRef.current;
@@ -442,303 +471,173 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = ({ onClose, closeGu
           </div>
         )}
 
-        {/* OCR LOADING OVERLAY */}
-        {isOcrLoading && (
-          <div className="p-6 bg-[#FCFAF5] border-b border-[#EBE7DF] text-center space-y-3 animate-fade-in shrink-0">
-            <Loader2 className="w-7 h-7 text-[#284235] animate-spin mx-auto" />
-            <div>
-              <h4 className="font-serif font-bold text-sm text-stone-900">
-                {ocrStatusText}
-              </h4>
-            </div>
-            <div className="w-full bg-stone-200 h-2 rounded-full overflow-hidden">
-              <div
-                className="bg-[#284235] h-full rounded-full transition-all duration-200"
-                style={{ width: `${ocrProgress}%` }}
-              />
-            </div>
-          </div>
-        )}
+        {/* Link, paste and photo: each fills the space; the form is shown once something is filled in */}
+        {activeImportMode !== 'manual' && (
+          <div className="flex-1 overflow-y-auto px-5 pt-4 pb-6 text-sm animate-fade-in">
+            {/* LINK */}
+            {activeImportMode === 'url' && (
+              <form id="url-form" onSubmit={handleFetchUrlRecipe} className="space-y-3">
+                <p className="text-stone-600">Adressen till receptet.</p>
+                <input
+                  type="url"
+                  inputMode="url"
+                  disabled={isUrlFetching}
+                  value={sourceUrl}
+                  onChange={(e) => {
+                    setSourceUrl(e.target.value);
+                    setUrlFetchError(null);
+                  }}
+                  placeholder="https://"
+                  aria-label="Receptets adress"
+                  className="w-full h-12 bg-white border border-[#EBE7DF] rounded-2xl px-3.5 text-base sm:text-sm text-stone-900 focus:outline-none focus:ring-2 focus:ring-[#284235] disabled:bg-stone-50 disabled:text-stone-500"
+                />
+                {!isUrlFetching && (
+                  <button type="button" onClick={pasteLinkFromClipboard} className={clipboardButton}>
+                    <ClipboardPaste className="w-4 h-4" />
+                    Klistra in länk
+                  </button>
+                )}
 
-        {/* TAB 1: WEB LINK IMPORT */}
-        {activeImportMode === 'url' && (
-          <div className="p-5 bg-[#FCFAF5] border-b border-[#EBE7DF] space-y-3.5 animate-fade-in text-xs shrink-0">
-            <div>
-              <h4 className="font-serif font-bold text-base text-stone-900">
-                Klistra in receptlänk
-              </h4>
-            </div>
-
-            <form onSubmit={handleFetchUrlRecipe} className="space-y-3">
-              <input
-                type="url"
-                required
-                disabled={isUrlFetching}
-                value={sourceUrl}
-                onChange={(e) => {
-                  setSourceUrl(e.target.value);
-                  setUrlFetchError(null);
-                }}
-                placeholder="https://www.ica.se/recept/..."
-                className="w-full h-12 bg-white border border-[#EBE7DF] rounded-2xl px-3.5 text-sm text-stone-900 focus:outline-none focus:ring-2 focus:ring-[#284235] shadow-xs disabled:bg-stone-50 disabled:text-stone-500"
-              />
-
-              {/* Progress bar during URL recipe fetching */}
-              {isUrlFetching && (
-                <div className="p-3.5 bg-white rounded-2xl border border-[#EBE7DF] space-y-2.5 animate-fade-in shadow-xs">
-                  <div className="flex items-center justify-between text-xs">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <Loader2 className="w-3.5 h-3.5 text-[#284235] animate-spin shrink-0" />
-                      <span className="font-bold text-stone-900 text-xs truncate">
-                        {urlFetchStatus || 'Läser in recept...'}
+                {isUrlFetching && (
+                  <div className="space-y-2 pt-1">
+                    <div className="flex items-center justify-between gap-2 text-stone-700">
+                      <span className="flex items-center gap-2 min-w-0">
+                        <Loader2 className="w-4 h-4 animate-spin shrink-0" />
+                        <span className="truncate">{urlFetchStatus || 'Hämtar receptet'}</span>
                       </span>
+                      <span className="tabular-nums text-stone-500 shrink-0">{urlFetchProgress} %</span>
                     </div>
-                    <span className="font-bold text-[#284235] text-xs font-mono shrink-0 ml-2">
-                      {urlFetchProgress}%
-                    </span>
+                    <div className="w-full bg-stone-200 h-1.5 rounded-full overflow-hidden">
+                      <div
+                        className="bg-[#284235] h-full rounded-full transition-all duration-300 ease-out"
+                        style={{ width: `${Math.max(6, Math.min(100, urlFetchProgress))}%` }}
+                      />
+                    </div>
                   </div>
+                )}
 
-                  {/* Progress Bar Track */}
-                  <div className="w-full bg-stone-100 h-2.5 rounded-full overflow-hidden p-0.5 border border-stone-200">
-                    <div
-                      className="bg-[#284235] h-full rounded-full transition-all duration-300 ease-out"
-                      style={{ width: `${Math.max(6, Math.min(100, urlFetchProgress))}%` }}
-                    />
-                  </div>
-
-                  <p className="text-[10px] text-stone-500">
-                    Läser in ingredienser, instruktioner och bilder från sidan...
-                  </p>
-                </div>
-              )}
-
-              {urlFetchError && (
-                <div className="p-3 bg-rose-50 border border-rose-200 rounded-2xl text-rose-800 text-xs space-y-2">
-                  <p>{urlFetchError}</p>
-                  <div className="flex flex-wrap gap-2 pt-1">
-                    <button
-                      type="button"
-                      onClick={() => setActiveImportMode('paste')}
-                      className="px-3 py-1.5 bg-stone-900 text-white rounded-xl font-bold flex items-center gap-1.5 active:scale-95 shadow-xs"
-                    >
-                      <FileText className="w-3.5 h-3.5 text-stone-300" />
-                      <span>Klistra in recepttexten istället</span>
+                {urlFetchError && (
+                  <div className="p-3 bg-rose-50 border border-rose-200 rounded-2xl text-rose-800 space-y-1">
+                    <p>{urlFetchError}</p>
+                    <button type="button" onClick={() => setActiveImportMode('paste')} className="font-semibold underline underline-offset-2 touch-manipulation">
+                      Klistra in texten i stället
                     </button>
                   </div>
-                </div>
-              )}
+                )}
+              </form>
+            )}
 
-              <div>
-                <button
-                  type="submit"
-                  disabled={isUrlFetching || !sourceUrl.trim()}
-                  className="w-full py-3.5 bg-[#284235] hover:bg-black text-white font-bold text-sm rounded-2xl active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-xs touch-manipulation min-h-[48px]"
-                >
-                  {isUrlFetching ? (
-                    <>
-                      <Loader2 className="w-4 h-4 text-emerald-300 animate-spin" />
-                      <span>Läser in ({urlFetchProgress}%)...</span>
-                    </>
-                  ) : (
-                    <span>Hämta recept</span>
-                  )}
-                </button>
-              </div>
-            </form>
-          </div>
-        )}
-
-        {/* TAB 2: PASTE RAW TEXT IMPORT */}
-        {activeImportMode === 'paste' && (
-          <div className="p-4 bg-[#FCFAF5] border-b border-[#EBE7DF] space-y-3 animate-fade-in text-xs shrink-0">
-            <div className="flex items-center justify-between">
-              <h4 className="font-serif font-bold text-base text-stone-900">
-                Klistra in recepttext
-              </h4>
-              <span className="text-[10px] text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 font-medium">
-                Automatisk tolkning
-              </span>
-            </div>
-
-            <p className="text-[11px] text-stone-500">
-              Kopiera text från valfri webbsida, app eller anteckning och klistra in här. Ingredienser, mått och tillagningssteg tolkas automatiskt.
-            </p>
-
-            <textarea
-              rows={6}
-              value={pastedRecipeText}
-              onChange={(e) => setPastedRecipeText(e.target.value)}
-              placeholder="Klistra in hela recepttexten här...&#10;&#10;T.ex:&#10;Krämig Kycklingpasta&#10;&#10;Ingredienser:&#10;400 g tagliatelle&#10;500 g kycklingfilé&#10;2 dl vispgrädde&#10;1 klyfta vitlök&#10;Salt och peppar&#10;&#10;Gör så här:&#10;1. Koka pastan al dente.&#10;2. Stek kycklingen gyllenbrun..."
-              className="w-full bg-white border border-[#EBE7DF] rounded-2xl p-3.5 text-xs text-stone-900 leading-relaxed focus:outline-none focus:ring-2 focus:ring-[#284235] font-sans resize-y"
-            />
-
-            <div className="flex gap-2">
-              <button
-                type="button"
-                disabled={!pastedRecipeText.trim()}
-                onClick={handleParsePastedText}
-                className="flex-1 py-3 bg-[#284235] hover:bg-black text-white font-bold text-xs rounded-2xl active:scale-95 transition-all disabled:opacity-40 flex items-center justify-center gap-1.5 shadow-xs touch-manipulation min-h-[44px]"
-              >
-                <span>Tolka och fyll i recept</span>
-              </button>
-
-              {pastedRecipeText && (
-                <button
-                  type="button"
-                  onClick={() => setPastedRecipeText('')}
-                  className="px-3.5 py-3 bg-white border border-[#EBE7DF] text-stone-600 hover:text-stone-900 font-semibold text-xs rounded-2xl active:scale-95 touch-manipulation min-h-[44px]"
-                >
-                  Rensa
-                </button>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* TAB 3: OCR & DOCUMENT SCAN — photo selection */}
-        {activeImportMode === 'ocr' && !isOcrLoading && !ocrReviewMode && (
-          <div className="p-4 bg-[#FCFAF5] border-b border-[#EBE7DF] space-y-3 animate-fade-in text-xs shrink-0">
-            <div>
-              <h4 className="font-serif font-bold text-base text-stone-900">
-                Skanna receptfoto eller kokbok
-              </h4>
-              <p className="text-[11px] text-stone-500 mt-0.5 leading-snug">
-                Tips: bra ljus, sida platt, fota lodrätt uppifrån
-              </p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2.5 pt-1">
-              <label className="flex flex-col items-center justify-center p-4 bg-white border border-[#EBE7DF] hover:border-[#284235] rounded-3xl cursor-pointer text-center active:scale-95 transition-all shadow-xs touch-manipulation min-h-[86px]">
-                <Camera className="w-5 h-5 text-[#284235] mb-1" />
-                <span className="font-bold text-stone-900 text-xs">Fota med kamera</span>
-                <input
-                  type="file"
-                  accept="image/*"
-                  capture="environment"
-                  className="hidden"
-                  onChange={(e) => handleDocumentFileUpload(e, true)}
-                />
-              </label>
-
-              <label className="flex flex-col items-center justify-center p-4 bg-white border border-[#EBE7DF] hover:border-[#284235] rounded-3xl cursor-pointer text-center active:scale-95 transition-all shadow-xs touch-manipulation min-h-[86px]">
-                <Upload className="w-5 h-5 text-stone-700 mb-1" />
-                <span className="font-bold text-stone-900 text-xs">Välj fil / PDF</span>
-                <input
-                  type="file"
-                  accept="image/*,application/pdf"
-                  className="hidden"
-                  onChange={(e) => handleDocumentFileUpload(e, true)}
-                />
-              </label>
-            </div>
-
-            {recipeDocumentUrl && (
-              <div className="bg-white p-3 rounded-2xl border border-[#EBE7DF] space-y-3">
+            {/* PASTE */}
+            {activeImportMode === 'paste' && (
+              <div className="space-y-3">
+                <p className="text-stone-600">Text från en webbsida, ett mejl eller en anteckning.</p>
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 truncate">
-                    <img
-                      src={recipeDocumentUrl}
-                      alt="Receptdokument"
-                      className="w-10 h-10 object-cover rounded-xl border border-stone-200 shrink-0"
-                    />
-                    <div className="truncate">
-                      <span className="font-bold text-stone-900 text-xs block truncate">
-                        Receptbild sparad
-                      </span>
-                      <span className="text-[10px] text-stone-500">
-                        Optimerad för OCR & bildvisare
-                      </span>
-                    </div>
+                  <button type="button" onClick={pasteTextFromClipboard} className={clipboardButton}>
+                    <ClipboardPaste className="w-4 h-4" />
+                    Klistra in från urklipp
+                  </button>
+                  {pastedRecipeText && (
+                    <button type="button" onClick={() => setPastedRecipeText('')} className="text-stone-600 font-semibold min-h-[40px] px-1 touch-manipulation">
+                      Rensa
+                    </button>
+                  )}
+                </div>
+                <AutoGrowTextarea
+                  minRows={10}
+                  value={pastedRecipeText}
+                  onChange={(e) => setPastedRecipeText(e.target.value)}
+                  placeholder="Klistra in receptet här"
+                  aria-label="Recepttext"
+                  className="w-full bg-white border border-[#EBE7DF] rounded-2xl p-3.5 text-base sm:text-sm text-stone-900 leading-relaxed focus:outline-none focus:ring-2 focus:ring-[#284235]"
+                />
+              </div>
+            )}
+
+            {/* PHOTO: reading */}
+            {activeImportMode === 'ocr' && isOcrLoading && (
+              <div className="py-6 space-y-3">
+                <div className="flex items-center gap-2 text-stone-700">
+                  <Loader2 className="w-4 h-4 animate-spin shrink-0" />
+                  <span>{ocrStatusText}</span>
+                </div>
+                <div className="w-full bg-stone-200 h-1.5 rounded-full overflow-hidden">
+                  <div className="bg-[#284235] h-full rounded-full transition-all duration-200" style={{ width: `${ocrProgress}%` }} />
+                </div>
+              </div>
+            )}
+
+            {/* PHOTO: choose */}
+            {activeImportMode === 'ocr' && !isOcrLoading && !ocrReviewMode && (
+              <div className="space-y-3">
+                <p className="text-stone-600">Fota sidan rakt uppifrån i bra ljus.</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <label className="flex items-center justify-center gap-2 min-h-[52px] bg-white hover:bg-stone-50 border border-[#EBE7DF] rounded-2xl cursor-pointer font-semibold text-stone-900 touch-manipulation">
+                    <Camera className="w-4 h-4" />
+                    Ta foto
+                    <input type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => handleDocumentFileUpload(e, true)} />
+                  </label>
+                  <label className="flex items-center justify-center gap-2 min-h-[52px] bg-white hover:bg-stone-50 border border-[#EBE7DF] rounded-2xl cursor-pointer font-semibold text-stone-900 touch-manipulation">
+                    <Upload className="w-4 h-4" />
+                    Välj bild eller PDF
+                    <input type="file" accept="image/*,application/pdf" className="hidden" onChange={(e) => handleDocumentFileUpload(e, true)} />
+                  </label>
+                </div>
+
+                {recipeDocumentUrl && (
+                  <div className="flex items-center gap-3 pt-2 border-t border-[#EBE7DF]">
+                    <img src={recipeDocumentUrl} alt="" className="w-12 h-12 object-cover rounded-xl border border-stone-200 shrink-0" />
+                    <span className="flex-1 min-w-0 text-stone-700 truncate">Bilden är sparad</span>
+                    <button type="button" onClick={() => runOcrOnCurrentFile()} className="text-[#284235] font-semibold min-h-[40px] px-1 touch-manipulation">
+                      Läs av igen
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setRecipeDocumentUrl('');
+                        setSelectedDocumentFile(null);
+                      }}
+                      className="text-rose-700 font-semibold min-h-[40px] px-1 touch-manipulation"
+                    >
+                      Ta bort
+                    </button>
                   </div>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setRecipeDocumentUrl('');
-                      setSelectedDocumentFile(null);
-                    }}
-                    className="text-rose-600 hover:text-rose-700 font-semibold text-xs px-2 py-1"
-                  >
-                    Ta bort
-                  </button>
-                </div>
-
-                <div className="pt-1 border-t border-stone-100">
-                  <button
-                    type="button"
-                    onClick={() => runOcrOnCurrentFile()}
-                    className="w-full py-2.5 px-3 bg-[#284235] hover:bg-black text-white font-bold rounded-xl active:scale-95 transition-all flex items-center justify-center gap-1.5 text-xs shadow-xs touch-manipulation min-h-[44px]"
-                  >
-                    <RefreshCw className="w-3.5 h-3.5 text-emerald-300" />
-                    <span>Läs av med OCR igen</span>
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* TAB 3: OCR REVIEW — editable raw text before parsing */}
-        {activeImportMode === 'ocr' && !isOcrLoading && ocrReviewMode && (
-          <div className="p-4 bg-[#FCFAF5] border-b border-[#EBE7DF] space-y-3 animate-fade-in text-xs shrink-0">
-            <div className="flex items-start justify-between gap-2">
-              <div>
-                <h4 className="font-serif font-bold text-base text-stone-900">
-                  Kontrollera avläst text
-                </h4>
-                <p className="text-[11px] text-stone-500 mt-0.5 leading-snug">
-                  Rätta fel, flytta om rader vid behov – klicka sedan <strong>Tolka</strong>
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setOcrReviewMode(false)}
-                className="shrink-0 text-[11px] text-stone-500 hover:text-stone-900 font-semibold underline"
-              >
-                ← Fota om
-              </button>
-            </div>
-
-            {ocrReviewText.trim().length < 30 && (
-              <div className="bg-amber-50 border border-amber-200 rounded-2xl px-3 py-2 text-[11px] text-amber-900 leading-snug">
-                ⚠️ Lite text avlästes ({ocrReviewText.trim().length} tecken). Kontrollera ljus och att boksidan är plan. Du kan ändå redigera och tolka texten, eller fota om.
+                )}
               </div>
             )}
 
-            <textarea
-              rows={10}
-              value={ocrReviewText}
-              onChange={(e) => setOcrReviewText(e.target.value)}
-              className="w-full bg-white border border-[#EBE7DF] rounded-2xl p-3 text-[11px] text-stone-900 leading-relaxed focus:outline-none focus:ring-2 focus:ring-[#284235] font-mono resize-y"
-              placeholder="Den avlästa texten visas här..."
-            />
-
-            <div className="flex gap-2">
-              <button
-                type="button"
-                disabled={!ocrReviewText.trim()}
-                onClick={handleApplyOcrReviewText}
-                className="flex-1 py-3 bg-[#284235] hover:bg-black text-white font-bold text-xs rounded-2xl active:scale-95 transition-all disabled:opacity-40 flex items-center justify-center gap-1.5 shadow-xs touch-manipulation min-h-[44px]"
-              >
-                <ScanText className="w-3.5 h-3.5 text-emerald-300" />
-                <span>Tolka och fyll i recept</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setOcrReviewText('');
-                  setOcrReviewMode(false);
-                }}
-                className="px-3.5 py-3 bg-white border border-[#EBE7DF] text-stone-600 hover:text-stone-900 font-semibold text-xs rounded-2xl active:scale-95 touch-manipulation min-h-[44px]"
-              >
-                Rensa
-              </button>
-            </div>
+            {/* PHOTO: check the text that was read */}
+            {activeImportMode === 'ocr' && !isOcrLoading && ocrReviewMode && (
+              <div className="space-y-3">
+                <div className="flex items-start justify-between gap-2">
+                  <p className="text-stone-600">Rätta det som blev fel i texten.</p>
+                  <button
+                    type="button"
+                    onClick={() => setOcrReviewMode(false)}
+                    className="shrink-0 text-[#284235] font-semibold min-h-[36px] touch-manipulation"
+                  >
+                    Fota om
+                  </button>
+                </div>
+                {ocrReviewText.trim().length < 30 && (
+                  <p className="bg-amber-50 border border-amber-200 rounded-2xl px-3 py-2 text-amber-900">
+                    Bara lite text kunde läsas. Fota gärna om med bättre ljus och sidan plan.
+                  </p>
+                )}
+                <AutoGrowTextarea
+                  minRows={10}
+                  value={ocrReviewText}
+                  onChange={(e) => setOcrReviewText(e.target.value)}
+                  placeholder="Den avlästa texten"
+                  aria-label="Avläst text"
+                  className="w-full bg-white border border-[#EBE7DF] rounded-2xl p-3.5 text-base sm:text-sm text-stone-900 leading-relaxed focus:outline-none focus:ring-2 focus:ring-[#284235]"
+                />
+              </div>
+            )}
           </div>
         )}
 
         {/* Form, the same fields as Redigera recept */}
+        {activeImportMode === 'manual' && (
         <form id="add-recipe-form" onSubmit={handleSubmit} className="px-5 pt-4 pb-6 space-y-5 overflow-y-auto overflow-x-hidden flex-1 text-xs min-w-0">
           <RecipeFormFields
             values={{ title, category, subcategories, servings, cookingTimeMinutes, difficulty, coverImageUrl, notes, ingredientsText, instructionsText }}
@@ -760,19 +659,35 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = ({ onClose, closeGu
             defaultServings={4}
           />
         </form>
+        )}
 
-        {/* Spara, always in view */}
+        {/* The main button, always in view: Spara, Hämta or Fyll i depending on the choice above */}
+        {!(activeImportMode === 'ocr' && (!ocrReviewMode || isOcrLoading)) && (
         <div className="px-5 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] border-t border-[#EBE7DF] bg-white shrink-0">
-          <button
-            type="submit"
-            form="add-recipe-form"
-            disabled={!title.trim()}
-            className="w-full min-h-[50px] bg-[#284235] hover:bg-black disabled:opacity-40 text-white font-semibold text-sm rounded-2xl touch-manipulation flex items-center justify-center gap-2"
-          >
-            <Check className="w-4 h-4" />
-            Spara recept
-          </button>
+          {activeImportMode === 'manual' && (
+            <button type="submit" form="add-recipe-form" disabled={!title.trim()} className={footerButton}>
+              <Check className="w-4 h-4" />
+              Spara recept
+            </button>
+          )}
+          {activeImportMode === 'url' && (
+            <button type="submit" form="url-form" disabled={isUrlFetching || !sourceUrl.trim()} className={footerButton}>
+              {isUrlFetching ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+              {isUrlFetching ? 'Hämtar receptet' : 'Hämta receptet'}
+            </button>
+          )}
+          {activeImportMode === 'paste' && (
+            <button type="button" onClick={handleParsePastedText} disabled={!pastedRecipeText.trim()} className={footerButton}>
+              Fyll i receptet
+            </button>
+          )}
+          {activeImportMode === 'ocr' && ocrReviewMode && !isOcrLoading && (
+            <button type="button" onClick={handleApplyOcrReviewText} disabled={!ocrReviewText.trim()} className={footerButton}>
+              Fyll i receptet
+            </button>
+          )}
         </div>
+        )}
 
         {/* Unsaved input */}
         {showDiscardPrompt && (
