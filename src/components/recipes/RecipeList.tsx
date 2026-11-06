@@ -777,7 +777,7 @@ export const RecipeList: React.FC = () => {
       {/* Main Content Area */}
       <div className="w-full max-w-md md:max-w-5xl lg:max-w-7xl mx-auto px-4 md:px-6 pt-2 md:pt-4 space-y-4 md:space-y-6">
         {/* Tonight's dinner from the meal plan. "I kväll" with Välj and Slumpa on top, the dish below. */}
-        <div className="flex items-start gap-3 border-b border-[#EBE7DF] pb-3">
+        <div className="flex items-center gap-3 border-b border-[#EBE7DF] pb-3">
           {tonight?.recipe?.coverImageUrl ? (
             <button
               type="button"
@@ -840,7 +840,7 @@ export const RecipeList: React.FC = () => {
               <button
                 type="button"
                 onClick={() => openRecipeDetail(tonight.recipe!)}
-                className="block w-full mt-1 text-left text-sm font-semibold leading-snug text-stone-900 line-clamp-2 touch-manipulation"
+                className="w-full mt-1 text-left text-sm font-semibold leading-snug text-stone-900 line-clamp-2 touch-manipulation"
               >
                 {tonight.text}
               </button>
