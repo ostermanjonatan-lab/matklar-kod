@@ -8,6 +8,40 @@ export function hasPantryStaples(recipe: Recipe): boolean {
   return (recipe.ingredients || []).some((ing) => ing.isPantryStaple);
 }
 
+/** The things a staple is, by their last word: "Salt och peppar" -> salt, peppar. */
+export function stapleKeys(name: string): string[] {
+  const core = name
+    .toLowerCase()
+    .replace(/\([^)]*\)/g, ' ')
+    // What it is for does not matter here: "Salt till pastavattnet", "Peppar efter smak"
+    .split(/\s(?:till|efter|att|för|på|i)\s|,/)[0];
+  return core
+    .split(/\s+och\s+|\s*[&+/]\s*/)
+    .map((part) => part.trim().split(/\s+/).pop() || '')
+    .filter((w) => w.length >= 3);
+}
+
+const sameStaple = (a: string, b: string) => a === b || a.endsWith(b) || b.endsWith(a);
+
+/**
+ * Each staple once: "Salt" is left out when "Salt och peppar" is there too, and
+ * "Nymalen svartpeppar" is covered by "peppar". Kept in the recipe's order.
+ */
+export function uniqueStaples(names: string[]): string[] {
+  const items = names.map((name, index) => ({ name, index, keys: stapleKeys(name) }));
+  const covered: string[] = [];
+  const kept = new Set<number>();
+  // Names that cover more come first, so "Salt och peppar" wins over "Salt"
+  for (const item of [...items].sort((a, b) => b.keys.length - a.keys.length || a.index - b.index)) {
+    const fresh = item.keys.filter((k) => !covered.some((c) => sameStaple(c, k)));
+    if (fresh.length > 0 || item.keys.length === 0) {
+      kept.add(item.index);
+      covered.push(...item.keys);
+    }
+  }
+  return items.filter((i) => kept.has(i.index)).map((i) => i.name);
+}
+
 interface PantryChoiceDialogProps {
   recipe: Recipe;
   onChoose: (skipPantryStaples: boolean) => void;
@@ -15,7 +49,7 @@ interface PantryChoiceDialogProps {
 }
 
 export const PantryChoiceDialog: React.FC<PantryChoiceDialogProps> = ({ recipe, onChoose, onClose }) => {
-  const staples = recipe.ingredients.filter((ing) => ing.isPantryStaple);
+  const staples = uniqueStaples(recipe.ingredients.filter((ing) => ing.isPantryStaple).map((ing) => ing.name));
 
   return (
     <div
@@ -44,8 +78,8 @@ export const PantryChoiceDialog: React.FC<PantryChoiceDialogProps> = ({ recipe, 
         </h3>
 
         <ul className="max-h-40 overflow-y-auto space-y-1 text-sm font-medium text-stone-800">
-          {staples.map((ing, idx) => (
-            <li key={idx}>{capitalizeFirst(ing.name)}</li>
+          {staples.map((name) => (
+            <li key={name}>{capitalizeFirst(name)}</li>
           ))}
         </ul>
 
