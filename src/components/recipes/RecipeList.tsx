@@ -762,19 +762,22 @@ export const RecipeList: React.FC = () => {
                   type="button"
                   onClick={() => setShowTonightPicker(true)}
                   className="px-3 rounded-xl bg-white border border-[#EBE7DF] hover:bg-stone-50 active:scale-95 text-stone-700 font-semibold text-xs flex items-center gap-1.5 transition-all touch-manipulation min-h-[36px]"
-                  aria-label="Välj middag i kväll"
+                  aria-label={tonight ? 'Byt middag i kväll' : 'Välj middag i kväll'}
                 >
                   <ListChecks className="w-4 h-4" />
-                  <span>Välj</span>
+                  <span>{tonight ? 'Byt' : 'Välj'}</span>
                 </button>
-                <button
-                  type="button"
-                  onClick={() => setShowRandomPicker(true)}
-                  className="px-3 rounded-xl bg-white border border-[#EBE7DF] hover:bg-stone-50 active:scale-95 text-stone-700 font-semibold text-xs flex items-center gap-1.5 transition-all touch-manipulation min-h-[36px]"
-                >
-                  <Dices className="w-4 h-4" />
-                  <span>Slumpa</span>
-                </button>
+                {/* Slumpa only when nothing is planned for tonight */}
+                {!tonight && (
+                  <button
+                    type="button"
+                    onClick={() => setShowRandomPicker(true)}
+                    className="px-3 rounded-xl bg-white border border-[#EBE7DF] hover:bg-stone-50 active:scale-95 text-stone-700 font-semibold text-xs flex items-center gap-1.5 transition-all touch-manipulation min-h-[36px]"
+                  >
+                    <Dices className="w-4 h-4" />
+                    <span>Slumpa</span>
+                  </button>
+                )}
               </div>
             </div>
 
