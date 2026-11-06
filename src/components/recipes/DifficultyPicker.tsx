@@ -46,3 +46,40 @@ export const DifficultyDots: React.FC<{ level: RecipeDifficulty; light?: boolean
     ))}
   </span>
 );
+
+interface DifficultyFilterProps {
+  selected: RecipeDifficulty[];
+  onChange: (selected: RecipeDifficulty[]) => void;
+  className?: string;
+}
+
+/**
+ * Filter on difficulty: Lätt, Medel and Svår can be turned on one by one.
+ * Nothing chosen means all recipes, also those without a difficulty.
+ */
+export const DifficultyFilter: React.FC<DifficultyFilterProps> = ({ selected, onChange, className = '' }) => (
+  <div className={`flex gap-1.5 ${className}`} role="group" aria-label="Svårighetsgrad">
+    {DIFFICULTY_LEVELS.map((level) => {
+      const on = selected.includes(level);
+      return (
+        <button
+          key={level}
+          type="button"
+          aria-pressed={on}
+          onClick={() => onChange(on ? selected.filter((l) => l !== level) : [...selected, level].sort())}
+          className={`px-3 min-h-[36px] rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors touch-manipulation ${
+            on ? 'bg-[#284235] text-white' : 'bg-[#FCFAF5] border border-stone-200 text-stone-700 hover:bg-stone-100'
+          }`}
+        >
+          <DifficultyDots level={level} light={on} />
+          {DIFFICULTY_LABELS[level]}
+        </button>
+      );
+    })}
+  </div>
+);
+
+/** Whether a recipe passes the difficulty filter. */
+export function matchesDifficulty(difficulty: RecipeDifficulty | undefined, selected: RecipeDifficulty[]): boolean {
+  return selected.length === 0 || (difficulty !== undefined && selected.includes(difficulty));
+}

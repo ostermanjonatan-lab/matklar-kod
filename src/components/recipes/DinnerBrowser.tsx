@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { DIFFICULTY_LABELS } from '../../utils/recipeDifficulty';
 import { Check, ChevronLeft, ChevronRight, Search } from 'lucide-react';
-import type { Recipe } from '../../types/recipe';
+import type { Recipe, RecipeDifficulty } from '../../types/recipe';
+import { DifficultyFilter, matchesDifficulty } from './DifficultyPicker';
 import { getRecipeSubcategories } from '../../types/recipe';
 import { formatCookingTime, formatRecipeTitle } from '../../utils/formatters';
 
@@ -102,7 +103,11 @@ interface DinnerBrowserProps {
 export const DinnerBrowser: React.FC<DinnerBrowserProps> = ({ recipes, mealLabel = 'middag', currentRecipeId, onSelect }) => {
   const [query, setQuery] = useState('');
   // Only dinners are chosen here, so the list starts in the Middag category
-  const dinners = useMemo(() => recipes.filter((r) => r.category === 'Middag'), [recipes]);
+  const [difficultyFilter, setDifficultyFilter] = useState<RecipeDifficulty[]>([]);
+  const dinners = useMemo(
+    () => recipes.filter((r) => r.category === 'Middag' && matchesDifficulty(r.difficulty, difficultyFilter)),
+    [recipes, difficultyFilter]
+  );
   const allDinnerImages = useMemo(() => imagesOf(dinners), [dinners]);
   const [subcategory, setSubcategory] = useState<string | null>(null);
 
@@ -154,6 +159,8 @@ export const DinnerBrowser: React.FC<DinnerBrowserProps> = ({ recipes, mealLabel
         />
       </div>
 
+      <DifficultyFilter selected={difficultyFilter} onChange={setDifficultyFilter} className="shrink-0 mt-2" />
+
       {canGoBack && (
         <button
           type="button"
@@ -170,7 +177,11 @@ export const DinnerBrowser: React.FC<DinnerBrowserProps> = ({ recipes, mealLabel
         {showRecipes ? (
           recipeList.length === 0 ? (
             <p className="py-6 text-sm text-stone-500">
-              {q ? `Inga recept i Middag matchar "${query}".` : 'Det finns inga recept i kategorin Middag.'}
+              {q
+                ? `Inga recept i Middag matchar "${query}".`
+                : difficultyFilter.length > 0
+                ? 'Inga middagar med den svårighetsgraden.'
+                : 'Det finns inga recept i kategorin Middag.'}
             </p>
           ) : (
             recipeList.map((recipe) => (

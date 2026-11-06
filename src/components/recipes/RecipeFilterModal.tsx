@@ -1,5 +1,6 @@
 ﻿import React, { useState, useMemo } from 'react';
-import type { Recipe } from '../../types/recipe';
+import type { Recipe, RecipeDifficulty } from '../../types/recipe';
+import { DifficultyFilter } from './DifficultyPicker';
 import { getRecipeSubcategories } from '../../types/recipe';
 import { DEFAULT_SUBCATEGORIES, DIETARY_SUBCATEGORIES, getAllStandardSubcategories } from '../../data/categories';
 import { useRecipes } from '../../context/RecipeContext';
@@ -29,6 +30,9 @@ export interface RecipeFilterModalProps {
   // Cooking time
   maxCookingTime: number | null;
   onChangeMaxCookingTime: (time: number | null) => void;
+  // Difficulty
+  difficultyFilter: RecipeDifficulty[];
+  onChangeDifficultyFilter: (selected: RecipeDifficulty[]) => void;
   // Favorites
   onlyFavorites: boolean;
   onToggleFavorites: () => void;
@@ -64,6 +68,8 @@ export const RecipeFilterModal: React.FC<RecipeFilterModalProps> = ({
   onClearSubcategories,
   maxCookingTime,
   onChangeMaxCookingTime,
+  difficultyFilter,
+  onChangeDifficultyFilter,
   onlyFavorites,
   onToggleFavorites,
   onResetFilters,
@@ -450,6 +456,11 @@ export const RecipeFilterModal: React.FC<RecipeFilterModalProps> = ({
                   );
                 })}
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <span className="block text-xs font-bold text-stone-800">Svårighetsgrad</span>
+              <DifficultyFilter selected={difficultyFilter} onChange={onChangeDifficultyFilter} className="flex-wrap" />
             </div>
 
             {sortOptions && onChangeSort && (

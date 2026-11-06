@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useDeferredValue, useCallback, useRef, useEffect } from 'react';
 import { useRecipes } from '../../context/RecipeContext';
-import type { Recipe } from '../../types/recipe';
+import type { Recipe, RecipeDifficulty } from '../../types/recipe';
+import { matchesDifficulty } from './DifficultyPicker';
 import { getRecipeSubcategories, getRecipeTimestamp } from '../../types/recipe';
 import { RecipeCard } from './RecipeCard';
 import { PantryChoiceDialog, hasPantryStaples } from './PantryChoiceDialog';
@@ -81,6 +82,7 @@ export const RecipeList: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('Alla');
   const [selectedSubcategories, setSelectedSubcategories] = useState<string[]>([]);
   const [maxCookingTime, setMaxCookingTime] = useState<number | null>(null);
+  const [difficultyFilter, setDifficultyFilter] = useState<RecipeDifficulty[]>([]);
   const [onlyFavorites, setOnlyFavorites] = useState<boolean>(false);
   const [sortBy, setSortBy] = useState<SortOption>('default');
   const [showSortSheet, setShowSortSheet] = useState<boolean>(false);
@@ -280,6 +282,11 @@ export const RecipeList: React.FC = () => {
       }
 
 
+      // Difficulty filter
+      if (!matchesDifficulty(recipe.difficulty, difficultyFilter)) {
+        return false;
+      }
+
       // Favorites filter
       if (onlyFavorites && !recipe.isFavorite) {
         return false;
@@ -323,6 +330,7 @@ export const RecipeList: React.FC = () => {
     selectedCategory,
     selectedSubcategories,
     maxCookingTime,
+    difficultyFilter,
     onlyFavorites,
     sortBy,
   ]);
@@ -335,6 +343,7 @@ export const RecipeList: React.FC = () => {
     selectedCategory,
     selectedSubcategories,
     maxCookingTime,
+    difficultyFilter,
     onlyFavorites,
     sortBy,
   ]);
@@ -373,6 +382,7 @@ export const RecipeList: React.FC = () => {
     setSelectedCategory('Alla');
     setSelectedSubcategories([]);
     setMaxCookingTime(null);
+    setDifficultyFilter([]);
     setOnlyFavorites(false);
     setSortBy('default');
   };
@@ -382,9 +392,10 @@ export const RecipeList: React.FC = () => {
     if (selectedCategory !== 'Alla') count++;
     count += selectedSubcategories.length;
     if (maxCookingTime !== null) count++;
+    count += difficultyFilter.length;
     if (onlyFavorites) count++;
     return count;
-  }, [selectedCategory, selectedSubcategories, maxCookingTime, onlyFavorites]);
+  }, [selectedCategory, selectedSubcategories, maxCookingTime, difficultyFilter, onlyFavorites]);
 
 
   const hasActiveFilters =
@@ -478,6 +489,8 @@ export const RecipeList: React.FC = () => {
           onClearSubcategories={() => setSelectedSubcategories([])}
           maxCookingTime={maxCookingTime}
           onChangeMaxCookingTime={setMaxCookingTime}
+          difficultyFilter={difficultyFilter}
+          onChangeDifficultyFilter={setDifficultyFilter}
           onlyFavorites={onlyFavorites}
           onToggleFavorites={() => setOnlyFavorites((prev) => !prev)}
           onResetFilters={clearFilters}
