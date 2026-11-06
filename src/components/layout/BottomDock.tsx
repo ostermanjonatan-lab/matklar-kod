@@ -36,13 +36,11 @@ export const BottomDock: React.FC<BottomDockProps> = ({ minimized, onCloseMinimi
       )}
       <div
         ref={shape.ref}
-        className={`relative rounded-2xl overflow-hidden pb-3 backdrop-blur-xl backdrop-saturate-150 animate-slide-up ${
-          timer && timer.secondsLeft === 0 ? 'bg-[#284235]/90' : 'bg-white/80'
-        }`}
+        className="relative rounded-2xl overflow-hidden bg-white/80 backdrop-blur-xl backdrop-saturate-150 animate-slide-up"
         style={shape.path ? { clipPath: `path('${shape.path}')` } : undefined}
       >
         {minimized && (
-          <div className={`bg-white/0 flex items-center gap-1 pl-2 pr-1.5 py-2 ${timer ? 'border-b border-stone-900/10' : ''}`}>
+          <div className={`flex items-center gap-1 pl-2 pr-1.5 pt-2 ${timer ? 'pb-2 border-b border-stone-900/10' : 'pb-5'}`}>
             <button
               type="button"
               onClick={() => openRecipeDetail(minimized)}

@@ -1,5 +1,5 @@
 import React, { useLayoutEffect, useRef, useState } from 'react';
-import { X } from 'lucide-react';
+import { X, Pause, Play, RotateCcw } from 'lucide-react';
 import { useTimer } from '../../context/TimerContext';
 import { useRecipes } from '../../context/RecipeContext';
 import { formatRecipeTitle } from '../../utils/formatters';
@@ -51,9 +51,10 @@ export const TimerRow: React.FC<{ inDock: boolean }> = ({ inDock }) => {
 
   const done = timer.secondsLeft === 0;
   const recipe = inDock && timer.recipeId ? recipes.find((r) => r.id === timer.recipeId) : undefined;
-  const caption = `Timer på ${timer.label}`;
   const elapsed = timer.totalSeconds > 0 ? 1 - timer.secondsLeft / timer.totalSeconds : 1;
-  const textButton = 'min-h-[44px] px-3 text-sm font-semibold touch-manipulation';
+  const iconButton = `w-11 h-11 rounded-full flex items-center justify-center touch-manipulation ${
+    done ? 'text-white hover:bg-white/10' : 'text-[#284235] hover:bg-stone-900/5'
+  }`;
 
   const progress = !done && (
     <div className="h-[3px] bg-stone-900/10">
@@ -64,7 +65,7 @@ export const TimerRow: React.FC<{ inDock: boolean }> = ({ inDock }) => {
   return (
     <div className={done ? 'bg-[#284235]/90 text-white' : 'text-stone-900'} role="timer">
       {inDock && progress}
-      <div className="flex items-center gap-2 pl-4 pr-1.5 py-2">
+      <div className={`flex items-center gap-2 pl-4 pr-1.5 pt-2 ${inDock ? 'pb-5' : 'pb-2'}`}>
         <button
           type="button"
           onClick={() => recipe && openRecipeDetail(recipe)}
@@ -76,26 +77,27 @@ export const TimerRow: React.FC<{ inDock: boolean }> = ({ inDock }) => {
             <span className="text-2xl font-semibold tabular-nums leading-tight shrink-0">
               {done ? 'Klart' : formatTimerDisplay(timer.secondsLeft)}
             </span>
-            <span className={`text-sm truncate ${done ? 'text-emerald-100' : 'text-stone-500'}`}>
-              {/* Above the menu only the time left counts, so the length is left out there */}
-              {inDock
-                ? !done && !timer.isRunning
-                  ? 'Pausad'
-                  : ''
-                : !done && !timer.isRunning
-                ? `Pausad · ${caption}`
-                : caption}
-            </span>
+            {/* The timer's full length, in the recipe only. Above the menu only the time left counts. */}
+            {!inDock && (
+              <span className={`text-sm tabular-nums truncate ${done ? 'text-emerald-100/80' : 'text-stone-400'}`}>
+                {formatTimerDisplay(timer.totalSeconds)}
+              </span>
+            )}
           </div>
         </button>
 
         {done ? (
-          <button type="button" onClick={restartTimer} className={`${textButton} text-white`}>
-            Igen
+          <button type="button" onClick={restartTimer} className={iconButton} aria-label="Starta timern igen">
+            <RotateCcw className="w-5 h-5" />
           </button>
         ) : (
-          <button type="button" onClick={toggleTimer} className={`${textButton} text-[#284235]`}>
-            {timer.isRunning ? 'Pausa' : 'Fortsätt'}
+          <button
+            type="button"
+            onClick={toggleTimer}
+            className={iconButton}
+            aria-label={timer.isRunning ? 'Pausa timern' : 'Fortsätt timern'}
+          >
+            {timer.isRunning ? <Pause className="w-5 h-5 fill-current" /> : <Play className="w-5 h-5 fill-current" />}
           </button>
         )}
         <button
