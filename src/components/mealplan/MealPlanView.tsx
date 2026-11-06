@@ -22,10 +22,12 @@ import {
 } from 'lucide-react';
 import { LunchboxIcon } from '../icons/LunchboxIcon';
 import { DinnerBrowser } from '../recipes/DinnerBrowser';
+import { leftoverLunchText, leftoverSourceDate, parseLeftoverLunch } from '../../utils/leftovers';
 import { RandomPickerModal } from '../recipes/RandomPickerModal';
 import { formatCookingTime, scaleIngredientAmount, formatAmount, formatRecipeTitle } from '../../utils/formatters';
 import {
   addDaysISO,
+  dayNameForDate,
   formatDayMonth,
   formatWeekRange,
   getISOWeekNumber,
@@ -56,6 +58,7 @@ export const MealPlanView: React.FC = () => {
     setActiveTab,
     planWeekStart,
     setPlanWeekStart,
+    getMealPlanForDate,
   } = useRecipes();
 
   const today = todayISO();
@@ -163,6 +166,33 @@ export const MealPlanView: React.FC = () => {
     } else {
       setSlide('0', 1, true);
     }
+  };
+
+  // Leftovers: dinners from the three days before a date, to choose as lunch
+  const leftoverChoices = (lunchDate: string) => {
+    const choices: { date: string; title: string }[] = [];
+    for (let back = 1; back <= 3; back++) {
+      const date = addDaysISO(lunchDate, -back);
+      const day = getMealPlanForDate(date);
+      if (!day) continue;
+      const recipe = day.dinnerRecipeId ? recipes.find((r) => r.id === day.dinnerRecipeId) : undefined;
+      const title = recipe ? formatRecipeTitle(recipe.title) : day.customDinner?.trim();
+      if (title && !/^rester/i.test(title)) choices.push({ date, title });
+    }
+    return choices;
+  };
+
+  // Lunches in the coming days made from the dinner on this date
+  const leftoverLunchesFrom = (dinnerDate: string) => {
+    const result: { date: string; servings: number }[] = [];
+    for (let ahead = 1; ahead <= 6; ahead++) {
+      const date = addDaysISO(dinnerDate, ahead);
+      const day = getMealPlanForDate(date);
+      if (day && leftoverSourceDate(date, day.customLunch) === dinnerDate) {
+        result.push({ date, servings: day.lunchServings || 2 });
+      }
+    }
+    return result;
   };
 
   const goToWeek = (weekStart: string) => {
@@ -675,6 +705,19 @@ export const MealPlanView: React.FC = () => {
 
                   {/* Interactive Controls below Dinner Banner */}
                   <div className="p-3.5 space-y-2.5 bg-white">
+                    {(() => {
+                      const lunches = leftoverLunchesFrom(weekDates[selectedDayIndex]);
+                      if (lunches.length === 0) return null;
+                      return (
+                        <p className="text-xs text-stone-500 flex items-center gap-1.5 order-last">
+                          <LunchboxIcon className="w-3.5 h-3.5 shrink-0" />
+                          {lunches
+                            .map((l) => `${l.servings} ${l.servings === 1 ? 'portion' : 'portioner'} till lunch ${dayNameForDate(l.date).toLowerCase()}`)
+                            .join(', ')}
+                          , räknas med i inköpslistan
+                        </p>
+                      );
+                    })()}
                     {/* Servings Stepper & Change Recipe Button */}
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-1.5 min-[380px]:gap-2 min-w-0 bg-[#FCFAF5] border border-[#EBE7DF] rounded-2xl pl-2.5 pr-1.5 min-[380px]:px-3 py-1.5">
@@ -991,13 +1034,15 @@ export const MealPlanView: React.FC = () => {
                     </div>
                     <div className="min-w-0 flex-1">
                       <span className="text-[10px] bg-amber-100 text-amber-900 font-bold px-1.5 py-0.2 rounded inline-block mb-0.5">
-                        Egen måltid
+                        {parseLeftoverLunch(activeDayData.customLunch) ? 'Rester' : 'Egen måltid'}
                       </span>
                       <h4 className="font-serif font-bold text-sm text-stone-900 truncate">
-                        {activeDayData.customLunch}
+                        {parseLeftoverLunch(activeDayData.customLunch)?.title ?? activeDayData.customLunch}
                       </h4>
                       <p className="text-[11px] text-stone-500">
-                        Klicka för att ändra
+                        {parseLeftoverLunch(activeDayData.customLunch)
+                          ? `Från middagen i ${parseLeftoverLunch(activeDayData.customLunch)!.day}s`
+                          : 'Klicka för att ändra'}
                       </p>
                     </div>
                   </div>
@@ -1210,6 +1255,38 @@ export const MealPlanView: React.FC = () => {
                 </button>
               </div>
             </div>
+
+            {/* Leftovers from the days before, for lunch */}
+            {pickerState.mealType === 'lunch' &&
+              (() => {
+                const lunchDate = weekDates[DAYS_OF_WEEK.indexOf(pickerState.dayName)];
+                const choices = leftoverChoices(lunchDate);
+                if (choices.length === 0) return null;
+                return (
+                  <div className="shrink-0">
+                    <div className="text-xs text-stone-500 pb-1">Rester</div>
+                    <div className="divide-y divide-[#EBE7DF] border-y border-[#EBE7DF]">
+                      {choices.map((c) => (
+                        <button
+                          key={c.date}
+                          type="button"
+                          onClick={() => {
+                            setMealPlanForDay(pickerState.dayName, 'lunch', null, leftoverLunchText(c.date, c.title));
+                            setPickerState(null);
+                          }}
+                          className="w-full min-h-[48px] py-2 flex items-center gap-3 text-left touch-manipulation active:bg-stone-100/70"
+                        >
+                          <LunchboxIcon className="w-4 h-4 text-stone-500 shrink-0" />
+                          <span className="flex-1 min-w-0 text-sm text-stone-900 truncate">
+                            <span className="text-stone-500">Från {dayNameForDate(c.date).toLowerCase()}: </span>
+                            {c.title}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
 
             {/* Mode Switcher: Recept ur samlingen / Egen måltid */}
             <div className="flex rounded-2xl bg-[#FCFAF5] border border-[#EBE7DF] p-1 shrink-0">

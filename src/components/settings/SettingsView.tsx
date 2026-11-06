@@ -6,6 +6,7 @@ import { SupabaseConfigModal } from './SupabaseConfigModal';
 import { useModalBackHandler } from '../../hooks/useModalBackHandler';
 import { APP_VERSION } from '../../version';
 import { OPEN_STORE_ORDER_KEY } from '../shopping/storeOrderLink';
+import { downloadRecipeBackup, readRecipeBackup } from '../../utils/recipeBackup';
 import { Check, Copy, ChevronRight, ChevronDown, Clock, ShieldAlert } from 'lucide-react';
 
 /** A plain row in a list: text on the left, optional detail and arrow on the right. */
@@ -72,6 +73,9 @@ export const SettingsView: React.FC = () => {
     pendingJoin,
     cancelPendingJoin,
     setActiveTab,
+    addRecipe,
+    customSubcategories,
+    addCustomSubcategory,
   } = useRecipes();
 
   const [showShareModal, setShowShareModal] = useState<boolean>(false);
@@ -113,6 +117,50 @@ export const SettingsView: React.FC = () => {
       // ignore, the shopping list still opens
     }
     setActiveTab('shopping');
+  };
+
+  // Backup: save the recipes to a file, and read them back
+  const handleSaveBackup = () => {
+    if (recipes.length === 0) {
+      showToast('Det finns inga recept att spara');
+      return;
+    }
+    const fileName = downloadRecipeBackup(recipes, customSubcategories || []);
+    showToast(`${recipes.length} recept sparade i ${fileName}`);
+  };
+
+  const handleReadBackup = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    try {
+      const backup = await readRecipeBackup(file);
+      const existingIds = new Set(recipes.map((r) => r.id));
+      const existingTitles = new Set(recipes.map((r) => r.title.trim().toLowerCase()));
+      let added = 0;
+      let skipped = 0;
+      for (const recipe of backup.recipes) {
+        if (existingIds.has(recipe.id) || existingTitles.has(recipe.title.trim().toLowerCase())) {
+          skipped++;
+          continue;
+        }
+        addRecipe(recipe);
+        existingTitles.add(recipe.title.trim().toLowerCase());
+        added++;
+      }
+      backup.customSubcategories.forEach((sub) => {
+        if (!(customSubcategories || []).includes(sub)) addCustomSubcategory(sub);
+      });
+      showToast(
+        added === 0
+          ? `Alla ${skipped} recept i filen finns redan`
+          : skipped > 0
+          ? `${added} recept ${added === 1 ? "inläst" : "inlästa"}, ${skipped} fanns redan`
+          : `${added} recept ${added === 1 ? "inläst" : "inlästa"}`
+      );
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Filen gick inte att läsa');
+    }
   };
 
   const members = household?.members?.filter((m) => !m.status || m.status === 'approved') || [];
@@ -347,6 +395,17 @@ export const SettingsView: React.FC = () => {
         <h2 className={sectionHeading}>Inköpslistan</h2>
         <div className="divide-y divide-[#EBE7DF] border-y border-[#EBE7DF]">
           <Row label="Butiker och avdelningarnas ordning" onClick={openStoreOrder} />
+        </div>
+
+        {/* Backup of the recipes */}
+        <h2 className={sectionHeading}>Säkerhetskopia</h2>
+        <div className="divide-y divide-[#EBE7DF] border-y border-[#EBE7DF]">
+          <Row label="Spara recepten i en fil" detail={`${recipes.length} recept`} onClick={handleSaveBackup} />
+          <label className="w-full min-h-[52px] py-3 flex items-center gap-3 text-left touch-manipulation active:bg-stone-100/70 cursor-pointer">
+            <span className="flex-1 min-w-0 text-sm text-stone-900">Läs in recept från en fil</span>
+            <ChevronRight className="w-4 h-4 text-stone-300 shrink-0" />
+            <input type="file" accept="application/json,.json" className="hidden" onChange={handleReadBackup} />
+          </label>
         </div>
 
         {/* Advanced: database, clearing and demo data */}

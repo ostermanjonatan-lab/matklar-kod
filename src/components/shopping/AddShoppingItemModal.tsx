@@ -1,5 +1,6 @@
 ﻿import React, { useState, useMemo, useRef } from 'react';
 import { useRecipes } from '../../context/RecipeContext';
+import { FrequentItems } from './FrequentItems';
 import { parseSmartItemInput } from '../../utils/ingredientParser';
 import { DEFAULT_AISLE_ORDER, loadStoreLayouts, loadActiveStoreId } from '../../utils/storeLayoutService';
 import { formatAmount, formatUnit } from '../../utils/formatters';
@@ -198,6 +199,9 @@ export const AddShoppingItemModal: React.FC<AddShoppingItemModalProps> = ({ onCl
               )}
             </div>
           </div>
+
+          {/* Quick choices for items you often buy */}
+          {!smartInput.trim() && <FrequentItems />}
 
           {/* Live Parsing Preview */}
           {parsedPreview && parsedPreview.name && (

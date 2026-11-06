@@ -3,6 +3,8 @@ import type { ReactNode } from 'react';
 import type { Recipe, MealPlanDay, ShoppingItem, TabType, UserProfile, Household, PantryItem, HouseholdJoinRequest, PendingJoinState } from '../types/recipe';
 import { getRecipeSubcategories, NON_FOOD_SUBCATEGORIES } from '../types/recipe';
 import { INITIAL_RECIPES, INITIAL_MEAL_PLAN } from '../data/mockRecipes';
+import { recordFrequentItem } from '../utils/frequentItems';
+import { withLeftoverPortions } from '../utils/leftovers';
 import {
   WEEKDAY_NAMES,
   dayNameForDate,
@@ -1468,7 +1470,8 @@ export const RecipeProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   }, [planWeekStart, commitMealPlan]);
 
   const generateShoppingListFromWeek = useCallback((skipPantryStaples: boolean): number => {
-    const { items } = generateShoppingListFromMealPlan(weekMealPlan, recipes, {
+    // Dinners that also become leftover lunches are bought for the extra portions
+    const { items } = generateShoppingListFromMealPlan(withLeftoverPortions(weekMealPlan), recipes, {
       skipPantryStaples,
     });
 
@@ -1652,6 +1655,8 @@ export const RecipeProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   }) => {
     const newId = `shop-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
     recentLocalShoppingUpdatesRef.current.set(newId, Date.now());
+    // Learn which items you often add, for the quick choices
+    recordFrequentItem(item.name);
 
     setShoppingList((prev) => {
       const { mergedList, removedDuplicateIds } = mergeIngredientsIntoShoppingList(prev, [

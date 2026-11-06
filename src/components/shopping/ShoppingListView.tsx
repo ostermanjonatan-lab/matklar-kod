@@ -4,6 +4,7 @@ import { useRecipes } from '../../context/RecipeContext';
 import { useModalBackHandler } from '../../hooks/useModalBackHandler';
 import { AlltidHemmaView } from './AlltidHemmaView';
 import { takeOpenStoreOrderFlag } from './storeOrderLink';
+import { FrequentItems } from './FrequentItems';
 import {
   Plus,
   Trash2,
@@ -878,6 +879,9 @@ export const ShoppingListView: React.FC = () => {
                     )}
                   </div>
                 </div>
+
+                {/* Quick choices for items you often buy */}
+                {!manualSmartInput.trim() && <FrequentItems />}
 
                 {/* Live Parsing Preview */}
                 {parsedManualPreview && parsedManualPreview.name && (
