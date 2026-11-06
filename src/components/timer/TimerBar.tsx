@@ -56,13 +56,13 @@ export const TimerRow: React.FC<{ inDock: boolean }> = ({ inDock }) => {
   const textButton = 'min-h-[44px] px-3 text-sm font-semibold touch-manipulation';
 
   const progress = !done && (
-    <div className="h-[3px] bg-stone-100">
+    <div className="h-[3px] bg-stone-900/10">
       <div className="h-full bg-[#284235] transition-[width] duration-300 ease-linear" style={{ width: `${elapsed * 100}%` }} />
     </div>
   );
 
   return (
-    <div className={done ? 'bg-[#284235] text-white' : 'text-stone-900'} role="timer">
+    <div className={done ? 'bg-[#284235]/90 text-white' : 'text-stone-900'} role="timer">
       {inDock && progress}
       <div className="flex items-center gap-2 pl-4 pr-1.5 py-2">
         <button
@@ -122,11 +122,10 @@ export const TimerBar: React.FC = () => {
   return (
     <div
       className="fixed left-4 right-4 max-w-md mx-auto bottom-[max(1rem,env(safe-area-inset-bottom,0px))] z-50"
-      style={{ filter: 'drop-shadow(0 6px 16px rgba(28,25,23,0.13))' }}
     >
       <div
-        className={`rounded-2xl overflow-hidden border animate-slide-up ${
-          done ? 'border-[#284235] bg-[#284235]' : 'border-[#EBE7DF] bg-white'
+        className={`rounded-2xl overflow-hidden border animate-slide-up backdrop-blur-xl backdrop-saturate-150 shadow-[0_6px_16px_rgba(28,25,23,0.13)] ${
+          done ? 'border-[#284235]/80 bg-[#284235]/80' : 'border-white/60 bg-white/70'
         }`}
       >
         <TimerRow inDock={false} />

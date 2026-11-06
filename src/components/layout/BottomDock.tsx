@@ -24,19 +24,25 @@ export const BottomDock: React.FC<BottomDockProps> = ({ minimized, onCloseMinimi
   if (!visible) return null;
 
   return (
-    <div
-      className="fixed left-4 right-4 max-w-md mx-auto bottom-[calc(95px+env(safe-area-inset-bottom,0px))] z-30"
-      style={{ filter: 'drop-shadow(0 6px 16px rgba(28,25,23,0.13))' }}
-    >
+    <div className="fixed left-4 right-4 max-w-md mx-auto bottom-[calc(95px+env(safe-area-inset-bottom,0px))] z-30">
+      {/* The shadow is a blurred copy of the shape behind the box. A shadow filter or an animation
+          on a layer around the box would turn off the see-through blur. */}
+      {shape.path && (
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 translate-y-1.5 bg-stone-900/15 blur-md pointer-events-none"
+          style={{ clipPath: `path('${shape.path}')` }}
+        />
+      )}
       <div
         ref={shape.ref}
-        className={`rounded-2xl overflow-hidden pb-3 animate-slide-up ${
-          timer && timer.secondsLeft === 0 ? 'bg-[#284235]' : 'bg-white'
+        className={`relative rounded-2xl overflow-hidden pb-3 backdrop-blur-xl backdrop-saturate-150 animate-slide-up ${
+          timer && timer.secondsLeft === 0 ? 'bg-[#284235]/90' : 'bg-white/70'
         }`}
         style={shape.path ? { clipPath: `path('${shape.path}')` } : undefined}
       >
         {minimized && (
-          <div className={`bg-white flex items-center gap-1 pl-2 pr-1.5 py-2 ${timer ? 'border-b border-[#EBE7DF]' : ''}`}>
+          <div className={`bg-white/0 flex items-center gap-1 pl-2 pr-1.5 py-2 ${timer ? 'border-b border-stone-900/10' : ''}`}>
             <button
               type="button"
               onClick={() => openRecipeDetail(minimized)}
