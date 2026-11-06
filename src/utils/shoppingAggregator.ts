@@ -1,5 +1,5 @@
 import type { Recipe, MealPlanDay, ShoppingItem } from '../types/recipe';
-import { scaleIngredientAmount } from './formatters';
+import { scaleIngredientAmount, stripPreparation } from './formatters';
 import { detectAisle, normalizeUnit } from './ingredientParser';
 
 /**
@@ -10,7 +10,7 @@ import { detectAisle, normalizeUnit } from './ingredientParser';
 export function normalizeIngredientNameForMatching(name: string): string {
   if (!name) return '';
 
-  const clean = name
+  const clean = stripPreparation(name)
     .toLowerCase()
     .replace(/\s*\(.*?\)\s*/g, '')
     .replace(/^(?:färska?|små|stora?|valfria?|ekologiska?|torkade?|frysta?)\s+/i, '')

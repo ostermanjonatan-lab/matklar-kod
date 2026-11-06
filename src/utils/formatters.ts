@@ -455,3 +455,19 @@ export function formatIngredientsToText(
     .join('\n');
 }
 
+
+// Words that describe how an ingredient is prepared, which do not matter when shopping
+const PREPARATION_PATTERN =
+  /(hack|skiv|kvart|tärn|riv|strimla|pressad|klyft|delad|delade|halverad|bitar|mosad|smält|rumsvarm|skala|sköljd|avrunn|fint|grovt|tunt|servering|garnering|stekning|steka|pensling|bryning|marinad|urkramad|finfördela|slanta)/i;
+
+/**
+ * Removes preparation notes after a comma in an ingredient name, for the shopping list.
+ * E.g. "Gul lök, finhackad" -> "Gul lök", "Champinjoner, i kvartar eller skivor" -> "Champinjoner".
+ * A comma part that is not about preparation is kept ("Ost, gärna lagrad").
+ */
+export function stripPreparation(name: string): string {
+  if (!name || !name.includes(',')) return name;
+  const [first, ...rest] = name.split(',');
+  const kept = rest.filter((part) => !PREPARATION_PATTERN.test(part));
+  return [first, ...kept].join(',').trim();
+}

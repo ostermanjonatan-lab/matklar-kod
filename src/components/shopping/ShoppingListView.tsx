@@ -34,8 +34,9 @@ import {
   Edit3,
   Home,
   Tag,
+  MoreVertical,
 } from 'lucide-react';
-import { formatAmount, capitalizeFirst, formatUnit, formatIngredientName } from '../../utils/formatters';
+import { formatAmount, capitalizeFirst, formatUnit, formatIngredientName, stripPreparation } from '../../utils/formatters';
 import { parseSmartItemInput } from '../../utils/ingredientParser';
 import { normalizeRecipeSource } from '../../utils/shoppingAggregator';
 import { copyTextToClipboard } from '../../utils/recipeShare';
@@ -118,6 +119,10 @@ export const ShoppingListView: React.FC = () => {
   useModalBackHandler(Boolean(editingItem), () => setEditingItem(null), 'edit-shopping-comment');
 
   // Change Aisle Modal State
+  // Item whose action menu (comment, category, remove) is open
+  const [itemMenu, setItemMenu] = useState<ShoppingItem | null>(null);
+  useModalBackHandler(Boolean(itemMenu), () => setItemMenu(null), 'shopping-item-menu');
+
   const [itemToMove, setItemToMove] = useState<ShoppingItem | null>(null);
   useModalBackHandler(Boolean(itemToMove), () => setItemToMove(null), 'change-shopping-aisle');
 
@@ -1034,7 +1039,7 @@ export const ShoppingListView: React.FC = () => {
                       </div>
 
                       <div className="min-w-0 flex items-center gap-2 truncate">
-                        <span className="font-semibold text-xs text-stone-800 uppercase tracking-wider truncate">
+                        <span className="font-semibold text-sm text-stone-800 truncate">
                           {group.aisleName}
                         </span>
 
@@ -1107,53 +1112,49 @@ export const ShoppingListView: React.FC = () => {
                       <div
                         key={item.id}
                         onClick={() => toggleShoppingItem(item.id)}
-                        className={`px-4 py-3.5 flex flex-wrap items-center justify-between cursor-pointer transition-colors active:bg-stone-50 touch-manipulation w-full gap-x-2 gap-y-1 ${
-                          item.checked
-                            ? 'bg-stone-50/60 text-stone-400'
-                            : 'text-stone-900 hover:bg-stone-50/40'
+                        className={`pl-3 pr-1.5 py-3 flex items-center gap-3 cursor-pointer transition-colors active:bg-stone-50 touch-manipulation w-full ${
+                          item.checked ? 'bg-stone-50/60' : 'hover:bg-stone-50/40'
                         }`}
                         style={{ minHeight: '56px' }}
                       >
-                        <div className="flex items-center gap-3 flex-1 min-w-[10rem]">
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              toggleShoppingItem(item.id);
-                            }}
-                            className="w-7 h-7 flex items-center justify-center shrink-0 text-stone-400 touch-manipulation active:scale-90 transition-transform"
-                            aria-label={item.checked ? 'Avmarkera' : 'Markera som köpt'}
-                          >
-                            {item.checked ? (
-                              <CheckCircle2 className="w-5 h-5 text-[#284235] fill-emerald-100" />
-                            ) : (
-                              <Circle className="w-5 h-5 text-stone-300" />
-                            )}
-                          </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleShoppingItem(item.id);
+                          }}
+                          className="w-7 h-7 flex items-center justify-center shrink-0 touch-manipulation active:scale-90 transition-transform"
+                          aria-label={item.checked ? 'Avmarkera' : 'Markera som köpt'}
+                        >
+                          {item.checked ? (
+                            <CheckCircle2 className="w-5 h-5 text-[#284235] fill-emerald-100" />
+                          ) : (
+                            <Circle className="w-5 h-5 text-stone-300" />
+                          )}
+                        </button>
 
-                          <div className="min-w-0 flex-1">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-baseline justify-between gap-3">
                             <span
-                              className={`text-sm font-medium block leading-snug break-words ${
+                              className={`text-[15px] leading-snug hyphens-auto break-words min-w-0 ${
                                 item.checked ? 'line-through text-stone-400' : 'text-stone-900'
                               }`}
                             >
-                              {capitalizeFirst(formatIngredientName(item.name, item.amount, item.unit))}
+                              {capitalizeFirst(stripPreparation(formatIngredientName(item.name, item.amount, item.unit)))}
                             </span>
+                            {formattedAmt && (
+                              <span
+                                className={`text-sm tabular-nums whitespace-nowrap shrink-0 ${
+                                  item.checked ? 'text-stone-400 line-through' : 'text-stone-600'
+                                }`}
+                              >
+                                {formattedAmt} {formatUnit(item.unit, item.amount)}
+                              </span>
+                            )}
+                          </div>
 
-                            <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                              {item.isPantryStaple && (
-                                <span className="text-[10px] bg-[#FCFAF5] text-stone-600 border border-[#EBE7DF] font-medium px-2 py-0.2 rounded-md shrink-0">
-                                  Basvara
-                                </span>
-                              )}
-                              {displaySource && (
-                                <span
-                                  className="text-[10px] text-stone-400 truncate max-w-[260px] sm:max-w-md"
-                                  title={`Från ${displaySource}`}
-                                >
-                                  Från {displaySource}
-                                </span>
-                              )}
+                          {(item.isPantryStaple || displaySource || item.comment) && (
+                            <div className="flex items-center gap-1.5 mt-0.5 flex-wrap text-xs text-stone-400 min-w-0">
                               {item.comment && (
                                 <button
                                   type="button"
@@ -1161,71 +1162,34 @@ export const ShoppingListView: React.FC = () => {
                                     e.stopPropagation();
                                     handleOpenEditComment(item);
                                   }}
-                                  className="text-[10px] text-amber-900 bg-amber-50 border border-amber-200/80 hover:bg-amber-100 px-2 py-0.5 rounded-lg truncate max-w-[170px] font-medium flex items-center gap-1 active:scale-95 transition-all text-left"
-                                  title="Tryck för att ändra kommentar"
+                                  className="text-amber-800 flex items-center gap-1 text-left max-w-full"
+                                  title="Ändra kommentar"
                                 >
-                                  <MessageSquare className="w-2.5 h-2.5 shrink-0 text-amber-700" />
+                                  <MessageSquare className="w-3 h-3 shrink-0" />
                                   <span className="truncate">{item.comment}</span>
                                 </button>
                               )}
+                              {item.isPantryStaple && <span className="shrink-0">Basvara</span>}
+                              {displaySource && (
+                                <span className="truncate min-w-0" title={`Från ${displaySource}`}>
+                                  Från {displaySource}
+                                </span>
+                              )}
                             </div>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-1 shrink-0 ml-auto">
-                          {formattedAmt && (
-                            <span
-                              className={`text-sm font-bold tabular-nums whitespace-nowrap mr-1 ${
-                                item.checked ? 'text-stone-400 line-through' : 'text-[#284235]'
-                              }`}
-                            >
-                              {formattedAmt} {formatUnit(item.unit, item.amount)}
-                            </span>
                           )}
-
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleOpenEditComment(item);
-                            }}
-                            className={`w-8 h-8 rounded-full flex items-center justify-center transition-all touch-manipulation active:scale-90 ${
-                              item.comment
-                                ? 'text-amber-700 hover:bg-amber-100/70'
-                                : 'text-stone-300 hover:text-stone-600 hover:bg-stone-100'
-                            }`}
-                            title={item.comment ? 'Ändra kommentar' : 'Lägg till kommentar'}
-                            aria-label={`Kommentar för ${item.name}`}
-                          >
-                            <MessageSquare className="w-3.5 h-3.5" />
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setItemToMove(item);
-                            }}
-                            className="w-8 h-8 rounded-full flex items-center justify-center text-stone-300 hover:text-stone-600 hover:bg-stone-100 active:scale-90 transition-all touch-manipulation"
-                            title="Ändra kategori"
-                            aria-label={`Ändra kategori för ${item.name}`}
-                          >
-                            <Tag className="w-3.5 h-3.5" />
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setItemToDelete(item);
-                            }}
-                            className="w-8 h-8 rounded-full flex items-center justify-center text-stone-300 hover:text-rose-600 hover:bg-rose-50 active:scale-90 transition-all touch-manipulation"
-                            title="Ta bort från inköpslistan"
-                            aria-label={`Ta bort ${item.name}`}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
                         </div>
+
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setItemMenu(item);
+                          }}
+                          className="w-9 h-9 rounded-full flex items-center justify-center text-stone-400 active:bg-stone-100 shrink-0 touch-manipulation"
+                          aria-label={`Fler val för ${item.name}`}
+                        >
+                          <MoreVertical className="w-4 h-4" />
+                        </button>
                       </div>
                     );
                   })}
@@ -1335,6 +1299,62 @@ export const ShoppingListView: React.FC = () => {
                 Spara
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ITEM ACTION MENU */}
+      {itemMenu && (
+        <div
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 animate-fade-in"
+          role="dialog"
+          aria-label={capitalizeFirst(stripPreparation(itemMenu.name))}
+          onClick={() => setItemMenu(null)}
+        >
+          <div
+            className="bg-white w-full sm:max-w-sm rounded-t-3xl sm:rounded-3xl p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] shadow-xl animate-scale-up"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="px-3 pt-2 pb-2 text-sm font-semibold text-stone-900 border-b border-[#EBE7DF]">
+              {capitalizeFirst(stripPreparation(itemMenu.name))}
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                const item = itemMenu;
+                setItemMenu(null);
+                handleOpenEditComment(item);
+              }}
+              className="w-full min-h-[48px] px-3 flex items-center gap-3 text-sm text-stone-800 rounded-2xl active:bg-stone-100 touch-manipulation"
+            >
+              <MessageSquare className="w-4 h-4 text-stone-500" />
+              {itemMenu.comment ? 'Ändra kommentar' : 'Lägg till kommentar'}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                const item = itemMenu;
+                setItemMenu(null);
+                setItemToMove(item);
+              }}
+              className="w-full min-h-[48px] px-3 flex items-center gap-3 text-sm text-stone-800 rounded-2xl active:bg-stone-100 touch-manipulation"
+            >
+              <Tag className="w-4 h-4 text-stone-500" />
+              Byt kategori
+              <span className="ml-auto text-xs text-stone-400">{itemMenu.aisle}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                const item = itemMenu;
+                setItemMenu(null);
+                setItemToDelete(item);
+              }}
+              className="w-full min-h-[48px] px-3 flex items-center gap-3 text-sm text-rose-700 rounded-2xl active:bg-rose-50 touch-manipulation"
+            >
+              <Trash2 className="w-4 h-4" />
+              Ta bort från listan
+            </button>
           </div>
         </div>
       )}
