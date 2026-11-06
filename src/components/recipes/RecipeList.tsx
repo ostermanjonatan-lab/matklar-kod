@@ -795,7 +795,12 @@ export const RecipeList: React.FC = () => {
 
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between gap-2">
-              <span className="text-xs text-stone-500">I kväll</span>
+              <span className="text-xs text-stone-500 truncate">
+                I kväll
+                {tonight?.recipe
+                  ? `, ${formatCookingTime(tonight.recipe.prepTimeMinutes, tonight.recipe.cookTimeMinutes)}`
+                  : ''}
+              </span>
               <div className="flex items-center gap-1.5 shrink-0">
                 <button
                   type="button"
@@ -835,15 +840,12 @@ export const RecipeList: React.FC = () => {
               <button
                 type="button"
                 onClick={() => openRecipeDetail(tonight.recipe!)}
-                className="w-full mt-0.5 flex items-baseline gap-2 text-left touch-manipulation"
+                className="block w-full mt-1 text-left text-sm font-semibold leading-snug text-stone-900 line-clamp-2 touch-manipulation"
               >
-                <span className="min-w-0 text-sm font-semibold text-stone-900 truncate">{tonight.text}</span>
-                <span className="text-xs text-stone-500 whitespace-nowrap shrink-0">
-                  {formatCookingTime(tonight.recipe.prepTimeMinutes, tonight.recipe.cookTimeMinutes)}
-                </span>
+                {tonight.text}
               </button>
             ) : (
-              <div className={`mt-0.5 text-sm truncate ${tonight ? 'font-semibold text-stone-900' : 'text-stone-500'}`}>
+              <div className={`mt-1 text-sm leading-snug line-clamp-2 ${tonight ? 'font-semibold text-stone-900' : 'text-stone-500'}`}>
                 {tonight ? tonight.text : 'Inget planerat'}
               </div>
             )}
