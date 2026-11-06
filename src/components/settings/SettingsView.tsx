@@ -6,6 +6,7 @@ import { HouseholdOnboarding } from '../auth/HouseholdOnboarding';
 import { SupabaseConfigModal } from './SupabaseConfigModal';
 import { useModalBackHandler } from '../../hooks/useModalBackHandler';
 import { APP_VERSION } from '../../version';
+import { getThemeChoice, setThemeChoice, type ThemeChoice } from '../../utils/theme';
 import { OPEN_STORE_ORDER_KEY } from '../shopping/storeOrderLink';
 import { saveRecipeBackup, readRecipeBackup } from '../../utils/recipeBackup';
 import { Check, Copy, ChevronRight, ChevronDown, Clock, ShieldAlert } from 'lucide-react';
@@ -79,6 +80,7 @@ export const SettingsView: React.FC = () => {
     addCustomSubcategory,
   } = useRecipes();
 
+  const [theme, setTheme] = useState<ThemeChoice>(getThemeChoice);
   const [showShareModal, setShowShareModal] = useState<boolean>(false);
   const [showHouseholdModal, setShowHouseholdModal] = useState<boolean>(false);
   const [householdModalTab, setHouseholdModalTab] = useState<'create' | 'join'>('create');
@@ -387,6 +389,32 @@ export const SettingsView: React.FC = () => {
             </div>
           </>
         )}
+
+        {/* Light or dark, on this phone */}
+        <h2 className={sectionHeading}>Utseende</h2>
+        <div className="grid grid-cols-3 gap-1 p-1 bg-stone-100 rounded-xl" role="radiogroup" aria-label="Utseende">
+          {([
+            ['system', 'Som telefonen'],
+            ['light', 'Ljust'],
+            ['dark', 'Mörkt'],
+          ] as [ThemeChoice, string][]).map(([value, label]) => (
+            <button
+              key={value}
+              type="button"
+              role="radio"
+              aria-checked={theme === value}
+              onClick={() => {
+                setTheme(value);
+                setThemeChoice(value);
+              }}
+              className={`min-h-[40px] rounded-lg text-sm font-semibold touch-manipulation ${
+                theme === value ? 'bg-white text-stone-900 shadow-xs' : 'text-stone-600'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
 
         {/* Other settings in the app */}
         <h2 className={sectionHeading}>Inköpslistan</h2>

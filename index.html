@@ -4,6 +4,16 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <meta name="theme-color" content="#284235" />
+    <script>
+      // Dark or light before the app starts, so the page does not flash light (see src/utils/theme.ts)
+      try {
+        var t = localStorage.getItem('matklar_theme');
+        if (t === 'dark' || (t !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+          document.documentElement.classList.add('dark');
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#1B1916');
+        }
+      } catch (e) {}
+    </script>
     <meta name="description" content="Matklar – Mobilanpassad recept- och matplaneringsapp för hela hushållet." />
     
     <!-- Google Fonts: Fraunces (Editorial Serif) & Plus Jakarta Sans (Clean Modern Sans) -->
