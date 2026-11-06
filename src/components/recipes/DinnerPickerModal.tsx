@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Check, ChevronLeft, ChevronRight, Search, X } from 'lucide-react';
 import type { Recipe } from '../../types/recipe';
 import { getRecipeSubcategories } from '../../types/recipe';
@@ -14,6 +14,78 @@ interface DinnerPickerModalProps {
 
 // Subcategory value meaning "all recipes in the category"
 const ALL = '__all__';
+
+const SLIDE_INTERVAL_MS = 4000;
+
+const thumbClass = 'w-11 h-11 rounded-xl object-cover bg-stone-200';
+
+const Thumb: React.FC<{ src?: string }> = ({ src }) =>
+  src ? (
+    <img src={smallImage(src)} alt="" loading="lazy" className={`${thumbClass} shrink-0`} />
+  ) : (
+    <div className="w-11 h-11 rounded-xl bg-stone-200 shrink-0" />
+  );
+
+/**
+ * Small picture that cycles through the recipes in a category, about every 4 seconds.
+ * Each row starts at a random point and time, so the rows do not change at once.
+ * Only the current picture and the one before it are in the page, and the next one is
+ * loaded in advance. With "reduce motion" turned on, the first picture stays.
+ */
+const SlideshowThumb: React.FC<{ images: string[] }> = ({ images }) => {
+  const [slide, setSlide] = useState<{ idx: number; prev: number | null }>(() => ({
+    idx: images.length > 1 ? Math.floor(Math.random() * images.length) : 0,
+    prev: null,
+  }));
+  const { idx, prev: prevIdx } = slide;
+
+  useEffect(() => {
+    if (images.length <= 1) return;
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+    let timer: ReturnType<typeof setTimeout>;
+    const tick = () => {
+      setSlide((s) => ({ idx: (s.idx + 1) % images.length, prev: s.idx }));
+      timer = setTimeout(tick, SLIDE_INTERVAL_MS);
+    };
+    // Random start so the rows change at different times
+    timer = setTimeout(tick, 1000 + Math.random() * SLIDE_INTERVAL_MS);
+    return () => clearTimeout(timer);
+  }, [images.length]);
+
+  // Load the next picture before it is shown
+  useEffect(() => {
+    if (images.length <= 1) return;
+    const next = new Image();
+    next.src = images[(idx + 1) % images.length];
+  }, [idx, images]);
+
+  if (images.length === 0) return <div className="w-11 h-11 rounded-xl bg-stone-200 shrink-0" />;
+  const current = images[idx % images.length];
+  const previous = prevIdx !== null ? images[prevIdx % images.length] : null;
+
+  return (
+    <div className="relative w-11 h-11 rounded-xl overflow-hidden bg-stone-200 shrink-0">
+      {previous && previous !== current && (
+        <img key={`p-${previous}`} src={previous} alt="" className={`absolute inset-0 ${thumbClass}`} />
+      )}
+      <img
+        key={`c-${current}`}
+        src={current}
+        alt=""
+        className={`absolute inset-0 ${thumbClass} ${previous ? 'animate-thumb-fade' : ''}`}
+      />
+    </div>
+  );
+};
+
+// Pictures from Unsplash can be fetched small, which saves data in the slideshows
+const smallImage = (url: string) =>
+  url.includes('images.unsplash.com') ? url.replace(/([?&])w=\d+/, '$1w=160') : url;
+
+const imagesOf = (list: Recipe[]) =>
+  Array.from(
+    new Set(list.map((r) => r.coverImageUrl).filter((u): u is string => Boolean(u && u.trim())).map(smallImage))
+  );
 
 const byTitle = (a: Recipe, b: Recipe) =>
   formatRecipeTitle(a.title).localeCompare(formatRecipeTitle(b.title), 'sv');
@@ -32,6 +104,7 @@ export const DinnerPickerModal: React.FC<DinnerPickerModalProps> = ({
   // Only dinners are chosen here, so the list starts in the Middag category
   const category = 'Middag';
   const dinners = useMemo(() => recipes.filter((r) => r.category === category), [recipes]);
+  const allDinnerImages = useMemo(() => imagesOf(dinners), [dinners]);
   const [subcategory, setSubcategory] = useState<string | null>(null);
 
   const q = query.trim().toLowerCase();
@@ -42,7 +115,7 @@ export const DinnerPickerModal: React.FC<DinnerPickerModalProps> = ({
         getRecipeSubcategories(r).forEach((s) => map.set(s, [...(map.get(s) || []), r]));
       });
     return Array.from(map.entries())
-      .map(([name, list]) => ({ name, count: list.length, image: list.find((r) => r.coverImageUrl)?.coverImageUrl }))
+      .map(([name, list]) => ({ name, count: list.length, images: imagesOf(list) }))
       .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, 'sv'));
   }, [dinners]);
 
@@ -68,13 +141,6 @@ export const DinnerPickerModal: React.FC<DinnerPickerModalProps> = ({
   const showRecipes = Boolean(q) || subcategory !== null || subcategories.length === 0;
   const title = !q && subcategory && subcategory !== ALL ? subcategory : 'Välj middag';
   const canGoBack = !q && subcategory !== null;
-
-  const Thumb = ({ src }: { src?: string }) =>
-    src ? (
-      <img src={src} alt="" loading="lazy" className="w-11 h-11 rounded-xl object-cover bg-stone-200 shrink-0" />
-    ) : (
-      <div className="w-11 h-11 rounded-xl bg-stone-200 shrink-0" />
-    );
 
   const rowClass = 'w-full py-2.5 flex items-center gap-3 text-left touch-manipulation active:bg-stone-100/70';
 
@@ -152,14 +218,14 @@ export const DinnerPickerModal: React.FC<DinnerPickerModalProps> = ({
           ) : (
             <>
               <button type="button" onClick={() => setSubcategory(ALL)} className={rowClass}>
-                <Thumb src={dinners.find((r) => r.coverImageUrl)?.coverImageUrl} />
+                <SlideshowThumb images={allDinnerImages} />
                 <span className="flex-1 min-w-0 text-sm font-semibold text-stone-900">Alla middagar</span>
                 <span className="text-xs text-stone-500 tabular-nums">{dinners.length}</span>
                 <ChevronRight className="w-4 h-4 text-stone-300 shrink-0" />
               </button>
               {subcategories.map((sub) => (
                 <button key={sub.name} type="button" onClick={() => setSubcategory(sub.name)} className={rowClass}>
-                  <Thumb src={sub.image} />
+                  <SlideshowThumb images={sub.images} />
                   <span className="flex-1 min-w-0 text-sm font-semibold text-stone-900 truncate">{sub.name}</span>
                   <span className="text-xs text-stone-500 tabular-nums">{sub.count}</span>
                   <ChevronRight className="w-4 h-4 text-stone-300 shrink-0" />
