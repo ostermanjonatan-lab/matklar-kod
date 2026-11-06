@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useRef } from 'react';
+import { flushSync } from 'react-dom';
 import type { MealPlanDay } from '../../types/recipe';
 import { getRecipeSubcategories } from '../../types/recipe';
 import { useRecipes } from '../../context/RecipeContext';
@@ -78,21 +79,88 @@ export const MealPlanView: React.FC = () => {
     }
   };
 
-  // Swipe sideways on the day to change day
-  const swipeStartRef = useRef<{ x: number; y: number } | null>(null);
-  const handleSwipeStart = (e: React.TouchEvent) => {
-    const t = e.touches[0];
-    swipeStartRef.current = { x: t.clientX, y: t.clientY };
+  // ---- Sliding between days ----
+  // While swiping, the day follows the finger. Past the threshold it slides out and the next
+  // day slides in from the other side, otherwise it springs back. The arrows use the same slide.
+  // Styles are set directly on the elements so that the big view does not re-render on every move.
+  const slideTitleRef = useRef<HTMLDivElement>(null);
+  const slideContentRef = useRef<HTMLDivElement>(null);
+  const slidingRef = useRef(false);
+  const dragRef = useRef<{ x: number; y: number; t: number; axis: 'x' | 'y' | null; dx: number } | null>(null);
+
+  const SLIDE_MS = 200;
+  const SLIDE_EASE = 'cubic-bezier(0.2, 0.8, 0.2, 1)';
+
+  const prefersReducedMotion = () =>
+    typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+
+  const setSlide = (x: string, opacity: number, animate: boolean) => {
+    [slideTitleRef.current, slideContentRef.current].forEach((el) => {
+      if (!el) return;
+      el.style.transition = animate ? `transform ${SLIDE_MS}ms ${SLIDE_EASE}, opacity ${SLIDE_MS}ms ${SLIDE_EASE}` : 'none';
+      el.style.transform = x === '0' ? '' : `translateX(${x})`;
+      el.style.opacity = opacity === 1 ? '' : String(opacity);
+    });
   };
-  const handleSwipeEnd = (e: React.TouchEvent) => {
-    const start = swipeStartRef.current;
-    swipeStartRef.current = null;
-    if (!start) return;
-    const t = e.changedTouches[0];
-    const dx = t.clientX - start.x;
-    const dy = t.clientY - start.y;
-    if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) {
-      stepDay(dx < 0 ? 1 : -1);
+
+  // Slides the current day out, changes day and slides the new one in
+  const slideToDay = (delta: number) => {
+    if (slidingRef.current) return;
+    if (prefersReducedMotion() || !slideContentRef.current) {
+      setSlide('0', 1, false);
+      stepDay(delta);
+      return;
+    }
+    slidingRef.current = true;
+    const out = delta > 0 ? '-100%' : '100%';
+    const enter = delta > 0 ? '40%' : '-40%';
+    setSlide(out, 0, true);
+    window.setTimeout(() => {
+      flushSync(() => stepDay(delta));
+      setSlide(enter, 0, false);
+      // Read layout so the start position is applied before animating to the middle
+      void slideContentRef.current?.offsetWidth;
+      setSlide('0', 1, true);
+      window.setTimeout(() => {
+        setSlide('0', 1, false);
+        slidingRef.current = false;
+      }, SLIDE_MS);
+    }, SLIDE_MS * 0.8);
+  };
+
+  const handleSwipeStart = (e: React.TouchEvent) => {
+    if (slidingRef.current) return;
+    const t = e.touches[0];
+    dragRef.current = { x: t.clientX, y: t.clientY, t: Date.now(), axis: null, dx: 0 };
+  };
+
+  const handleSwipeMove = (e: React.TouchEvent) => {
+    const drag = dragRef.current;
+    if (!drag) return;
+    const t = e.touches[0];
+    const dx = t.clientX - drag.x;
+    const dy = t.clientY - drag.y;
+    if (!drag.axis) {
+      if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+      drag.axis = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y';
+    }
+    if (drag.axis !== 'x') return;
+    drag.dx = dx;
+    if (!prefersReducedMotion()) {
+      setSlide(`${dx}px`, 1 - Math.min(Math.abs(dx) / 500, 0.35), false);
+    }
+  };
+
+  const handleSwipeEnd = () => {
+    const drag = dragRef.current;
+    dragRef.current = null;
+    if (!drag || drag.axis !== 'x') return;
+    const elapsed = Math.max(Date.now() - drag.t, 1);
+    const fast = Math.abs(drag.dx) / elapsed > 0.5 && Math.abs(drag.dx) > 30;
+    if (Math.abs(drag.dx) > 70 || fast) {
+      slideToDay(drag.dx < 0 ? 1 : -1);
+    } else {
+      setSlide('0', 1, true);
     }
   };
 
@@ -572,19 +640,22 @@ export const MealPlanView: React.FC = () => {
             <div
               className="w-full flex-1 min-w-0 max-w-xl mx-auto md:max-w-none space-y-4"
               onTouchStart={handleSwipeStart}
+              onTouchMove={handleSwipeMove}
               onTouchEnd={handleSwipeEnd}
+              onTouchCancel={handleSwipeEnd}
+              style={{ touchAction: 'pan-y' }}
             >
             {/* Day heading with previous / next day. On the phone you can also swipe. */}
             <div className="flex items-center justify-between gap-2">
               <button
                 type="button"
-                onClick={() => stepDay(-1)}
+                onClick={() => slideToDay(-1)}
                 className="w-10 h-10 -ml-2 rounded-full flex items-center justify-center text-stone-600 hover:bg-stone-100 active:bg-stone-200 touch-manipulation shrink-0 md:hidden"
                 aria-label="Föregående dag"
               >
                 <ChevronLeft className="w-5 h-5" />
               </button>
-              <div className="flex-1 min-w-0 text-center md:text-left md:px-1">
+              <div ref={slideTitleRef} className="flex-1 min-w-0 text-center md:text-left md:px-1 will-change-transform">
                 <h2 className="font-serif text-2xl font-bold text-stone-900 leading-tight truncate">
                   {activeDayName}
                 </h2>
@@ -595,7 +666,7 @@ export const MealPlanView: React.FC = () => {
               </div>
               <button
                 type="button"
-                onClick={() => stepDay(1)}
+                onClick={() => slideToDay(1)}
                 className="w-10 h-10 -mr-2 rounded-full flex items-center justify-center text-stone-600 hover:bg-stone-100 active:bg-stone-200 touch-manipulation shrink-0 md:hidden"
                 aria-label="Nästa dag"
               >
@@ -603,7 +674,7 @@ export const MealPlanView: React.FC = () => {
               </button>
             </div>
 
-            <div key={`${planWeekStart}-${selectedDayIndex}`} className="space-y-4 animate-fade-in">
+            <div ref={slideContentRef} className="space-y-4 will-change-transform">
 
             {/* ===================== DINNER HERO CARD ===================== */}
             <div className="bg-white rounded-3xl border border-[#EBE7DF] shadow-md overflow-hidden transition-all">
