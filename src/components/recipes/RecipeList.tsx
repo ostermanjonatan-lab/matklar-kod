@@ -6,6 +6,7 @@ import { RecipeCard } from './RecipeCard';
 import { PantryChoiceDialog, hasPantryStaples } from './PantryChoiceDialog';
 import { RandomPickerModal } from './RandomPickerModal';
 import { RecipeFilterModal } from './RecipeFilterModal';
+import { TonightPickerModal } from './TonightPickerModal';
 import { STANDARD_CATEGORIES } from '../../data/categories';
 import { useModalBackHandler } from '../../hooks/useModalBackHandler';
 import {
@@ -17,6 +18,7 @@ import {
   Check,
   ShoppingCart,
   Dices,
+  ListChecks,
 } from 'lucide-react';
 import { formatCookingTime, formatRecipeTitle } from '../../utils/formatters';
 import { todayISO } from '../../utils/mealPlanDates';
@@ -78,7 +80,11 @@ export const RecipeList: React.FC = () => {
     searchQuery,
     setSearchQuery,
     getMealPlanForDate,
+    setMealPlanForDate,
   } = useRecipes();
+
+  const [showTonightPicker, setShowTonightPicker] = useState<boolean>(false);
+  useModalBackHandler(showTonightPicker, () => setShowTonightPicker(false), 'tonight-picker');
 
   // Tonight's dinner from the meal plan, if any
   const tonight = useMemo(() => {
@@ -494,6 +500,19 @@ export const RecipeList: React.FC = () => {
         />
       )}
 
+      {/* Choose tonight's dinner by hand */}
+      {showTonightPicker && (
+        <TonightPickerModal
+          recipes={recipes}
+          currentRecipeId={tonight?.recipe?.id}
+          onSelect={(rec) => {
+            setMealPlanForDate(todayISO(), 'dinner', rec.id);
+            setShowTonightPicker(false);
+          }}
+          onClose={() => setShowTonightPicker(false)}
+        />
+      )}
+
       {/* Recept Filter Modal */}
       {showFilterModal && (
         <RecipeFilterModal
@@ -718,46 +737,64 @@ export const RecipeList: React.FC = () => {
 
       {/* Main Content Area */}
       <div className="w-full max-w-md md:max-w-5xl lg:max-w-7xl mx-auto px-4 md:px-6 pt-2 md:pt-4 space-y-4 md:space-y-6">
-        {/* Tonight's dinner from the meal plan, with a random pick next to it */}
-        <div className="flex items-center gap-3 py-1 border-b border-[#EBE7DF] pb-3">
-          {tonight?.recipe ? (
+        {/* Tonight's dinner from the meal plan. "I kväll" with Välj and Slumpa on top, the dish below. */}
+        <div className="flex items-start gap-3 border-b border-[#EBE7DF] pb-3">
+          {tonight?.recipe?.coverImageUrl ? (
             <button
               type="button"
               onClick={() => openRecipeDetail(tonight.recipe!)}
-              className="flex-1 min-w-0 flex items-center gap-3 text-left touch-manipulation"
+              className="shrink-0 touch-manipulation"
+              aria-label={`Öppna ${tonight.text}`}
             >
-              {tonight.recipe.coverImageUrl && (
-                <img
-                  src={tonight.recipe.coverImageUrl}
-                  alt=""
-                  className="w-11 h-11 rounded-xl object-cover bg-stone-200 shrink-0"
-                />
-              )}
-              <span className="min-w-0">
-                <span className="block text-xs text-stone-500">I kväll</span>
-                <span className="block text-sm font-semibold text-stone-900 truncate">{tonight.text}</span>
-              </span>
-              <span className="text-xs text-stone-500 whitespace-nowrap shrink-0">
-                {formatCookingTime(tonight.recipe.prepTimeMinutes, tonight.recipe.cookTimeMinutes)}
-              </span>
+              <img
+                src={tonight.recipe.coverImageUrl}
+                alt=""
+                className="w-14 h-14 rounded-xl object-cover bg-stone-200"
+              />
             </button>
-          ) : (
-            <div className="flex-1 min-w-0">
-              <span className="block text-xs text-stone-500">I kväll</span>
-              <span className={`block text-sm truncate ${tonight ? 'font-semibold text-stone-900' : 'text-stone-500'}`}>
-                {tonight ? tonight.text : 'Inget planerat'}
-              </span>
-            </div>
-          )}
+          ) : null}
 
-          <button
-            type="button"
-            onClick={() => setShowRandomPicker(true)}
-            className="px-3 py-2 rounded-xl bg-white border border-[#EBE7DF] hover:bg-stone-50 active:scale-95 text-stone-700 font-semibold text-xs flex items-center gap-1.5 transition-all touch-manipulation min-h-[40px] shrink-0"
-          >
-            <Dices className="w-4 h-4" />
-            <span>Slumpa</span>
-          </button>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-xs text-stone-500">I kväll</span>
+              <div className="flex items-center gap-1.5 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setShowTonightPicker(true)}
+                  className="px-3 rounded-xl bg-white border border-[#EBE7DF] hover:bg-stone-50 active:scale-95 text-stone-700 font-semibold text-xs flex items-center gap-1.5 transition-all touch-manipulation min-h-[36px]"
+                  aria-label="Välj middag i kväll"
+                >
+                  <ListChecks className="w-4 h-4" />
+                  <span>Välj</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowRandomPicker(true)}
+                  className="px-3 rounded-xl bg-white border border-[#EBE7DF] hover:bg-stone-50 active:scale-95 text-stone-700 font-semibold text-xs flex items-center gap-1.5 transition-all touch-manipulation min-h-[36px]"
+                >
+                  <Dices className="w-4 h-4" />
+                  <span>Slumpa</span>
+                </button>
+              </div>
+            </div>
+
+            {tonight?.recipe ? (
+              <button
+                type="button"
+                onClick={() => openRecipeDetail(tonight.recipe!)}
+                className="w-full mt-0.5 flex items-baseline gap-2 text-left touch-manipulation"
+              >
+                <span className="min-w-0 text-sm font-semibold text-stone-900 truncate">{tonight.text}</span>
+                <span className="text-xs text-stone-500 whitespace-nowrap shrink-0">
+                  {formatCookingTime(tonight.recipe.prepTimeMinutes, tonight.recipe.cookTimeMinutes)}
+                </span>
+              </button>
+            ) : (
+              <div className={`mt-0.5 text-sm truncate ${tonight ? 'font-semibold text-stone-900' : 'text-stone-500'}`}>
+                {tonight ? tonight.text : 'Inget planerat'}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Number of recipes. "Träffar" only after a search or filter */}
