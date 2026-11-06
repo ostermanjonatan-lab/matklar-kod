@@ -1,4 +1,5 @@
 ﻿import React, { useState, useMemo } from 'react';
+import { isRecipeLink, readRecipeLink } from '../../utils/recipeLink';
 import type { Recipe, Instruction, Ingredient, RecipeCategory, RecipeSourceType, RecipeDifficulty } from '../../types/recipe';
 import { useRecipes } from '../../context/RecipeContext';
 import {
@@ -227,6 +228,31 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = ({ onClose, closeGu
   const handleFetchUrlRecipe = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!sourceUrl.trim()) return;
+
+    // A recipe someone shared from MatKlar: everything is in the link, nothing to fetch
+    if (isRecipeLink(sourceUrl)) {
+      setUrlFetchError(null);
+      const shared = await readRecipeLink(sourceUrl);
+      if (!shared) {
+        setUrlFetchError('Länken gick inte att läsa. Den kan ha blivit avklippt.');
+        return;
+      }
+      setTitle(shared.title);
+      setCategory(shared.category);
+      setSubcategories(shared.subcategories);
+      setServings(shared.servings);
+      if (shared.difficulty) setDifficulty(shared.difficulty);
+      if (shared.cookTimeMinutes) setCookingTimeMinutes(shared.cookTimeMinutes);
+      if (shared.coverImageUrl) setCoverImageUrl(shared.coverImageUrl);
+      setIngredientsText(formatIngredientsToText(shared.ingredients));
+      setInstructionsText(shared.instructions.map((i) => i.text).join('\n'));
+      setSourceUrl(shared.sourceUrl || '');
+      setSourceType(shared.sourceUrl ? 'url' : 'manual');
+      setActiveImportMode('manual');
+      setToastMessage('Receptet från länken är ifyllt');
+      setTimeout(() => setToastMessage(null), 4000);
+      return;
+    }
 
     setIsUrlFetching(true);
     setUrlFetchProgress(15);

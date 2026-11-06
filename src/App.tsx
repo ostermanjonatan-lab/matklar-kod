@@ -11,6 +11,7 @@ import { SettingsView } from './components/settings/SettingsView';
 import { AddRecipeModal } from './components/recipes/AddRecipeModal';
 import { AddShoppingItemModal } from './components/shopping/AddShoppingItemModal';
 import { JoinRequestNotification } from './components/notifications/JoinRequestNotification';
+import { OpenedRecipeSheet } from './components/share/OpenedRecipeSheet';
 import { useModalBackHandler } from './hooks/useModalBackHandler';
 
 const AppContent: React.FC = () => {
@@ -70,6 +71,9 @@ const AppContent: React.FC = () => {
 
         {/* Global Join Request Notification for Household Admin */}
         <JoinRequestNotification />
+
+        {/* A recipe someone sent as a link */}
+        <OpenedRecipeSheet />
 
         {/* Main Tab Views (Stay mounted underneath when modal opens) */}
         {activeTab === 'recipes' && <RecipeList />}

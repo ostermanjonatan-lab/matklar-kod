@@ -40,7 +40,7 @@ import { useModalBackHandler } from '../../hooks/useModalBackHandler';
 import { PantryChoiceDialog, hasPantryStaples } from './PantryChoiceDialog';
 import { scaleIngredientAmount, formatAmount, formatCookingTime, capitalizeFirst, formatUnit, formatIngredientName, formatRecipeTitle } from '../../utils/formatters';
 import { splitTextIntoTimerSegments } from '../../utils/timerParser';
-import { shareRecipeAsText } from '../../utils/recipeShare';
+import { ShareRecipeSheet } from '../share/ShareRecipeSheet';
 import { playTimerAlarm } from '../../utils/audioAlert';
 import { useWakeLock } from '../../utils/wakeLock';
 
@@ -105,7 +105,7 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
   const [showMealPlanPicker, setShowMealPlanPicker] = useState<boolean>(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<boolean>(false);
   const [mealPlanMealType, setMealPlanMealType] = useState<'dinner' | 'lunch'>('dinner');
-  const [shareToast, setShareToast] = useState<boolean>(false);
+  const [shareToast, setShareToast] = useState<string | null>(null);
   const [copiedRecently, setCopiedRecently] = useState<boolean>(false);
 
   // Check if current recipe has items in shopping list
@@ -187,14 +187,13 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
     setTimeout(() => setWakeLockToast(null), 3000);
   };
 
-  const handleShareRecipe = async () => {
-    const { success } = await shareRecipeAsText(recipe, servings);
-    if (success) {
-      setCopiedRecently(true);
-      setShareToast(true);
-      setTimeout(() => setShareToast(false), 3000);
-      setTimeout(() => setCopiedRecently(false), 2000);
-    }
+  const [showShareSheet, setShowShareSheet] = useState(false);
+  const handleShareRecipe = () => setShowShareSheet(true);
+  const handleShareDone = (message: string) => {
+    setShareToast(message);
+    setCopiedRecently(true);
+    setTimeout(() => setShareToast(null), 3000);
+    setTimeout(() => setCopiedRecently(false), 2000);
   };
 
   // Synchronize modals and sheets with Android back button
@@ -213,6 +212,7 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
   );
   useModalBackHandler(showMealPlanPicker, () => setShowMealPlanPicker(false), 'meal-plan-picker');
   useModalBackHandler(showDeleteConfirm, () => setShowDeleteConfirm(false), 'delete-confirm');
+  useModalBackHandler(showShareSheet, () => setShowShareSheet(false), 'share-recipe');
 
   const handleDeleteRecipe = () => {
     deleteRecipe(recipe.id);
@@ -496,8 +496,8 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
               type="button"
               onClick={handleShareRecipe}
               className="w-10 h-10 rounded-full bg-white border border-[#EBE7DF] hover:bg-stone-50 active:scale-90 flex items-center justify-center text-stone-700 shadow-xs transition-all touch-manipulation cursor-pointer"
-              aria-label="Dela recept i textform"
-              title="Dela recept (kopiera till urklipp)"
+              aria-label="Dela receptet"
+              title="Dela receptet"
             >
               {copiedRecently ? (
                 <Check className="w-4 h-4 text-emerald-600 stroke-[2.5]" />
@@ -546,7 +546,7 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
         {shareToast && (
           <div className="bg-stone-900 text-white px-4 py-2.5 text-xs font-semibold flex items-center gap-2 animate-fade-in shrink-0 border-b border-stone-800">
             <Check className="w-4 h-4 text-emerald-400 shrink-0" />
-            <span>Receptet är kopierat som text</span>
+            <span>{shareToast}</span>
           </div>
         )}
 
@@ -1113,6 +1113,15 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
             </button>
           </div>
         </div>
+      )}
+
+      {showShareSheet && (
+        <ShareRecipeSheet
+          recipe={recipe}
+          servings={servings}
+          onClose={() => setShowShareSheet(false)}
+          onDone={handleShareDone}
+        />
       )}
 
       {showDeleteConfirm && (
