@@ -49,6 +49,32 @@ interface RecipeDetailProps {
   onBack: () => void;
 }
 
+/** "30 sek", "10 min", "1 min 30 sek" or "1 tim 30 min" for a timer button. */
+function shortDuration(minutes: number): string {
+  const total = Math.round(minutes * 60);
+  if (total < 60) return `${total} sek`;
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const sec = total % 60;
+  if (h > 0) return m > 0 ? `${h} tim ${m} min` : `${h} tim`;
+  return sec > 0 ? `${m} min ${sec} sek` : `${m} min`;
+}
+
+/** The timers in a step, each length once, in the order they are written. */
+function stepTimers(segments: ReturnType<typeof splitTextIntoTimerSegments>) {
+  const seen = new Set<number>();
+  const result: { minutes: number; label: string }[] = [];
+  for (const seg of segments) {
+    // seconds is exact. minutes is rounded up to whole minutes for times in seconds.
+    const minutes = seg.timer ? (seg.timer.seconds > 0 ? seg.timer.seconds / 60 : seg.timer.minutes) : 0;
+    if (seg.timer && !seen.has(minutes)) {
+      seen.add(minutes);
+      result.push({ minutes, label: seg.timer.label });
+    }
+  }
+  return result;
+}
+
 export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecipe, onBack }) => {
   const {
     recipes,
@@ -712,19 +738,9 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
                       {segments.map((seg, sIdx) => {
                         if (seg.timer) {
                           return (
-                            <button
-                              key={sIdx}
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleStartInlineTimer(seg.timer!.minutes, seg.timer!.label);
-                              }}
-                              className="inline-flex items-center gap-1.5 px-2.5 py-0.5 mx-1 rounded-xl bg-amber-100/80 hover:bg-amber-200 text-amber-900 border border-amber-300 font-bold active:scale-95 transition-all text-xs touch-manipulation align-baseline shadow-xs"
-                              title={`Starta timer på ${seg.timer.label}`}
-                            >
-                              <Timer className="w-3.5 h-3.5 text-amber-700" />
-                              <span>{seg.text}</span>
-                            </button>
+                            <span key={sIdx} className={isStepDone ? '' : 'font-semibold text-stone-900'}>
+                              {seg.text}
+                            </span>
                           );
                         }
                         return <span key={sIdx}>{seg.text}</span>;
@@ -748,6 +764,25 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
                             );
                           })}
                         </p>
+                      )}
+
+                      {!isStepDone && stepTimers(segments).length > 0 && (
+                        <div className="mt-1.5 flex flex-wrap gap-x-4">
+                          {stepTimers(segments).map((t) => (
+                            <button
+                              key={t.minutes}
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleStartInlineTimer(t.minutes, t.label);
+                              }}
+                              className="inline-flex items-center gap-1.5 min-h-[40px] text-sm font-semibold text-[#284235] touch-manipulation"
+                            >
+                              <Play className="w-3.5 h-3.5 fill-current" />
+                              Starta timer {shortDuration(t.minutes)}
+                            </button>
+                          ))}
+                        </div>
                       )}
                     </div>
                   </div>
