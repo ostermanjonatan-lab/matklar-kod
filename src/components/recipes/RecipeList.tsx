@@ -17,6 +17,7 @@ import {
   X,
   ArrowUpDown,
   Check,
+  ChevronDown,
 } from 'lucide-react';
 
 
@@ -29,36 +30,12 @@ interface SortItem {
 }
 
 const SORT_OPTIONS: SortItem[] = [
-  {
-    id: 'default',
-    label: 'Standard (Senast tillagda)',
-    shortLabel: 'Senast tillagd',
-  },
-  {
-    id: 'oldest',
-    label: 'Äldst tillagda först',
-    shortLabel: 'Äldst först',
-  },
-  {
-    id: 'time_asc',
-    label: 'Kortast tillagningstid först',
-    shortLabel: 'Kortast tid',
-  },
-  {
-    id: 'time_desc',
-    label: 'Längre tillagningstid (Långkok)',
-    shortLabel: 'Längre tid',
-  },
-  {
-    id: 'name_asc',
-    label: 'Namn A till Ö',
-    shortLabel: 'Namn A–Ö',
-  },
-  {
-    id: 'name_desc',
-    label: 'Namn Ö till A',
-    shortLabel: 'Namn Ö–A',
-  },
+  { id: 'default', label: 'Senast tillagda', shortLabel: 'Senast tillagda' },
+  { id: 'oldest', label: 'Först tillagda', shortLabel: 'Först tillagda' },
+  { id: 'time_asc', label: 'Kortast tid', shortLabel: 'Kortast tid' },
+  { id: 'time_desc', label: 'Längst tid', shortLabel: 'Längst tid' },
+  { id: 'name_asc', label: 'Namn A–Ö', shortLabel: 'Namn A–Ö' },
+  { id: 'name_desc', label: 'Namn Ö–A', shortLabel: 'Namn Ö–A' },
 ];
 
 const INITIAL_BATCH_SIZE = 24;
@@ -405,9 +382,9 @@ export const RecipeList: React.FC = () => {
     activeFilterCount > 0 ||
     sortBy !== 'default';
 
-  // The number on the filter button: only what is chosen inside it. Category and favourites show in the tabs.
+  // The number on the filter button: only what is chosen inside it. Category and favourites show in the tabs, sorting next to the count.
   const filterAndSortCount =
-    selectedSubcategories.length + (maxCookingTime !== null ? 1 : 0) + difficultyFilter.length + (sortBy !== 'default' ? 1 : 0);
+    selectedSubcategories.length + (maxCookingTime !== null ? 1 : 0) + difficultyFilter.length;
   const isNarrowed = searchQuery.trim() !== '' || activeFilterCount > 0 || selectedCategory !== 'Alla';
 
   const activeSortLabel =
@@ -468,69 +445,44 @@ export const RecipeList: React.FC = () => {
           onResetFilters={clearFilters}
           activeFilterCount={activeFilterCount}
           matchingCount={sortedAndFilteredRecipes.length}
-          sortOptions={SORT_OPTIONS}
-          sortBy={sortBy}
-          onChangeSort={(id) => setSortBy(id as SortOption)}
         />
       )}
 
       {/* Sort Bottom Sheet Modal */}
       {showSortSheet && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 animate-fade-in font-sans">
-          <div className="bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl shadow-2xl p-5 space-y-4 max-h-[85vh] overflow-y-auto">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <ArrowUpDown className="w-5 h-5 text-[#284235]" />
-                <h3 className="font-serif font-bold text-lg text-stone-900">
-                  Sortera recept
-                </h3>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setShowSortSheet(false)}
-                className="w-10 h-10 rounded-full bg-stone-100 flex items-center justify-center text-stone-600 hover:text-stone-900 transition-colors touch-manipulation"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="divide-y divide-stone-100 border border-[#EBE7DF] rounded-2xl overflow-hidden bg-white">
+        <div
+          className="fixed inset-0 z-50 bg-black/40 flex items-end sm:items-center justify-center animate-fade-in font-sans"
+          onClick={() => setShowSortSheet(false)}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Sortera recepten"
+        >
+          <div
+            className="bg-white w-full sm:max-w-sm rounded-t-3xl sm:rounded-3xl px-5 pt-4 pb-[max(1.25rem,env(safe-area-inset-bottom))]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="font-serif font-bold text-lg text-stone-900 pb-2">Sortera recepten</h3>
+            <div className="divide-y divide-[#EBE7DF] border-y border-[#EBE7DF]" role="radiogroup">
               {SORT_OPTIONS.map((opt) => {
                 const isSelected = sortBy === opt.id;
                 return (
                   <button
                     key={opt.id}
                     type="button"
+                    role="radio"
+                    aria-checked={isSelected}
                     onClick={() => {
                       setSortBy(opt.id);
                       setShowSortSheet(false);
                     }}
-                    className={`w-full px-4 py-3.5 flex items-center justify-between text-left transition-colors touch-manipulation min-h-[52px] ${
-                      isSelected
-                        ? 'bg-emerald-50/80 text-emerald-950 font-bold'
-                        : 'text-stone-800 hover:bg-stone-50'
-                    }`}
+                    className="w-full min-h-[50px] flex items-center justify-between text-left touch-manipulation"
                   >
-                    <span className="text-sm">{opt.label}</span>
-
-                    {isSelected && (
-                      <div className="w-6 h-6 rounded-full bg-[#284235] text-white flex items-center justify-center shrink-0 ml-2">
-                        <Check className="w-3.5 h-3.5 stroke-[3]" />
-                      </div>
-                    )}
+                    <span className={`text-[15px] ${isSelected ? 'font-semibold text-stone-900' : 'text-stone-700'}`}>{opt.label}</span>
+                    {isSelected && <Check className="w-5 h-5 text-[#284235] shrink-0" />}
                   </button>
                 );
               })}
             </div>
-
-            <button
-              type="button"
-              onClick={() => setShowSortSheet(false)}
-              className="w-full py-3.5 bg-stone-900 text-white font-semibold text-xs rounded-2xl touch-manipulation min-h-[48px]"
-            >
-              Klar
-            </button>
           </div>
         </div>
       )}
@@ -568,8 +520,8 @@ export const RecipeList: React.FC = () => {
                   ? 'bg-emerald-50 border-emerald-300 text-emerald-950'
                   : 'bg-white border-[#EBE7DF] text-stone-700 shadow-xs'
               }`}
-              aria-label="Filtrera och sortera"
-              title="Filtrera och sortera"
+              aria-label="Filtrera"
+              title="Filtrera"
             >
               <SlidersHorizontal className="w-5 h-5" />
               {filterAndSortCount > 0 && (
@@ -685,15 +637,26 @@ export const RecipeList: React.FC = () => {
             {onlyFavorites && ' bland favoriter'}
           </span>
 
-          {hasActiveFilters && (
+          <div className="md:hidden flex items-center gap-3">
+            {hasActiveFilters && (
+              <button
+                type="button"
+                onClick={clearFilters}
+                className="text-xs text-[#284235] font-semibold min-h-[36px] touch-manipulation"
+              >
+                Återställ
+              </button>
+            )}
             <button
               type="button"
-              onClick={clearFilters}
-              className="md:hidden text-xs text-[#284235] font-semibold py-1 px-1 touch-manipulation"
+              onClick={() => setShowSortSheet(true)}
+              className="flex items-center gap-1 text-xs text-stone-600 min-h-[36px] touch-manipulation"
+              aria-label={`Sortera, nu ${activeSortLabel}`}
             >
-              Återställ
+              {activeSortLabel}
+              <ChevronDown className="w-3.5 h-3.5" />
             </button>
-          )}
+          </div>
         </div>
 
         {/* Recipe Cards List / Grid (1 col on mobile, 2 cols on tablet, 3-4 cols on desktop) */}

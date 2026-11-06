@@ -35,10 +35,6 @@ export interface RecipeFilterModalProps {
   // Active count
   activeFilterCount: number;
   matchingCount: number;
-  // Sorting (optional, shown last)
-  sortOptions?: { id: string; shortLabel: string }[];
-  sortBy?: string;
-  onChangeSort?: (id: string) => void;
 }
 
 export const RecipeFilterModal: React.FC<RecipeFilterModalProps> = ({
@@ -58,9 +54,6 @@ export const RecipeFilterModal: React.FC<RecipeFilterModalProps> = ({
   onResetFilters,
   activeFilterCount,
   matchingCount,
-  sortOptions,
-  sortBy,
-  onChangeSort,
 }) => {
   const { customSubcategories } = useRecipes();
   const [subcatSearch, setSubcatSearch] = useState<string>('');
@@ -190,7 +183,7 @@ export const RecipeFilterModal: React.FC<RecipeFilterModalProps> = ({
         {/* Header */}
         <div className="px-5 py-4 border-b border-stone-100 flex items-center justify-between shrink-0">
           <h2 id="filter-modal-title" className="font-serif font-bold text-lg text-stone-900 leading-tight">
-            Filtrera och sortera
+            Filtrera
           </h2>
 
           <div className="flex items-center gap-2">
@@ -336,31 +329,6 @@ export const RecipeFilterModal: React.FC<RecipeFilterModalProps> = ({
               <DifficultyFilter selected={difficultyFilter} onChange={onChangeDifficultyFilter} className="flex-wrap" />
             </div>
 
-            {sortOptions && onChangeSort && (
-              <div className="space-y-2">
-                <span className="block text-sm font-semibold text-stone-900">Sortera</span>
-                <div className="flex flex-wrap gap-1.5">
-                  {sortOptions.map((opt) => {
-                    const isSelected = sortBy === opt.id;
-                    return (
-                      <button
-                        key={opt.id}
-                        type="button"
-                        onClick={() => onChangeSort(opt.id)}
-                        aria-pressed={isSelected}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all touch-manipulation min-h-[36px] ${
-                          isSelected
-                            ? 'bg-[#284235] text-white shadow-xs'
-                            : 'bg-[#FCFAF5] border border-stone-200 text-stone-700 hover:bg-stone-100'
-                        }`}
-                      >
-                        {opt.shortLabel}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
           </div>
         </div>
 
