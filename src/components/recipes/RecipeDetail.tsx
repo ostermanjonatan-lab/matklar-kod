@@ -26,7 +26,7 @@ import { findIngredientsInStep } from '../../utils/stepIngredients';
 import { EditRecipeModal } from './EditRecipeModal';
 import { useModalBackHandler } from '../../hooks/useModalBackHandler';
 import { PantryChoiceDialog, hasPantryStaples } from './PantryChoiceDialog';
-import { scaleIngredientAmount, formatAmount, formatCookingTime, capitalizeFirst, formatUnit, formatIngredientName } from '../../utils/formatters';
+import { scaleIngredientAmount, formatAmount, formatCookingTime, capitalizeFirst, formatUnit, formatIngredientName, formatRecipeTitle } from '../../utils/formatters';
 import { splitTextIntoTimerSegments } from '../../utils/timerParser';
 import { shareRecipeAsText } from '../../utils/recipeShare';
 import { playTimerAlarm } from '../../utils/audioAlert';
@@ -514,7 +514,7 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
 
             <div className="absolute bottom-4 left-4 right-16 text-white z-10">
               <h1 className="font-serif text-2xl sm:text-3xl font-bold text-white leading-tight drop-shadow-md">
-                {recipe.title}
+                {formatRecipeTitle(recipe.title)}
               </h1>
             </div>
 
@@ -929,7 +929,7 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
             </div>
 
             <p className="text-xs text-stone-500">
-              Välj vilken dag du vill lägga till {recipe.title} som {mealPlanMealType === 'dinner' ? 'middag' : 'lunch'}:
+              Välj vilken dag du vill lägga till {formatRecipeTitle(recipe.title)} som {mealPlanMealType === 'dinner' ? 'middag' : 'lunch'}:
             </p>
 
             <div className="grid grid-cols-1 gap-2">
@@ -1045,7 +1045,7 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
                 Ta bort recept?
               </h3>
               <p className="text-xs text-stone-500 leading-relaxed">
-                Är du säker på att du vill ta bort <span className="font-semibold text-stone-800">"{recipe.title}"</span>? Detta går inte att ångra.
+                Är du säker på att du vill ta bort <span className="font-semibold text-stone-800">"{formatRecipeTitle(recipe.title)}"</span>? Detta går inte att ångra.
               </p>
             </div>
 

@@ -23,7 +23,7 @@ import {
   ChefHat
 } from 'lucide-react';
 import { LunchboxIcon } from '../icons/LunchboxIcon';
-import { formatCookingTime, scaleIngredientAmount, formatAmount } from '../../utils/formatters';
+import { formatCookingTime, scaleIngredientAmount, formatAmount, formatRecipeTitle } from '../../utils/formatters';
 
 const DAYS_OF_WEEK: MealPlanDay['dayName'][] = [
   'Måndag',
@@ -793,7 +793,7 @@ export const MealPlanView: React.FC = () => {
                         </span>
                       </div>
                       <h3 className="font-serif font-bold text-xl leading-snug drop-shadow-md text-white">
-                        {dinnerRecipe.title}
+                        {formatRecipeTitle(dinnerRecipe.title)}
                       </h3>
                     </div>
                   </div>
@@ -1053,7 +1053,7 @@ export const MealPlanView: React.FC = () => {
                         </span>
                       )}
                       <h4 className="font-serif font-bold text-sm text-stone-900 truncate group-hover:text-emerald-900 transition-colors">
-                        {lunchRecipe.title}
+                        {formatRecipeTitle(lunchRecipe.title)}
                       </h4>
                       <p className="text-[11px] text-stone-500">
                         {lunchRecipe.category}
@@ -1444,7 +1444,7 @@ export const MealPlanView: React.FC = () => {
                           />
                           <div className="min-w-0 flex-1">
                             <h4 className="font-serif font-bold text-sm text-stone-900 truncate">
-                              {r.title}
+                              {formatRecipeTitle(r.title)}
                             </h4>
                             <div className="flex items-center gap-2 text-[11px] text-stone-400">
                               <span>{r.category}</span>

@@ -3,7 +3,7 @@ import type { Recipe } from '../../types/recipe';
 import { isRecipeNew, getRecipeSubcategories } from '../../types/recipe';
 import { useRecipes } from '../../context/RecipeContext';
 import { Heart, Clock, Check, ShoppingCart } from 'lucide-react';
-import { formatCookingTime } from '../../utils/formatters';
+import { formatCookingTime, formatRecipeTitle } from '../../utils/formatters';
 
 interface RecipeCardProps {
   recipe: Recipe;
@@ -318,7 +318,7 @@ export const RecipeCard = React.memo<RecipeCardProps>(
         {/* Bottom Content: Title, Time & Rating directly over image */}
         <div className="absolute bottom-0 inset-x-0 p-4 sm:p-5 pr-15 sm:pr-16 flex flex-col justify-end z-10">
           <h3 className="font-serif text-base sm:text-lg md:text-xl font-bold text-white leading-snug tracking-tight drop-shadow-[0_2px_4px_rgba(0,0,0,0.85)] line-clamp-2 group-hover:text-emerald-100 transition-colors">
-            {recipe.title}
+            {formatRecipeTitle(recipe.title)}
           </h3>
 
           <div className="mt-2 flex items-center gap-2 text-white/95 text-xs font-semibold flex-wrap">

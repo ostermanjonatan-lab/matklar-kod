@@ -14,7 +14,7 @@ import {
   RotateCcw
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
-import { formatCookingTime } from '../../utils/formatters';
+import { formatCookingTime, formatRecipeTitle } from '../../utils/formatters';
 
 interface RandomPickerModalProps {
   recipes: Recipe[];
@@ -385,7 +385,7 @@ export const RandomPickerModal: React.FC<RandomPickerModalProps> = ({
                       <div>
                         <div className="flex items-center gap-2">
                           <span className="font-serif font-bold text-base text-stone-900 leading-tight">
-                            {opt.title}
+                            {formatRecipeTitle(opt.title)}
                           </span>
                           <span className="text-[10px] bg-[#FCFAF5] text-stone-600 font-semibold px-2 py-0.5 rounded-full border border-[#EBE7DF] whitespace-nowrap shrink-0">
                             {count} st
@@ -491,7 +491,7 @@ export const RandomPickerModal: React.FC<RandomPickerModalProps> = ({
                           {displayedRecipe.category}
                         </span>
                         <h4 className="font-serif font-bold text-lg sm:text-xl leading-snug drop-shadow-md">
-                          {displayedRecipe.title}
+                          {formatRecipeTitle(displayedRecipe.title)}
                         </h4>
                       </div>
                     </div>

@@ -6,7 +6,6 @@ import { RecipeCard } from './RecipeCard';
 import { PantryChoiceDialog, hasPantryStaples } from './PantryChoiceDialog';
 import { RandomPickerModal } from './RandomPickerModal';
 import { RecipeFilterModal } from './RecipeFilterModal';
-import { ChooseMealModal } from './ChooseMealModal';
 import { STANDARD_CATEGORIES } from '../../data/categories';
 import { useModalBackHandler } from '../../hooks/useModalBackHandler';
 import {
@@ -18,8 +17,10 @@ import {
   Check,
   ShoppingCart,
   Dices,
-  Compass
 } from 'lucide-react';
+import { formatCookingTime, formatRecipeTitle } from '../../utils/formatters';
+
+const WEEKDAY_NAMES = ['Måndag', 'Tisdag', 'Onsdag', 'Torsdag', 'Fredag', 'Lördag', 'Söndag'] as const;
 
 
 type SortOption = 'default' | 'oldest' | 'time_asc' | 'time_desc' | 'name_asc' | 'name_desc';
@@ -77,7 +78,19 @@ export const RecipeList: React.FC = () => {
     shoppingList,
     searchQuery,
     setSearchQuery,
+    mealPlan,
   } = useRecipes();
+
+  // Tonight's dinner from the meal plan, if any
+  const tonight = useMemo(() => {
+    const todayName = WEEKDAY_NAMES[(new Date().getDay() + 6) % 7];
+    const day = mealPlan.find((d) => d.dayName === todayName);
+    if (!day) return null;
+    const recipe = day.dinnerRecipeId ? recipes.find((r) => r.id === day.dinnerRecipeId) : undefined;
+    if (recipe) return { recipe, text: formatRecipeTitle(recipe.title) };
+    if (day.customDinner?.trim()) return { recipe: undefined, text: day.customDinner.trim() };
+    return null;
+  }, [mealPlan, recipes]);
 
   const deferredSearchQuery = useDeferredValue(searchQuery);
 
@@ -87,7 +100,6 @@ export const RecipeList: React.FC = () => {
   const [onlyFavorites, setOnlyFavorites] = useState<boolean>(false);
   const [sortBy, setSortBy] = useState<SortOption>('default');
   const [showRandomPicker, setShowRandomPicker] = useState<boolean>(false);
-  const [showChooseMeal, setShowChooseMeal] = useState<boolean>(false);
   const [showSortSheet, setShowSortSheet] = useState<boolean>(false);
   const [showFilterModal, setShowFilterModal] = useState<boolean>(false);
 
@@ -398,6 +410,9 @@ export const RecipeList: React.FC = () => {
     activeFilterCount > 0 ||
     sortBy !== 'default';
 
+  const filterAndSortCount = activeFilterCount + (sortBy !== 'default' ? 1 : 0);
+  const isNarrowed = searchQuery.trim() !== '' || activeFilterCount > 0 || selectedCategory !== 'Alla';
+
   const activeSortLabel =
     SORT_OPTIONS.find((s) => s.id === sortBy)?.shortLabel || 'Standard';
 
@@ -481,21 +496,6 @@ export const RecipeList: React.FC = () => {
         />
       )}
 
-      {/* Välj själv (Choose Meal Modal) */}
-      <ChooseMealModal
-        isOpen={showChooseMeal}
-        onClose={() => setShowChooseMeal(false)}
-        recipes={recipes}
-        onSelectCategory={(category, subcat) => {
-          setSelectedCategory(category);
-          if (subcat) {
-            setSelectedSubcategories([subcat]);
-          } else {
-            setSelectedSubcategories([]);
-          }
-        }}
-      />
-
       {/* Recept Filter Modal */}
       {showFilterModal && (
         <RecipeFilterModal
@@ -516,6 +516,9 @@ export const RecipeList: React.FC = () => {
           onResetFilters={clearFilters}
           activeFilterCount={activeFilterCount}
           matchingCount={sortedAndFilteredRecipes.length}
+          sortOptions={SORT_OPTIONS}
+          sortBy={sortBy}
+          onChangeSort={(id) => setSortBy(id as SortOption)}
         />
       )}
 
@@ -580,46 +583,12 @@ export const RecipeList: React.FC = () => {
         </div>
       )}
 
-      {/* Desktop Hero Banner: "Vad ska vi äta idag?" (Rendered above category filter row on md+, hidden on mobile) */}
-      <div className="hidden md:block w-full max-w-md md:max-w-5xl lg:max-w-7xl mx-auto px-4 md:px-6 pt-6 pb-2">
-        <div className="bg-[#284235] rounded-3xl px-6 py-5 text-white shadow-sm flex items-center justify-between gap-6">
-          <div className="min-w-0 pr-2">
-            <h2 className="font-serif text-xl lg:text-2xl font-bold text-white leading-tight">
-              Vad ska vi äta idag?
-            </h2>
-            <p className="text-sm text-emerald-200/90 mt-1">
-              Slumpa fram middagsidéer eller välj bland dina favoriter
-            </p>
-          </div>
-
-          <div className="flex items-center gap-3 shrink-0">
-            <button
-              type="button"
-              onClick={() => setShowRandomPicker(true)}
-              className="px-4 py-2.5 rounded-2xl bg-white/15 hover:bg-white/25 active:scale-95 text-white font-bold text-xs flex items-center justify-center gap-2 transition-all touch-manipulation min-h-[42px] border border-white/20 cursor-pointer shadow-xs"
-            >
-              <Dices className="w-4 h-4 stroke-[2]" />
-              <span>Slumpa</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setShowChooseMeal(true)}
-              className="px-5 py-2.5 rounded-2xl bg-white hover:bg-emerald-50 active:scale-95 text-[#284235] font-bold text-xs flex items-center justify-center gap-2 transition-all touch-manipulation min-h-[42px] shadow-sm cursor-pointer"
-            >
-              <Compass className="w-4 h-4 stroke-[2.5]" />
-              <span>Välj själv</span>
-            </button>
-          </div>
-        </div>
-      </div>
-
       {/* Search & Filter Header (sticky top-0 on mobile, static on desktop below the hero banner) */}
       <div className="sticky top-0 md:static z-20 md:z-auto bg-[#FCFAF5]/95 md:bg-transparent backdrop-blur-md md:backdrop-blur-none border-b md:border-b-0 border-[#EBE7DF] shadow-xs md:shadow-none py-2.5 md:py-2 w-full min-w-0">
         <div className="w-full max-w-md md:max-w-5xl lg:max-w-7xl mx-auto px-4 md:px-6">
           {/* Mobile Search Input (Hidden on desktop since DesktopNav handles search) */}
-          <div className="md:hidden mb-2.5">
-            <div className="relative w-full flex items-center">
+          <div className="md:hidden mb-2.5 flex items-center gap-2">
+            <div className="relative flex-1 min-w-0 flex items-center">
               <Search className="w-5 h-5 text-stone-400 absolute left-3.5 pointer-events-none stroke-[2]" />
               <input
                 type="text"
@@ -639,32 +608,34 @@ export const RecipeList: React.FC = () => {
                 </button>
               )}
             </div>
+            <button
+              type="button"
+              onClick={() => setShowFilterModal(true)}
+              className={`relative w-12 h-12 shrink-0 rounded-2xl border flex items-center justify-center touch-manipulation ${
+                filterAndSortCount > 0
+                  ? 'bg-emerald-50 border-emerald-300 text-emerald-950'
+                  : 'bg-white border-[#EBE7DF] text-stone-700 shadow-xs'
+              }`}
+              aria-label="Filtrera och sortera"
+              title="Filtrera och sortera"
+            >
+              <SlidersHorizontal className="w-5 h-5" />
+              {filterAndSortCount > 0 && (
+                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-[#284235] text-white text-[10px] font-bold flex items-center justify-center">
+                  {filterAndSortCount}
+                </span>
+              )}
+            </button>
           </div>
 
           {/* Category & Filter Row (Horizontal Scroll on mobile, unified bar on desktop) */}
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2 overflow-x-auto no-scrollbar flex-1 min-w-0">
-              {/* Favorite Toggle Chip */}
-              <button
-                type="button"
-                onClick={() => setOnlyFavorites((prev) => !prev)}
-                aria-label={onlyFavorites ? 'Visa alla recept' : 'Visa endast favoriter'}
-                title={onlyFavorites ? 'Visa alla recept' : 'Visa endast favoriter'}
-                className={`w-10 h-10 flex items-center justify-center rounded-xl transition-all active:scale-95 shrink-0 touch-manipulation min-h-[40px] cursor-pointer ${
-                  onlyFavorites
-                    ? 'bg-rose-600 text-white shadow-xs'
-                    : 'bg-white border border-[#EBE7DF] text-stone-700 hover:bg-stone-50'
-                }`}
-              >
-                <Heart
-                  className={`w-4 h-4 ${onlyFavorites ? 'fill-white stroke-white' : 'text-rose-600'}`}
-                />
-              </button>
-
               {/* Categories */}
-              {categories.map((cat) => {
+              {categories.map((cat, catIdx) => {
                 const isSelected = selectedCategory === cat;
                 return (
+                  <React.Fragment key={cat}>
                   <button
                     key={cat}
                     type="button"
@@ -677,6 +648,22 @@ export const RecipeList: React.FC = () => {
                   >
                     {cat}
                   </button>
+                  {catIdx === 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setOnlyFavorites((prev) => !prev)}
+                      aria-pressed={onlyFavorites}
+                      className={`px-4 py-2.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all active:scale-95 shrink-0 touch-manipulation min-h-[40px] cursor-pointer flex items-center gap-1.5 ${
+                        onlyFavorites
+                          ? 'bg-[#284235] text-white shadow-xs'
+                          : 'bg-white border border-[#EBE7DF] text-stone-700 hover:bg-stone-50'
+                      }`}
+                    >
+                      <Heart className={`w-3.5 h-3.5 ${onlyFavorites ? 'fill-white' : ''}`} />
+                      Favoriter
+                    </button>
+                  )}
+                  </React.Fragment>
                 );
               })}
             </div>
@@ -733,92 +720,66 @@ export const RecipeList: React.FC = () => {
 
       {/* Main Content Area */}
       <div className="w-full max-w-md md:max-w-5xl lg:max-w-7xl mx-auto px-4 md:px-6 pt-2 md:pt-4 space-y-4 md:space-y-6">
-        {/* Scandinavian Clean "Vad ska vi äta idag?" Banner (Mobile only, desktop has hero above) */}
-        <div className="md:hidden bg-[#284235] rounded-2xl px-4 py-3 text-white shadow-sm flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
-          <div className="min-w-[7rem] flex-1 pr-1">
-            <h2 className="font-serif text-sm sm:text-base font-bold text-white leading-tight">
-              Vad ska vi äta idag?
-            </h2>
-            <p className="hidden sm:block text-xs text-emerald-200/80 mt-0.5">
-              Slumpa fram middagsidéer eller välj bland dina favoriter
-            </p>
-          </div>
-
-          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+        {/* Tonight's dinner from the meal plan, with a random pick next to it */}
+        <div className="flex items-center gap-3 py-1 border-b border-[#EBE7DF] pb-3">
+          {tonight?.recipe ? (
             <button
               type="button"
-              onClick={() => setShowRandomPicker(true)}
-              className="px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl sm:rounded-2xl bg-white/15 hover:bg-white/25 active:scale-95 text-white font-semibold text-xs flex items-center justify-center gap-1.5 transition-all touch-manipulation min-h-[36px] border border-white/20 cursor-pointer"
+              onClick={() => openRecipeDetail(tonight.recipe!)}
+              className="flex-1 min-w-0 flex items-center gap-3 text-left touch-manipulation"
             >
-              <Dices className="w-4 h-4 stroke-[2]" />
-              <span>Slumpa</span>
+              {tonight.recipe.coverImageUrl && (
+                <img
+                  src={tonight.recipe.coverImageUrl}
+                  alt=""
+                  className="w-11 h-11 rounded-xl object-cover bg-stone-200 shrink-0"
+                />
+              )}
+              <span className="min-w-0">
+                <span className="block text-xs text-stone-500">I kväll</span>
+                <span className="block text-sm font-semibold text-stone-900 truncate">{tonight.text}</span>
+              </span>
+              <span className="text-xs text-stone-500 whitespace-nowrap shrink-0">
+                {formatCookingTime(tonight.recipe.prepTimeMinutes, tonight.recipe.cookTimeMinutes)}
+              </span>
             </button>
+          ) : (
+            <div className="flex-1 min-w-0">
+              <span className="block text-xs text-stone-500">I kväll</span>
+              <span className={`block text-sm truncate ${tonight ? 'font-semibold text-stone-900' : 'text-stone-500'}`}>
+                {tonight ? tonight.text : 'Inget planerat'}
+              </span>
+            </div>
+          )}
 
-            <button
-              type="button"
-              onClick={() => setShowChooseMeal(true)}
-              className="px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl sm:rounded-2xl bg-white hover:bg-emerald-50 active:scale-95 text-[#284235] font-bold text-xs flex items-center justify-center gap-1.5 transition-all touch-manipulation min-h-[36px] shadow-sm cursor-pointer"
-            >
-              <Compass className="w-4 h-4 stroke-[2.5]" />
-              <span>Välj själv</span>
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={() => setShowRandomPicker(true)}
+            className="px-3 py-2 rounded-xl bg-white border border-[#EBE7DF] hover:bg-stone-50 active:scale-95 text-stone-700 font-semibold text-xs flex items-center gap-1.5 transition-all touch-manipulation min-h-[40px] shrink-0"
+          >
+            <Dices className="w-4 h-4" />
+            <span>Slumpa</span>
+          </button>
         </div>
 
-        {/* Results Info & Sort Controls Row */}
-        <div className="flex flex-wrap items-center justify-between px-1 gap-2">
-          <span className="text-xs font-semibold text-stone-500 whitespace-nowrap">
-            {sortedAndFilteredRecipes.length} recept hittades
-            {onlyFavorites && ' (favoriter)'}
+        {/* Number of recipes. "Träffar" only after a search or filter */}
+        <div className="flex items-center justify-between px-1 gap-2 min-h-[24px]">
+          <span className="text-xs text-stone-500 whitespace-nowrap">
+            {isNarrowed
+              ? `${sortedAndFilteredRecipes.length} ${sortedAndFilteredRecipes.length === 1 ? 'träff' : 'träffar'}`
+              : `${sortedAndFilteredRecipes.length} recept`}
+            {onlyFavorites && ' bland favoriter'}
           </span>
 
-          {/* Mobile Filter & Sort Triggers (hidden on md: where they are in the header) */}
-          <div className="flex items-center gap-2 shrink-0 md:hidden">
-            {/* Filter Button */}
+          {hasActiveFilters && (
             <button
               type="button"
-              onClick={() => setShowFilterModal(true)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border touch-manipulation min-h-[38px] ${
-                activeFilterCount > 0
-                  ? 'bg-emerald-50 text-emerald-950 border-emerald-300 font-bold shadow-xs'
-                  : 'bg-white text-stone-700 border-[#EBE7DF] hover:bg-stone-50'
-              }`}
-              title="Filtrera recept"
+              onClick={clearFilters}
+              className="md:hidden text-xs text-[#284235] font-semibold py-1 px-1 touch-manipulation"
             >
-              <SlidersHorizontal className="w-3.5 h-3.5 text-stone-500" />
-              <span>Filter</span>
-              {activeFilterCount > 0 && (
-                <span className="px-1.5 py-0.2 rounded-full bg-[#284235] text-white text-[10px] font-extrabold">
-                  {activeFilterCount}
-                </span>
-              )}
+              Återställ
             </button>
-
-            {/* Sort Button / Trigger */}
-            <button
-              type="button"
-              onClick={() => setShowSortSheet(true)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border touch-manipulation min-h-[38px] ${
-                sortBy !== 'default'
-                  ? 'bg-emerald-50 text-emerald-900 border-emerald-300 shadow-xs'
-                  : 'bg-white text-stone-700 border-[#EBE7DF] hover:bg-stone-50'
-              }`}
-              title="Välj sorteringsordning"
-            >
-              <ArrowUpDown className="w-3.5 h-3.5 text-stone-500" />
-              <span>{activeSortLabel}</span>
-            </button>
-
-            {hasActiveFilters && (
-              <button
-                type="button"
-                onClick={clearFilters}
-                className="text-xs text-[#284235] font-bold hover:underline py-1.5 px-1 touch-manipulation"
-              >
-                Återställ
-              </button>
-            )}
-          </div>
+          )}
         </div>
 
         {/* Recipe Cards List / Grid (1 col on mobile, 2 cols on tablet, 3-4 cols on desktop) */}

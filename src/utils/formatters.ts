@@ -479,3 +479,31 @@ export function stripPreparation(name: string): string {
   const kept = rest.filter((part) => !PREPARATION_PATTERN.test(part));
   return [first, ...kept].join(',').trim();
 }
+
+// Names that keep their capital letter inside a recipe title.
+const TITLE_PROPER_NOUNS = new Set(['skagen']);
+
+/**
+ * Recipe titles written with a capital letter on every word ("Klassisk Krämig Pasta")
+ * are shown the Swedish way ("Klassisk krämig pasta"). Titles that already follow
+ * Swedish style are left as they are. Only the display changes, not the saved title.
+ */
+export function formatRecipeTitle(title: string | null | undefined): string {
+  if (!title) return '';
+  const words = title.trim().split(/\s+/);
+  const letterWords = words.slice(1).filter((w) => /\p{L}/u.test(w));
+  if (letterWords.length < 2) return title.trim();
+  const capitalised = letterWords.filter((w) => /^[^\p{L}]*\p{Lu}/u.test(w)).length;
+  if (capitalised / letterWords.length < 0.6) return title.trim();
+
+  return words
+    .map((word, idx) => {
+      if (idx === 0) return word;
+      const letters = word.replace(/[^\p{L}]/gu, '');
+      // Keep abbreviations like BBQ and names like Skagen
+      if (letters.length > 1 && letters === letters.toUpperCase()) return word;
+      if (TITLE_PROPER_NOUNS.has(letters.toLowerCase())) return word;
+      return word.toLowerCase();
+    })
+    .join(' ');
+}
