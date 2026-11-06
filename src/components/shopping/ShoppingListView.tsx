@@ -3,6 +3,7 @@ import type { ShoppingItem } from '../../types/recipe';
 import { useRecipes } from '../../context/RecipeContext';
 import { useModalBackHandler } from '../../hooks/useModalBackHandler';
 import { AlltidHemmaView } from './AlltidHemmaView';
+import { takeOpenStoreOrderFlag } from './storeOrderLink';
 import {
   Plus,
   Trash2,
@@ -77,7 +78,8 @@ export const ShoppingListView: React.FC = () => {
   const [activeStoreId, setActiveStoreId] = useState<string>(() => loadActiveStoreId());
   const [collapsedAisles, setCollapsedAisles] = useState<Set<string>>(() => new Set(loadCollapsedAisles()));
   const [showStoreDropdown, setShowStoreDropdown] = useState<boolean>(false);
-  const [showReorderModal, setShowReorderModal] = useState<boolean>(false);
+  // Opened from Settings: go straight to Ordna
+  const [showReorderModal, setShowReorderModal] = useState<boolean>(() => takeOpenStoreOrderFlag());
   useModalBackHandler(showReorderModal, () => setShowReorderModal(false), 'reorder-shopping-aisles');
 
   // Modal inner state for store management

@@ -5,23 +5,56 @@ import { HouseholdOnboarding } from '../auth/HouseholdOnboarding';
 import { SupabaseConfigModal } from './SupabaseConfigModal';
 import { useModalBackHandler } from '../../hooks/useModalBackHandler';
 import { APP_VERSION } from '../../version';
-import {
-  RotateCcw,
-  Check,
-  Copy,
-  Database,
-  Radio,
-  ChevronRight,
-  Trash2,
-  AlertTriangle,
-  RefreshCw,
-  Plus,
-  Users,
-  KeyRound,
-  Crown,
-  Clock,
-  ShieldAlert,
-} from 'lucide-react';
+import { OPEN_STORE_ORDER_KEY } from '../shopping/storeOrderLink';
+import { Check, Copy, ChevronRight, ChevronDown, Clock, ShieldAlert } from 'lucide-react';
+
+/** A plain row in a list: text on the left, optional detail and arrow on the right. */
+const Row: React.FC<{
+  label: string;
+  detail?: string;
+  onClick: () => void;
+  danger?: boolean;
+}> = ({ label, detail, onClick, danger }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className="w-full min-h-[52px] py-3 flex items-center gap-3 text-left touch-manipulation active:bg-stone-100/70"
+  >
+    <span className={`flex-1 min-w-0 text-sm ${danger ? 'text-rose-700' : 'text-stone-900'}`}>{label}</span>
+    {detail && <span className="text-xs text-stone-500 truncate max-w-[45%]">{detail}</span>}
+    <ChevronRight className="w-4 h-4 text-stone-300 shrink-0" />
+  </button>
+);
+
+/** Inline yes/no under a row, for things that cannot be undone. */
+const Confirm: React.FC<{
+  text: string;
+  confirmLabel: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+}> = ({ text, confirmLabel, onConfirm, onCancel }) => (
+  <div className="pb-3 space-y-2.5">
+    <p className="text-sm text-stone-700">{text}</p>
+    <div className="flex gap-2">
+      <button
+        type="button"
+        onClick={onCancel}
+        className="flex-1 min-h-[44px] rounded-xl bg-stone-100 text-stone-700 text-sm font-semibold touch-manipulation"
+      >
+        Avbryt
+      </button>
+      <button
+        type="button"
+        onClick={onConfirm}
+        className="flex-1 min-h-[44px] rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-sm font-semibold touch-manipulation"
+      >
+        {confirmLabel}
+      </button>
+    </div>
+  </div>
+);
+
+const sectionHeading = 'text-xs font-semibold text-stone-500 pt-6 pb-1';
 
 export const SettingsView: React.FC = () => {
   const {
@@ -38,6 +71,7 @@ export const SettingsView: React.FC = () => {
     rejectJoinRequest,
     pendingJoin,
     cancelPendingJoin,
+    setActiveTab,
   } = useRecipes();
 
   const [showShareModal, setShowShareModal] = useState<boolean>(false);
@@ -49,10 +83,16 @@ export const SettingsView: React.FC = () => {
   useModalBackHandler(showShareModal, () => setShowShareModal(false), 'share-modal');
   useModalBackHandler(showHouseholdModal, () => setShowHouseholdModal(false), 'household-auth-modal');
   useModalBackHandler(showSupabaseModal, () => setShowSupabaseModal(false), 'supabase-modal');
-  const [showResetConfirm, setShowResetConfirm] = useState<boolean>(false);
-  const [showClearRecipesConfirm, setShowClearRecipesConfirm] = useState<boolean>(false);
+
+  const [showAdvanced, setShowAdvanced] = useState<boolean>(false);
+  const [confirming, setConfirming] = useState<'newCode' | 'clearRecipes' | 'reset' | null>(null);
   const [copiedCode, setCopiedCode] = useState<boolean>(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const showToast = (text: string) => {
+    setToastMessage(text);
+    setTimeout(() => setToastMessage(null), 3000);
+  };
 
   const handleCopyCode = () => {
     if (!household) return;
@@ -61,12 +101,21 @@ export const SettingsView: React.FC = () => {
     setTimeout(() => setCopiedCode(false), 2000);
   };
 
-  const handleClearAllRecipes = () => {
-    clearAllRecipes();
-    setShowClearRecipesConfirm(false);
-    setToastMessage('Alla recept har rensats bort.');
-    setTimeout(() => setToastMessage(null), 3000);
+  const openHouseholdModal = (tab: 'create' | 'join') => {
+    setHouseholdModalTab(tab);
+    setShowHouseholdModal(true);
   };
+
+  const openStoreOrder = () => {
+    try {
+      sessionStorage.setItem(OPEN_STORE_ORDER_KEY, '1');
+    } catch {
+      // ignore, the shopping list still opens
+    }
+    setActiveTab('shopping');
+  };
+
+  const members = household?.members?.filter((m) => !m.status || m.status === 'approved') || [];
 
   return (
     <div className="min-h-screen bg-[#FCFAF5] pb-32 md:pb-16 w-full max-w-full overflow-x-hidden font-sans">
@@ -78,52 +127,27 @@ export const SettingsView: React.FC = () => {
         </div>
       )}
 
-      {/* Household Share Modal */}
       {showShareModal && <HouseholdShareModal onClose={() => setShowShareModal(false)} />}
-
-      {/* Household Create/Join Onboarding Modal */}
       {showHouseholdModal && (
-        <HouseholdOnboarding
-          onClose={() => setShowHouseholdModal(false)}
-          initialTab={householdModalTab}
-        />
+        <HouseholdOnboarding onClose={() => setShowHouseholdModal(false)} initialTab={householdModalTab} />
       )}
-
-      {/* Supabase Config Modal */}
       {showSupabaseModal && <SupabaseConfigModal onClose={() => setShowSupabaseModal(false)} />}
 
-      {/* Header (Sticky top-0 on mobile, static on desktop) */}
-      <div className="sticky top-0 md:static z-20 md:z-auto bg-[#FCFAF5]/95 backdrop-blur-md border-b border-[#EBE7DF] px-4 md:px-6 py-3 shadow-xs w-full">
-        <div className="w-full max-w-md md:max-w-3xl lg:max-w-4xl mx-auto flex items-center justify-between">
-          <div>
-            <h1 className="font-serif text-xl font-bold text-stone-900 leading-tight">Inställningar</h1>
-            <p className="text-[11px] text-stone-500">Hushåll, Profil & Synk</p>
-          </div>
-
-          {/* Realtime Status Badge */}
-          <div
-            onClick={() => setShowSupabaseModal(true)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold cursor-pointer active:scale-95 transition-all touch-manipulation min-h-[38px] ${
-              isLiveSupabase
-                ? 'bg-emerald-50 border border-emerald-200 text-emerald-950 hover:bg-emerald-100'
-                : 'bg-stone-100 border border-stone-200 text-stone-600 hover:bg-stone-200/70'
-            }`}
-            title={isLiveSupabase ? 'Ansluten till Supabase molndatabas' : 'Endast lokalt på denna enhet. Klicka för att konfigurera molnsynk.'}
-          >
-            <span
-              className={`w-2 h-2 rounded-full ${
-                isLiveSupabase ? 'bg-emerald-600 animate-ping' : 'bg-stone-400'
-              }`}
-            />
-            <span>{isLiveSupabase ? 'Molnsynk Aktiv' : 'Lokal lagring'}</span>
-          </div>
+      {/* Header */}
+      <div className="sticky top-0 md:static z-20 md:z-auto bg-[#FCFAF5]/95 backdrop-blur-md border-b border-[#EBE7DF] px-4 md:px-6 py-3 w-full">
+        <div className="w-full max-w-md md:max-w-3xl lg:max-w-4xl mx-auto flex items-center justify-between gap-3">
+          <h1 className="font-serif text-xl font-bold text-stone-900 leading-tight">Inställningar</h1>
+          <span className="flex items-center gap-1.5 text-xs text-stone-500">
+            <span className={`w-2 h-2 rounded-full ${isLiveSupabase ? 'bg-emerald-600' : 'bg-stone-400'}`} />
+            {isLiveSupabase ? 'Synkas' : 'Bara på den här telefonen'}
+          </span>
         </div>
       </div>
 
-      <div className="w-full max-w-md md:max-w-3xl lg:max-w-4xl mx-auto p-4 md:px-6 md:py-6 space-y-6">
+      <div className="w-full max-w-md md:max-w-3xl lg:max-w-4xl mx-auto px-4 md:px-6 pt-4">
         {/* Admin Pending Join Requests Banner */}
         {isHouseholdAdmin && joinRequests && joinRequests.length > 0 && (
-          <div className="bg-amber-50 border border-amber-300 rounded-3xl p-4 sm:p-5 text-amber-950 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-slide-down">
+          <div className="bg-amber-50 border border-amber-300 rounded-2xl p-4 text-amber-950 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-slide-down">
             <div className="flex items-center gap-3 min-w-0">
               <div className="w-10 h-10 rounded-2xl bg-amber-200/80 text-amber-900 flex items-center justify-center shrink-0">
                 <ShieldAlert className="w-5 h-5" />
@@ -148,7 +172,7 @@ export const SettingsView: React.FC = () => {
                     onClick={async () => {
                       const ok = await approveJoinRequest(joinRequests[0].id);
                       if (ok) {
-                        setToastMessage(`${joinRequests[0].displayName} godkändes!`);
+                        setToastMessage(`${joinRequests[0].displayName} är godkänd`);
                         setTimeout(() => setToastMessage(null), 3000);
                       }
                     }}
@@ -186,7 +210,7 @@ export const SettingsView: React.FC = () => {
 
         {/* Applicant Pending Waiting Status Card */}
         {pendingJoin && pendingJoin.status === 'pending' && (
-          <div className="bg-stone-50 border border-amber-300/80 rounded-3xl p-4 sm:p-5 text-stone-900 shadow-xs flex items-center justify-between gap-3 animate-slide-down">
+          <div className="bg-stone-50 border border-amber-300/80 rounded-2xl p-4 text-stone-900 shadow-xs flex items-center justify-between gap-3 animate-slide-down">
             <div className="flex items-center gap-3 min-w-0">
               <div className="w-10 h-10 rounded-2xl bg-amber-100 text-amber-800 flex items-center justify-center shrink-0">
                 <Clock className="w-5 h-5" />
@@ -211,329 +235,189 @@ export const SettingsView: React.FC = () => {
           </div>
         )}
 
-        {/* Household Section */}
+        {/* Household: the one box on the page */}
         {!household ? (
-          <div className="bg-[#284235] rounded-3xl p-5 text-white shadow-sm space-y-4">
-            <div className="flex items-start gap-3.5">
-              <div className="w-12 h-12 rounded-2xl bg-white/15 border border-white/20 text-emerald-300 flex items-center justify-center shrink-0">
-                <Users className="w-6 h-6" />
-              </div>
-              <div className="min-w-0">
-                <span className="text-[10px] text-emerald-200/80 font-bold uppercase tracking-wider block">
-                  Gemensamt kök & synkning
-                </span>
-                <h3 className="font-serif text-lg font-bold text-white leading-tight mt-0.5">
-                  Inget hushåll anslutet
-                </h3>
-                <p className="text-xs text-emerald-100/80 mt-1 leading-relaxed">
-                  Skapa ett hushåll eller anslut med delningskod för att dela recept, veckomatsedel och inköpslista i realtid med familj eller sambo.
-                </p>
-              </div>
+          <div className="bg-white rounded-2xl border border-[#EBE7DF] p-4 space-y-3 mt-2">
+            <div>
+              <h2 className="font-serif text-lg font-bold text-stone-900">Hushåll</h2>
+              <p className="text-sm text-stone-600 mt-0.5">Dela recept, veckoplan och inköpslista med dem du bor med.</p>
             </div>
-
-            <div className="grid grid-cols-2 gap-2.5 pt-1">
+            <div className="grid grid-cols-2 gap-2">
               <button
                 type="button"
-                onClick={() => {
-                  setHouseholdModalTab('create');
-                  setShowHouseholdModal(true);
-                }}
-                className="py-3 px-3 rounded-2xl bg-white text-stone-900 font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm active:scale-95 hover:bg-emerald-50 transition-all touch-manipulation min-h-[46px]"
+                onClick={() => openHouseholdModal('create')}
+                className="min-h-[44px] rounded-xl bg-[#284235] hover:bg-black text-white text-sm font-semibold touch-manipulation"
               >
-                <Plus className="w-4 h-4 text-emerald-800" />
-                <span>Skapa hushåll</span>
+                Skapa hushåll
               </button>
-
               <button
                 type="button"
-                onClick={() => {
-                  setHouseholdModalTab('join');
-                  setShowHouseholdModal(true);
-                }}
-                className="py-3 px-3 rounded-2xl bg-white/15 hover:bg-white/25 text-white font-bold text-xs flex items-center justify-center gap-1.5 border border-white/20 active:scale-95 transition-all touch-manipulation min-h-[46px]"
+                onClick={() => openHouseholdModal('join')}
+                className="min-h-[44px] rounded-xl border border-[#EBE7DF] bg-white hover:bg-stone-50 text-stone-800 text-sm font-semibold touch-manipulation"
               >
-                <KeyRound className="w-4 h-4 text-emerald-300" />
-                <span>Gå med via kod</span>
+                Gå med via kod
               </button>
             </div>
           </div>
         ) : (
           <>
-            {/* Active Household Profile & Share Code Card */}
-            <div className="bg-[#284235] rounded-3xl p-5 text-white shadow-sm space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-11 h-11 rounded-2xl bg-white/15 border border-white/20 text-white font-bold text-sm flex items-center justify-center shrink-0">
-                    {currentUser.initials || currentUser.displayName[0]}
-                  </div>
-                  <div>
-                    <div className="text-xs text-emerald-200/80 font-medium flex items-center gap-1.5 flex-wrap">
-                      <span>Aktiv profil: <span className="font-semibold text-white">{currentUser.displayName}</span></span>
-                      {isHouseholdAdmin ? (
-                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-amber-400/20 text-amber-200 border border-amber-400/40 text-[10px] font-bold">
-                          <Crown className="w-2.5 h-2.5 text-amber-300" />
-                          Admin
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-white/10 text-emerald-200 text-[10px] font-medium">
-                          Medlem
-                        </span>
-                      )}
-                    </div>
-                    <h3 className="font-serif text-lg font-bold text-white leading-tight">
-                      {household.name}
-                    </h3>
-                  </div>
-                </div>
+            <div className="bg-white rounded-2xl border border-[#EBE7DF] p-4 mt-2">
+              <h2 className="font-serif text-lg font-bold text-stone-900 leading-tight">{household.name}</h2>
+              <p className="text-sm text-stone-600 mt-0.5">
+                Du är {currentUser.displayName}, {isHouseholdAdmin ? 'admin' : 'medlem'}
+              </p>
 
+              {/* Delningskod */}
+              <div className="mt-4 pt-3 border-t border-[#EBE7DF]">
+                <div className="text-xs text-stone-500">Delningskod</div>
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-2xl font-bold text-stone-900 font-mono tracking-widest">{household.joinCode}</span>
+                  <button
+                    type="button"
+                    onClick={handleCopyCode}
+                    className="px-3 min-h-[40px] rounded-xl border border-[#EBE7DF] bg-white hover:bg-stone-50 text-stone-800 text-sm font-semibold flex items-center gap-1.5 touch-manipulation"
+                  >
+                    {copiedCode ? <Check className="w-4 h-4 text-emerald-700" /> : <Copy className="w-4 h-4" />}
+                    {copiedCode ? 'Kopierad' : 'Kopiera'}
+                  </button>
+                </div>
+                {isHouseholdAdmin &&
+                  (confirming === 'newCode' ? (
+                    <div className="pt-2">
+                      <Confirm
+                        text="Den gamla koden slutar fungera. Inbjudningar med den behöver skickas igen."
+                        confirmLabel="Byt kod"
+                        onCancel={() => setConfirming(null)}
+                        onConfirm={() => {
+                          const newCode = regenerateHouseholdCode();
+                          setConfirming(null);
+                          showToast(`Ny kod: ${newCode}`);
+                        }}
+                      />
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setConfirming('newCode')}
+                      className="text-sm text-[#284235] font-semibold py-2 touch-manipulation"
+                    >
+                      Byt till ny kod
+                    </button>
+                  ))}
+              </div>
+
+              {/* Members */}
+              <div className="mt-2 pt-3 border-t border-[#EBE7DF]">
+                <div className="text-xs text-stone-500 pb-1">Medlemmar</div>
+                <ul className="divide-y divide-[#EBE7DF]">
+                  {members.map((m) => (
+                    <li key={m.id} className="py-2 flex items-center gap-3">
+                      <span className="w-8 h-8 rounded-full bg-stone-100 text-stone-700 text-xs font-semibold flex items-center justify-center shrink-0">
+                        {m.initials || m.displayName[0]}
+                      </span>
+                      <span className="flex-1 min-w-0 text-sm text-stone-900 truncate">
+                        {m.displayName}
+                        {m.id === currentUser.id ? ' (du)' : ''}
+                      </span>
+                      {(m.isAdmin || m.id === household.creatorId) && (
+                        <span className="text-xs text-stone-500">Admin</span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
                 <button
                   type="button"
                   onClick={() => setShowShareModal(true)}
-                  className="px-3.5 py-2 rounded-2xl bg-white/15 hover:bg-white/25 text-white font-semibold text-xs flex items-center gap-1.5 border border-white/20 transition-all touch-manipulation min-h-[42px]"
+                  className="mt-1 text-sm text-[#284235] font-semibold py-2 flex items-center gap-1 touch-manipulation"
                 >
-                  <span>Hantera</span>
-                  <ChevronRight className="w-3.5 h-3.5" />
-                </button>
-              </div>
-
-              {/* Delningskod Section */}
-              <div className="bg-black/25 rounded-2xl p-3.5 border border-white/10 flex items-center justify-between">
-                <div>
-                  <span className="text-[10px] text-emerald-200/70 uppercase tracking-wider block font-semibold">
-                    Delningskod till hushållet
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xl font-bold text-emerald-300 font-mono tracking-widest">
-                      {household.joinCode}
-                    </span>
-                    {isHouseholdAdmin && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const newCode = regenerateHouseholdCode();
-                          setToastMessage(`Ny 6-siffrig kod genererad: ${newCode}`);
-                          setTimeout(() => setToastMessage(null), 3000);
-                        }}
-                        className="p-1.5 text-emerald-300/70 hover:text-white rounded-lg hover:bg-white/10 transition-colors"
-                        title="Skapa ny 6-siffrig kod"
-                      >
-                        <RefreshCw className="w-3.5 h-3.5" />
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={handleCopyCode}
-                  className="px-4 py-2.5 rounded-xl bg-white/15 hover:bg-white/25 text-white font-semibold text-xs flex items-center gap-1.5 active:scale-95 border border-white/15 transition-all touch-manipulation min-h-[44px]"
-                >
-                  {copiedCode ? <Check className="w-4 h-4 text-emerald-300" /> : <Copy className="w-4 h-4" />}
-                  <span>{copiedCode ? 'Kopierad' : 'Kopiera'}</span>
+                  {isHouseholdAdmin ? 'Hantera medlemmar' : 'Visa medlemmar'}
+                  <ChevronRight className="w-4 h-4" />
                 </button>
               </div>
             </div>
 
-            {/* Quick Action Buttons */}
-            <div className="grid grid-cols-2 gap-2.5">
-              <button
-                type="button"
-                onClick={() => {
-                  setHouseholdModalTab('create');
-                  setShowHouseholdModal(true);
-                }}
-                className="bg-white rounded-2xl border border-[#EBE7DF] p-3.5 flex items-center gap-2.5 hover:bg-stone-50 active:scale-[0.98] transition-all shadow-xs touch-manipulation text-left"
-              >
-                <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-800 flex items-center justify-center font-bold shrink-0">
-                  <Plus className="w-4 h-4 stroke-[2.5]" />
-                </div>
-                <div className="min-w-0">
-                  <span className="font-bold text-xs text-stone-900 block truncate">Nytt hushåll</span>
-                  <span className="text-[10px] text-stone-500 block truncate">Skapa ett till</span>
-                </div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setHouseholdModalTab('join');
-                  setShowHouseholdModal(true);
-                }}
-                className="bg-white rounded-2xl border border-[#EBE7DF] p-3.5 flex items-center gap-2.5 hover:bg-stone-50 active:scale-[0.98] transition-all shadow-xs touch-manipulation text-left"
-              >
-                <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-800 flex items-center justify-center font-bold shrink-0">
-                  <KeyRound className="w-4 h-4 stroke-[2.5]" />
-                </div>
-                <div className="min-w-0">
-                  <span className="font-bold text-xs text-stone-900 block truncate">Gå med i hushåll</span>
-                  <span className="text-[10px] text-stone-500 block truncate">Anslut via kod</span>
-                </div>
-              </button>
+            <div className="divide-y divide-[#EBE7DF] border-b border-[#EBE7DF] mt-2">
+              <Row label="Skapa ett nytt hushåll" onClick={() => openHouseholdModal('create')} />
+              <Row label="Gå med i ett annat hushåll" onClick={() => openHouseholdModal('join')} />
             </div>
           </>
         )}
 
-        {/* Databas & Synkning Card */}
-        <div
-          onClick={() => setShowSupabaseModal(true)}
-          className="bg-white rounded-3xl border border-[#EBE7DF] p-4 flex items-center justify-between cursor-pointer hover:bg-stone-50 transition-colors shadow-xs touch-manipulation"
-          style={{ minHeight: '64px' }}
+        {/* Other settings in the app */}
+        <h2 className={sectionHeading}>Inköpslistan</h2>
+        <div className="divide-y divide-[#EBE7DF] border-y border-[#EBE7DF]">
+          <Row label="Butiker och avdelningarnas ordning" onClick={openStoreOrder} />
+        </div>
+
+        {/* Advanced: database, clearing and demo data */}
+        <button
+          type="button"
+          onClick={() => {
+            setShowAdvanced((v) => !v);
+            setConfirming((c) => (c === 'newCode' ? c : null));
+          }}
+          aria-expanded={showAdvanced}
+          className="w-full mt-6 min-h-[52px] flex items-center justify-between border-y border-[#EBE7DF] text-sm text-stone-900 touch-manipulation"
         >
-          <div className="flex items-center gap-3.5">
-            <div className="w-11 h-11 rounded-2xl bg-[#FCFAF5] text-stone-800 flex items-center justify-center font-bold text-sm shrink-0 border border-[#EBE7DF]">
-              <Database className="w-5 h-5 stroke-[1.75] text-[#284235]" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h4 className="font-semibold text-sm text-stone-900 leading-tight">
-                  Databas & Synkning
-                </h4>
-                <span className="text-[10px] bg-[#FCFAF5] text-stone-700 font-medium px-2 py-0.5 rounded-md border border-[#EBE7DF]">
-                  {isLiveSupabase ? 'Molnsynk Aktiv' : 'Lokal Realtid'}
-                </span>
+          Avancerat
+          <ChevronDown className={`w-4 h-4 text-stone-400 transition-transform ${showAdvanced ? 'rotate-180' : ''}`} />
+        </button>
+
+        {showAdvanced && (
+          <div className="divide-y divide-[#EBE7DF] border-b border-[#EBE7DF] animate-fade-in">
+            <Row
+              label="Databas och synk"
+              detail={isLiveSupabase ? 'Supabase, ansluten' : 'Inte ansluten'}
+              onClick={() => setShowSupabaseModal(true)}
+            />
+
+            {isHouseholdAdmin && (
+              <div>
+                <Row
+                  label={`Rensa alla recept (${recipes.length})`}
+                  danger
+                  onClick={() => setConfirming(confirming === 'clearRecipes' ? null : 'clearRecipes')}
+                />
+                {confirming === 'clearRecipes' && (
+                  <Confirm
+                    text={`Alla ${recipes.length} recept tas bort för hela hushållet. Det går inte att ångra.`}
+                    confirmLabel="Rensa recepten"
+                    onCancel={() => setConfirming(null)}
+                    onConfirm={() => {
+                      clearAllRecipes();
+                      setConfirming(null);
+                      showToast('Alla recept är borttagna');
+                    }}
+                  />
+                )}
               </div>
-              <p className="text-xs text-stone-500 mt-0.5">
-                Hantera anslutning för delning och molnlagring
-              </p>
-            </div>
-          </div>
-          <ChevronRight className="w-5 h-5 text-stone-400" />
-        </div>
-
-        {/* Realtime Features Info */}
-        <div className="bg-white border border-[#EBE7DF] rounded-3xl p-4 space-y-2.5 shadow-xs">
-          <div className="flex items-center gap-2 text-stone-900 font-bold text-sm">
-            <Radio className="w-4 h-4 text-[#284235]" />
-            <span>Realtidssynkronisering</span>
-          </div>
-          <ul className="text-xs text-stone-600 space-y-1.5 list-disc list-inside leading-relaxed">
-            <li>Recept och ändringar synkas direkt mellan hushållets enheter</li>
-            <li>Gemensamma anteckningar uppdateras direkt</li>
-            <li>Inköpslistan bockas av i realtid när någon är i butiken</li>
-            <li>Veckoplanen hålls automatiskt synkroniserad</li>
-          </ul>
-        </div>
-
-        {/* Clear All Recipes Card (Admin Only) */}
-        {isHouseholdAdmin ? (
-          <div className="bg-white rounded-3xl border border-[#EBE7DF] shadow-xs p-4 space-y-3">
-            <div className="flex items-center gap-2 text-stone-900 font-bold text-sm">
-              <Trash2 className="w-4 h-4 text-rose-600" />
-              <span>Rensa alla recept</span>
-            </div>
-
-            <p className="text-xs text-stone-500 leading-relaxed">
-              Tar bort samtliga recept ({recipes.length} st) från appen så att du kan börja om med en helt tom samling.
-            </p>
-
-            {showClearRecipesConfirm ? (
-              <div className="bg-rose-50 border border-rose-200 rounded-2xl p-3.5 space-y-2.5">
-                <div className="flex items-center gap-2 text-rose-900 font-bold text-xs">
-                  <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
-                  <span>Vill du radera alla {recipes.length} recept?</span>
-                </div>
-                <p className="text-xs text-rose-700">
-                  Detta tar bort alla sparade recept permanent från hushållet.
-                </p>
-                <div className="flex gap-2.5 pt-1">
-                  <button
-                    type="button"
-                    onClick={() => setShowClearRecipesConfirm(false)}
-                    className="flex-1 py-3 rounded-2xl bg-white border border-rose-200 text-stone-700 text-xs font-semibold touch-manipulation min-h-[46px]"
-                  >
-                    Avbryt
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleClearAllRecipes}
-                    className="flex-1 py-3 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-xs active:scale-95 touch-manipulation min-h-[46px]"
-                  >
-                    Ja, rensa alla
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <button
-                type="button"
-                disabled={recipes.length === 0}
-                onClick={() => setShowClearRecipesConfirm(true)}
-                className="w-full py-3.5 px-4 rounded-2xl bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 active:scale-95 disabled:opacity-40 text-xs font-semibold transition-all touch-manipulation min-h-[48px] flex items-center justify-center gap-2"
-              >
-                <Trash2 className="w-4 h-4" />
-                <span>Rensa alla {recipes.length} recept</span>
-              </button>
             )}
-          </div>
-        ) : (
-          <div className="bg-white rounded-3xl border border-[#EBE7DF] shadow-xs p-4 flex items-center gap-3">
-            <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-800 flex items-center justify-center shrink-0">
-              <Crown className="w-4 h-4" />
+
+            <div>
+              <Row
+                label="Återställ demorecepten"
+                detail="Bara den här telefonen"
+                danger
+                onClick={() => setConfirming(confirming === 'reset' ? null : 'reset')}
+              />
+              {confirming === 'reset' && (
+                <Confirm
+                  text="Recepten byts mot demorecepten, och veckoplanen och inköpslistan töms på den här telefonen."
+                  confirmLabel="Återställ"
+                  onCancel={() => setConfirming(null)}
+                  onConfirm={() => {
+                    resetToMockData();
+                    setConfirming(null);
+                    showToast('Demorecepten är återställda');
+                  }}
+                />
+              )}
             </div>
-            <p className="text-xs text-stone-500 leading-relaxed">
-              Endast hushållets admin kan rensa bort receptsamlingen eller hantera medlemmar.
-            </p>
           </div>
         )}
 
-        {/* Data Reset */}
-        <div className="bg-white rounded-3xl border border-[#EBE7DF] shadow-xs p-4 space-y-3">
-          <div className="flex items-center gap-2 text-stone-900 font-bold text-sm">
-            <RotateCcw className="w-4 h-4 text-stone-600" />
-            <span>Återställ till standard-demo</span>
-          </div>
-
-          <p className="text-xs text-stone-500 leading-relaxed">
-            Återställ all data till de ursprungliga demorecepten och standardveckoplanen.
-          </p>
-
-          {showResetConfirm ? (
-            <div className="bg-stone-50 border border-stone-200 rounded-2xl p-3.5 space-y-2.5">
-              <p className="text-xs font-semibold text-stone-800">
-                Är du säker? Egna ändringar ersätts med demodata.
-              </p>
-              <div className="flex gap-2.5">
-                <button
-                  type="button"
-                  onClick={() => setShowResetConfirm(false)}
-                  className="flex-1 py-3 rounded-2xl bg-stone-200 text-stone-700 text-xs font-semibold touch-manipulation min-h-[46px]"
-                >
-                  Avbryt
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    resetToMockData();
-                    setShowResetConfirm(false);
-                    setToastMessage('Återställt till standard-demodata!');
-                    setTimeout(() => setToastMessage(null), 3000);
-                  }}
-                  className="flex-1 py-3 rounded-2xl bg-stone-900 text-white text-xs font-semibold shadow-xs active:scale-95 touch-manipulation min-h-[46px]"
-                >
-                  Ja, återställ
-                </button>
-              </div>
-            </div>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setShowResetConfirm(true)}
-              className="w-full py-3 px-4 rounded-2xl border border-[#EBE7DF] hover:bg-stone-50 active:scale-95 text-stone-700 text-xs font-semibold transition-all touch-manipulation min-h-[48px]"
-            >
-              Återställ standardrecept
-            </button>
-          )}
-        </div>
-
-        {/* Brand & App Info Footer */}
-        <div className="text-center pt-3 pb-8 text-stone-400 space-y-1.5">
-          <p className="font-serif font-bold text-base text-stone-700">Matklar</p>
-          <p className="text-[11px] text-stone-500">Receptsamling, veckoplanering & inköp för hela hushållet</p>
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-stone-200/70 text-stone-600 text-[11px] font-semibold mt-1">
-            <span>Version {APP_VERSION}</span>
-            <span className="text-stone-300">•</span>
-            <span>PWA</span>
-          </div>
-        </div>
+        {/* Version, so you can see that an update has arrived */}
+        <p className="text-xs text-stone-500 pt-6 pb-8">Version {APP_VERSION}</p>
       </div>
     </div>
   );
