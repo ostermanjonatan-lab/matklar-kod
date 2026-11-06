@@ -20,7 +20,6 @@ import {
   Check,
   CheckCircle2,
   Circle,
-  Edit3,
   Play,
   X,
   ChevronDown,
@@ -418,16 +417,6 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
               ) : (
                 <Share2 className="w-4 h-4" />
               )}
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setIsEditingRecipe(true)}
-              className="w-10 h-10 rounded-full bg-white border border-[#EBE7DF] hover:bg-stone-50 active:scale-90 flex items-center justify-center text-stone-700 shadow-xs transition-all touch-manipulation cursor-pointer"
-              aria-label="Redigera recept"
-              title="Redigera recept"
-            >
-              <Edit3 className="w-4 h-4" />
             </button>
 
             <button
