@@ -2,6 +2,7 @@ import React, { useState, useLayoutEffect, useRef } from 'react';
 import { RecipeProvider, useRecipes } from './context/RecipeContext';
 import { TimerProvider } from './context/TimerContext';
 import { BottomDock } from './components/layout/BottomDock';
+import { UpdateNotice } from './components/layout/UpdateNotice';
 import { BottomNav } from './components/layout/BottomNav';
 import { DesktopNav } from './components/layout/DesktopNav';
 import { PwaInstallPrompt } from './components/layout/PwaInstallPrompt';
@@ -79,6 +80,9 @@ const AppContent: React.FC = () => {
 
         {/* A recipe someone sent as a link */}
         <OpenedRecipeSheet />
+
+        {/* Tells when a newer version has been published */}
+        <UpdateNotice />
 
         {/* Main Tab Views (Stay mounted underneath when modal opens) */}
         {activeTab === 'recipes' && <RecipeList />}

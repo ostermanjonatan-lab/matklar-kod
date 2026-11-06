@@ -14,9 +14,9 @@ export function stapleKeys(name: string): string[] {
     .toLowerCase()
     .replace(/\([^)]*\)/g, ' ')
     // What it is for does not matter here: "Salt till pastavattnet", "Peppar efter smak"
-    .split(/\s(?:till|efter|att|för|på|i)\s|,/)[0];
+    .split(/\s(?:till|efter|att|för|på|i)\s/)[0];
   return core
-    .split(/\s+och\s+|\s*[&+/]\s*/)
+    .split(/\s+och\s+|\s+eller\s+|\s*[&+/,]\s*/)
     .map((part) => part.trim().split(/\s+/).pop() || '')
     .filter((w) => w.length >= 3);
 }
