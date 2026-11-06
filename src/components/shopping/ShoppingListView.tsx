@@ -1117,7 +1117,7 @@ export const ShoppingListView: React.FC = () => {
                             e.stopPropagation();
                             setItemMenu(item);
                           }}
-                          className="hidden md:flex w-9 h-9 rounded-full items-center justify-center text-stone-400 hover:bg-stone-100 shrink-0"
+                          className="w-10 h-10 -mr-2 rounded-full flex items-center justify-center text-stone-400 active:bg-stone-100 md:hover:bg-stone-100 shrink-0 touch-manipulation"
                           aria-label={`Fler val för ${item.name}`}
                         >
                           <MoreVertical className="w-4 h-4" />
@@ -1131,10 +1131,6 @@ export const ShoppingListView: React.FC = () => {
           );
         })}
             </div>
-
-            <p className="md:hidden text-xs text-stone-400 pt-1">
-              Håll inne en vara för att ändra eller ta bort den.
-            </p>
 
             {/* List Management Bottom Actions */}
             <div className="flex flex-col sm:flex-row gap-2.5 pt-4 max-w-md mx-auto w-full">
