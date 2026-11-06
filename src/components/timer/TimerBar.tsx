@@ -1,5 +1,5 @@
 import React from 'react';
-import { Timer, Bell, Pause, Play, RotateCcw, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import { useTimer } from '../../context/TimerContext';
 import { useRecipes } from '../../context/RecipeContext';
 import { formatRecipeTitle } from '../../utils/formatters';
@@ -24,80 +24,66 @@ export const TimerBar: React.FC<{ placement: 'recipe' | 'app' }> = ({ placement 
   const done = timer.secondsLeft === 0;
   const recipe = placement === 'app' && timer.recipeId ? recipes.find((r) => r.id === timer.recipeId) : undefined;
   const caption =
-    placement === 'app' && timer.recipeTitle ? formatRecipeTitle(timer.recipeTitle) : `Timer: ${timer.label}`;
+    placement === 'app' && timer.recipeTitle ? formatRecipeTitle(timer.recipeTitle) : `Timer på ${timer.label}`;
+
+  const elapsed = timer.totalSeconds > 0 ? 1 - timer.secondsLeft / timer.totalSeconds : 1;
+  const textButton = 'min-h-[44px] px-3 text-sm font-semibold touch-manipulation';
 
   return (
     <div
-      className={`fixed left-4 right-4 max-w-md mx-auto bg-stone-900 text-white rounded-3xl p-3.5 shadow-2xl border border-stone-700 flex items-center justify-between gap-3 animate-slide-up ${
+      className={`fixed left-4 right-4 max-w-md mx-auto rounded-2xl border overflow-hidden shadow-[0_6px_24px_rgba(28,25,23,0.12)] animate-slide-up ${
+        done ? 'bg-[#284235] border-[#284235] text-white' : 'bg-white border-[#EBE7DF] text-stone-900'
+      } ${
         placement === 'recipe'
-          ? 'bottom-6 z-50'
+          ? 'bottom-[max(1rem,env(safe-area-inset-bottom,0px))] z-50'
           : 'bottom-[calc(6.5rem+env(safe-area-inset-bottom,0px))] z-30'
       }`}
+      role="timer"
     >
-      <button
-        type="button"
-        onClick={() => recipe && openRecipeDetail(recipe)}
-        disabled={!recipe}
-        className="flex items-center gap-3 min-w-0 text-left touch-manipulation"
-        aria-label={recipe ? `Öppna ${formatRecipeTitle(recipe.title)}` : undefined}
-      >
-        <div
-          className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 ${
-            done
-              ? 'bg-rose-500 text-white animate-bounce'
-              : timer.isRunning
-              ? 'bg-amber-400 text-stone-950 font-bold'
-              : 'bg-stone-800 text-stone-400'
-          }`}
+      <div className="flex items-center gap-2 pl-4 pr-1.5 py-2">
+        <button
+          type="button"
+          onClick={() => recipe && openRecipeDetail(recipe)}
+          disabled={!recipe}
+          className="min-w-0 flex-1 text-left touch-manipulation"
+          aria-label={recipe ? `Öppna ${formatRecipeTitle(recipe.title)}` : undefined}
         >
-          <Timer className="w-5 h-5" />
-        </div>
-
-        <div className="min-w-0">
-          <div className="text-[11px] text-stone-400 truncate">{caption}</div>
-          <div className="text-lg font-bold font-mono tracking-wider text-amber-300 flex items-center gap-1.5">
-            {done ? (
-              <>
-                <span>Klart</span>
-                <Bell className="w-4 h-4 text-amber-300 animate-bounce shrink-0" />
-              </>
-            ) : (
-              formatTimerDisplay(timer.secondsLeft)
-            )}
+          <div className="flex items-baseline gap-2.5 min-w-0">
+            <span className="text-2xl font-semibold tabular-nums leading-tight shrink-0">
+              {done ? 'Klart' : formatTimerDisplay(timer.secondsLeft)}
+            </span>
+            <span className={`text-sm truncate ${done ? 'text-emerald-100' : 'text-stone-500'}`}>
+              {done ? caption : !timer.isRunning ? `Pausad · ${caption}` : caption}
+            </span>
           </div>
-        </div>
-      </button>
+        </button>
 
-      <div className="flex items-center gap-1.5 shrink-0">
-        {!done ? (
-          <button
-            type="button"
-            onClick={toggleTimer}
-            className="w-10 h-10 rounded-2xl bg-white/15 hover:bg-white/25 active:scale-95 text-white flex items-center justify-center transition-all touch-manipulation"
-            aria-label={timer.isRunning ? 'Pausa timer' : 'Starta timer'}
-          >
-            {timer.isRunning ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 fill-white" />}
+        {done ? (
+          <button type="button" onClick={restartTimer} className={`${textButton} text-white`}>
+            Igen
           </button>
         ) : (
-          <button
-            type="button"
-            onClick={restartTimer}
-            className="px-3 h-10 rounded-2xl bg-amber-400 text-stone-950 font-bold text-xs flex items-center gap-1 active:scale-95 touch-manipulation"
-          >
-            <RotateCcw className="w-3.5 h-3.5" />
-            <span>Igen</span>
+          <button type="button" onClick={toggleTimer} className={`${textButton} text-[#284235]`}>
+            {timer.isRunning ? 'Pausa' : 'Fortsätt'}
           </button>
         )}
-
         <button
           type="button"
           onClick={clearTimer}
-          className="w-9 h-9 rounded-2xl bg-stone-800 text-stone-400 hover:text-white flex items-center justify-center touch-manipulation"
+          className={`w-11 h-11 rounded-full flex items-center justify-center touch-manipulation ${
+            done ? 'text-emerald-100 hover:bg-white/10' : 'text-stone-400 hover:bg-stone-100'
+          }`}
           aria-label="Stäng timer"
         >
-          <X className="w-4 h-4" />
+          <X className="w-5 h-5" />
         </button>
       </div>
+
+      {!done && (
+        <div className="h-[3px] bg-stone-100">
+          <div className="h-full bg-[#284235] transition-[width] duration-300 ease-linear" style={{ width: `${elapsed * 100}%` }} />
+        </div>
+      )}
     </div>
   );
 };
