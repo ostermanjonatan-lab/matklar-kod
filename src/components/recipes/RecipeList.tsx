@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 
 
-type SortOption = 'default' | 'oldest' | 'time_asc' | 'time_desc' | 'name_asc' | 'name_desc';
+type SortOption = 'default' | 'oldest' | 'time_asc' | 'time_desc' | 'difficulty_asc' | 'difficulty_desc' | 'name_asc' | 'name_desc';
 
 interface SortItem {
   id: SortOption;
@@ -34,6 +34,8 @@ const SORT_OPTIONS: SortItem[] = [
   { id: 'oldest', label: 'Först tillagda', shortLabel: 'Först tillagda' },
   { id: 'time_asc', label: 'Kortast tid', shortLabel: 'Kortast tid' },
   { id: 'time_desc', label: 'Längst tid', shortLabel: 'Längst tid' },
+  { id: 'difficulty_asc', label: 'Lättast först', shortLabel: 'Lättast först' },
+  { id: 'difficulty_desc', label: 'Svårast först', shortLabel: 'Svårast först' },
   { id: 'name_asc', label: 'Namn A–Ö', shortLabel: 'Namn A–Ö' },
   { id: 'name_desc', label: 'Namn Ö–A', shortLabel: 'Namn Ö–A' },
 ];
@@ -286,6 +288,20 @@ export const RecipeList: React.FC = () => {
           return totalTimeB - totalTimeA;
         case 'name_asc':
           return a.title.localeCompare(b.title, 'sv', { sensitivity: 'base' });
+        case 'name_desc':
+          return b.title.localeCompare(a.title, 'sv', { sensitivity: 'base' });
+        case 'difficulty_asc':
+        case 'difficulty_desc': {
+          // Recipes without a difficulty come last either way, then by name
+          const da = a.difficulty ?? null;
+          const db = b.difficulty ?? null;
+          if (da !== db) {
+            if (da === null) return 1;
+            if (db === null) return -1;
+            return sortBy === 'difficulty_asc' ? da - db : db - da;
+          }
+          return a.title.localeCompare(b.title, 'sv', { sensitivity: 'base' });
+        }
         case 'oldest': {
           const timeA = getRecipeTimestamp(a);
           const timeB = getRecipeTimestamp(b);
