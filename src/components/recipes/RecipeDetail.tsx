@@ -287,8 +287,15 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
     return result;
   }, [recipe.instructions, recipe.ingredients]);
   // "400 g", or "80 g pecorino romano · 50 g parmesan" when the word fits several ingredients
-  const mentionAmount = (indexes: number[]) =>
-    indexes
+  // One of something ("ägget", "löken") needs no "(1 st)": the word already says it
+  const mentionAmount = (indexes: number[]) => {
+    if (indexes.length === 1) {
+      const ing = recipe.ingredients[indexes[0]];
+      const scaled = scaleIngredientAmount(ing.amount, recipe.servings, servings);
+      const unit = (ing.unit || '').trim().toLowerCase().replace(/\.$/, '');
+      if (scaled === 1 && ['', 'st', 'styck', 'stycken'].includes(unit)) return '';
+    }
+    return indexes
       .map((idx) => {
         const ing = recipe.ingredients[idx];
         const scaled = scaleIngredientAmount(ing.amount, recipe.servings, servings);
@@ -298,6 +305,7 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
         return `${amount} ${name}`;
       })
       .join(' · ');
+  };
 
   // Toggle single step completion
   const toggleStepComplete = (stepNumber: number) => {
@@ -694,7 +702,9 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
                             parts.push(
                               <span key={`${inst.stepNumber}-${m.start}`} className={isStepDone ? '' : 'font-bold text-[#284235]'}>
                                 {inst.text.slice(m.start, m.end)}
-                                <span className="whitespace-nowrap"> ({mentionAmount(m.ingredients)})</span>
+                                {mentionAmount(m.ingredients) && (
+                                  <span className="whitespace-nowrap"> ({mentionAmount(m.ingredients)})</span>
+                                )}
                               </span>
                             );
                             pos = m.end;
