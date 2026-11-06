@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import type { MealPlanDay } from '../../types/recipe';
 import { getRecipeSubcategories } from '../../types/recipe';
 import { useRecipes } from '../../context/RecipeContext';
@@ -23,7 +23,6 @@ import { LunchboxIcon } from '../icons/LunchboxIcon';
 import { formatCookingTime, scaleIngredientAmount, formatAmount, formatRecipeTitle } from '../../utils/formatters';
 import {
   addDaysISO,
-  dayOfMonth,
   formatDayMonth,
   formatWeekRange,
   getISOWeekNumber,
@@ -41,16 +40,6 @@ const DAYS_OF_WEEK: MealPlanDay['dayName'][] = [
   'Lördag',
   'Söndag',
 ];
-
-const DAY_ABBR: Record<MealPlanDay['dayName'], string> = {
-  'Måndag': 'Mån',
-  'Tisdag': 'Tis',
-  'Onsdag': 'Ons',
-  'Torsdag': 'Tor',
-  'Fredag': 'Fre',
-  'Lördag': 'Lör',
-  'Söndag': 'Sön',
-};
 
 export const MealPlanView: React.FC = () => {
   const {
@@ -73,6 +62,38 @@ export const MealPlanView: React.FC = () => {
   const weekNumber = getISOWeekNumber(planWeekStart);
   // Index of today in the week shown, or -1 when another week is shown
   const todayIndex = weekDates.indexOf(today);
+
+  // Previous or next day. Past Sunday it continues into next week, before Monday into last week.
+  const stepDay = (delta: number) => {
+    const next = selectedDayIndex + delta;
+    if (next < 0) {
+      setPlanWeekStart(addDaysISO(planWeekStart, -7));
+      setSelectedDayIndex(6);
+    } else if (next > 6) {
+      setPlanWeekStart(addDaysISO(planWeekStart, 7));
+      setSelectedDayIndex(0);
+    } else {
+      setSelectedDayIndex(next);
+    }
+  };
+
+  // Swipe sideways on the day to change day
+  const swipeStartRef = useRef<{ x: number; y: number } | null>(null);
+  const handleSwipeStart = (e: React.TouchEvent) => {
+    const t = e.touches[0];
+    swipeStartRef.current = { x: t.clientX, y: t.clientY };
+  };
+  const handleSwipeEnd = (e: React.TouchEvent) => {
+    const start = swipeStartRef.current;
+    swipeStartRef.current = null;
+    if (!start) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - start.x;
+    const dy = t.clientY - start.y;
+    if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+      stepDay(dx < 0 ? 1 : -1);
+    }
+  };
 
   const goToWeek = (weekStart: string) => {
     setPlanWeekStart(weekStart);
@@ -310,7 +331,7 @@ export const MealPlanView: React.FC = () => {
         <div className="w-full max-w-md md:max-w-5xl lg:max-w-7xl mx-auto">
           {/* Row 1: Week with arrows, and Day / Week view */}
           <h1 className="sr-only">Veckoplan</h1>
-          <div className="flex items-center justify-between gap-2 mb-2.5">
+          <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-1 min-w-0">
               <button
                 type="button"
@@ -390,90 +411,6 @@ export const MealPlanView: React.FC = () => {
             </div>
           </div>
 
-        {/* Row 2: Visual 7-Day Thumbnail Strip (Mobile only - Desktop has left master list) */}
-        <div className="flex md:hidden items-center justify-between gap-1 pt-1">
-          {DAYS_OF_WEEK.map((day, idx) => {
-            const isSelected = idx === selectedDayIndex;
-            const dayData = mealPlan.find((d) => d.dayName === day);
-            const recipe = recipes.find((r) => r.id === dayData?.dinnerRecipeId);
-            const lunchRec = recipes.find((r) => r.id === dayData?.lunchRecipeId);
-            const hasCustomDinner = Boolean(dayData?.customDinner?.trim());
-            const hasCustomLunch = Boolean(dayData?.customLunch?.trim());
-            const hasLunch = Boolean(lunchRec || hasCustomLunch);
-            const hasDinner = Boolean(recipe || hasCustomDinner);
-
-            const isToday = idx === todayIndex;
-
-            return (
-              <button
-                key={day}
-                type="button"
-                onClick={() => {
-                  setSelectedDayIndex(idx);
-                  if (viewMode === 'overview') setViewMode('split');
-                }}
-                className="flex-1 min-w-0 flex flex-col items-center gap-1 py-1 transition-all touch-manipulation active:scale-95 group"
-              >
-                {/* Day name */}
-                <span
-                  className={`text-[11px] ${
-                    isSelected || isToday ? 'font-bold text-[#284235]' : 'font-medium text-stone-500'
-                  }`}
-                >
-                  {DAY_ABBR[day]}
-                </span>
-
-                {/* Circular thumbnail with active ring */}
-                <div
-                  className={`relative w-9 h-9 min-[380px]:w-10 min-[380px]:h-10 sm:w-11 sm:h-11 rounded-full overflow-hidden flex items-center justify-center transition-all duration-200 ${
-                    hasDinner ? 'border border-[#EBE7DF]' : 'bg-stone-200/60'
-                  } ${
-                    isSelected
-                      ? 'ring-2 ring-[#284235] ring-offset-2 ring-offset-[#FCFAF5] shadow-sm'
-                      : ''
-                  }`}
-                >
-                  {recipe ? (
-                    <img
-                      src={recipe.coverImageUrl}
-                      alt={recipe.title}
-                      onError={(e) => {
-                        const el = e.currentTarget;
-                        el.onerror = null;
-                        el.src = 'https://images.unsplash.com/photo-1498837167922-ddd27525d352?auto=format&fit=crop&w=1200&q=80';
-                      }}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : hasCustomDinner ? (
-                    <div className="w-full h-full bg-amber-100 flex items-center justify-center text-amber-900" title={dayData?.customDinner}>
-                      <Utensils className="w-3.5 h-3.5 text-amber-900" />
-                    </div>
-                  ) : null}
-
-                  {/* Tiny badge indicating lunch / matlåda */}
-                  {hasLunch && (
-                    <div
-                      className="absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full bg-amber-500 border border-white flex items-center justify-center text-white"
-                      title={lunchRec ? `Lunch: ${lunchRec.title}` : `Lunch: ${dayData?.customLunch}`}
-                    >
-                      <LunchboxIcon className="w-2.5 h-2.5 text-white" />
-                    </div>
-                  )}
-                </div>
-
-                {/* Date, marked when it is today */}
-                <span
-                  className={`text-[11px] tabular-nums leading-none px-1.5 py-0.5 rounded-full ${
-                    isToday ? 'bg-[#284235] text-white font-bold' : 'text-stone-500'
-                  }`}
-                  aria-label={isToday ? `I dag, ${formatDayMonth(weekDates[idx])}` : formatDayMonth(weekDates[idx])}
-                >
-                  {dayOfMonth(weekDates[idx])}
-                </span>
-              </button>
-            );
-          })}
-        </div>
       </div>
     </div>
 
@@ -631,11 +568,41 @@ export const MealPlanView: React.FC = () => {
             {/* =============================================================== */}
             {/* RIGHT DETAIL PANEL: VALD DAG (Mobile & Desktop)                 */}
             {/* =============================================================== */}
-            <div className="w-full flex-1 min-w-0 max-w-xl mx-auto md:max-w-none space-y-4">
-            {/* Day heading (desktop, the phone shows the day strip instead) */}
-            <h2 className="hidden md:block font-serif text-2xl font-bold text-stone-900 leading-none px-1">
-              {activeDayName} {formatDayMonth(weekDates[selectedDayIndex])}
-            </h2>
+            <div
+              className="w-full flex-1 min-w-0 max-w-xl mx-auto md:max-w-none space-y-4"
+              onTouchStart={handleSwipeStart}
+              onTouchEnd={handleSwipeEnd}
+            >
+            {/* Day heading with previous / next day. On the phone you can also swipe. */}
+            <div className="flex items-center justify-between gap-2">
+              <button
+                type="button"
+                onClick={() => stepDay(-1)}
+                className="w-10 h-10 -ml-2 rounded-full flex items-center justify-center text-stone-600 hover:bg-stone-100 active:bg-stone-200 touch-manipulation shrink-0 md:hidden"
+                aria-label="Föregående dag"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+              <div className="flex-1 min-w-0 text-center md:text-left md:px-1">
+                <h2 className="font-serif text-2xl font-bold text-stone-900 leading-tight truncate">
+                  {activeDayName}
+                </h2>
+                <div className="text-xs text-stone-500">
+                  {formatDayMonth(weekDates[selectedDayIndex])}
+                  {selectedDayIndex === todayIndex ? ', i dag' : ''}
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => stepDay(1)}
+                className="w-10 h-10 -mr-2 rounded-full flex items-center justify-center text-stone-600 hover:bg-stone-100 active:bg-stone-200 touch-manipulation shrink-0 md:hidden"
+                aria-label="Nästa dag"
+              >
+                <ChevronRight className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div key={`${planWeekStart}-${selectedDayIndex}`} className="space-y-4 animate-fade-in">
 
             {/* ===================== DINNER HERO CARD ===================== */}
             <div className="bg-white rounded-3xl border border-[#EBE7DF] shadow-md overflow-hidden transition-all">
@@ -664,9 +631,11 @@ export const MealPlanView: React.FC = () => {
                         <span className="bg-white/95 text-stone-900 text-[11px] font-bold px-2.5 py-1 rounded-full shadow-xs">
                           Middag
                         </span>
-                        <span className="bg-black/60 backdrop-blur-md text-white text-[11px] font-semibold px-2.5 py-1 rounded-full border border-white/20 shadow-xs">
-                          {dinnerRecipe.category}
-                        </span>
+                        {dinnerRecipe.category && dinnerRecipe.category !== 'Middag' && (
+                          <span className="bg-black/60 backdrop-blur-md text-white text-[11px] font-semibold px-2.5 py-1 rounded-full border border-white/20 shadow-xs">
+                            {dinnerRecipe.category}
+                          </span>
+                        )}
                       </div>
 
                       {/* Top Action Buttons (Randomize & Delete) */}
@@ -1095,6 +1064,7 @@ export const MealPlanView: React.FC = () => {
                   Lägg till lunch
                 </button>
               )}
+            </div>
             </div>
           </div>
         </div>
