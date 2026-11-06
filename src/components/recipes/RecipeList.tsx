@@ -574,8 +574,8 @@ export const RecipeList: React.FC = () => {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Sök recept, råvaror, pasta..."
-                className="w-full h-12 bg-white text-stone-900 placeholder-stone-400 text-base sm:text-sm rounded-2xl pl-10 pr-10 focus:outline-none focus:ring-2 focus:ring-[#284235] transition-all border border-[#EBE7DF] shadow-xs"
+                placeholder="Sök recept eller råvara"
+                className={`w-full h-12 bg-white text-stone-900 placeholder-stone-400 text-base sm:text-sm rounded-2xl pl-10 ${searchQuery ? 'pr-12' : 'pr-3'} focus:outline-none focus:ring-2 focus:ring-[#284235] transition-all border border-[#EBE7DF] shadow-xs`}
               />
               {searchQuery && (
                 <button

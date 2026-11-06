@@ -170,7 +170,7 @@ export const DesktopNav: React.FC<DesktopNavProps> = ({
                   handleTabClick('recipes');
                 }
               }}
-              placeholder="Sök recept, råvaror..."
+              placeholder="Sök recept eller råvara"
               className="w-full h-11 bg-white text-stone-900 placeholder-stone-400 text-xs rounded-xl pl-9 pr-8 border border-[#EBE7DF] focus:outline-none focus:ring-2 focus:ring-[#284235] shadow-2xs transition-all"
             />
             {searchQuery && (
