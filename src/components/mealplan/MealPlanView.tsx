@@ -1,7 +1,6 @@
 import React, { useState, useMemo, useRef } from 'react';
 import { flushSync } from 'react-dom';
 import type { MealPlanDay } from '../../types/recipe';
-import { getRecipeSubcategories } from '../../types/recipe';
 import { useRecipes } from '../../context/RecipeContext';
 import { useModalBackHandler } from '../../hooks/useModalBackHandler';
 import {
@@ -188,8 +187,6 @@ export const MealPlanView: React.FC = () => {
 
   const [pickerTab, setPickerTab] = useState<'recipe' | 'custom'>('recipe');
   const [customMealInput, setCustomMealInput] = useState<string>('');
-  const [recipeSearchQuery, setRecipeSearchQuery] = useState<string>('');
-  const [pickerCategoryFilter, setPickerCategoryFilter] = useState<string>('all');
 
   // Clear week modal
   const [showClearWeekModal, setShowClearWeekModal] = useState<boolean>(false);
@@ -351,8 +348,6 @@ export const MealPlanView: React.FC = () => {
     const existingCustom = mealType === 'dinner' ? dayObj?.customDinner : dayObj?.customLunch;
     setCustomMealInput(existingCustom || '');
     setPickerTab(existingCustom ? 'custom' : 'recipe');
-    setRecipeSearchQuery('');
-    setPickerCategoryFilter('all');
     setPickerState({
       isOpen: true,
       dayName,
@@ -360,31 +355,6 @@ export const MealPlanView: React.FC = () => {
     });
   };
 
-  // Filter recipes for picker modal
-  const filteredPickerRecipes = useMemo(() => {
-    return recipes.filter((r) => {
-      if (pickerCategoryFilter !== 'all' && r.category !== pickerCategoryFilter) {
-        return false;
-      }
-      if (!recipeSearchQuery.trim()) return true;
-      const q = recipeSearchQuery.toLowerCase().trim();
-      const subcats = getRecipeSubcategories(r);
-      return (
-        r.title.toLowerCase().includes(q) ||
-        r.category.toLowerCase().includes(q) ||
-        subcats.some((s) => s.toLowerCase().includes(q))
-      );
-    });
-  }, [recipes, recipeSearchQuery, pickerCategoryFilter]);
-
-  // Unique categories for picker
-  const pickerCategories = useMemo(() => {
-    const set = new Set<string>();
-    recipes.forEach((r) => {
-      if (r.category) set.add(r.category);
-    });
-    return Array.from(set);
-  }, [recipes]);
 
   return (
     <div className="min-h-screen bg-[#FCFAF5] pb-28 w-full max-w-full overflow-x-hidden font-sans">
@@ -1257,7 +1227,7 @@ export const MealPlanView: React.FC = () => {
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 animate-fade-in font-sans">
           <div
             className={`bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl shadow-2xl p-4 sm:p-5 space-y-3.5 flex flex-col ${
-              pickerState.mealType === 'dinner' && pickerTab === 'recipe' ? 'h-[85vh]' : 'max-h-[90vh]'
+              pickerTab === 'recipe' ? 'h-[85vh]' : 'max-h-[90vh]'
             }`}
           >
             <div className="flex items-center justify-between shrink-0">
@@ -1319,95 +1289,17 @@ export const MealPlanView: React.FC = () => {
               </button>
             </div>
 
-            {pickerTab === 'recipe' && pickerState.mealType === 'dinner' ? (
-              /* Dinner: subcategories with slideshows, then recipes (same as Välj middag on the start page) */
+            {pickerTab === 'recipe' ? (
+              /* Subcategories with slideshows, then recipes (same as Välj middag on the start page) */
               <DinnerBrowser
                 recipes={recipes}
-                currentRecipeId={mealPlan.find((d) => d.dayName === pickerState.dayName)?.dinnerRecipeId}
+                mealLabel={pickerState.mealType === 'dinner' ? 'middag' : 'lunch'}
+                currentRecipeId={(() => {
+                  const day = mealPlan.find((d) => d.dayName === pickerState.dayName);
+                  return pickerState.mealType === 'dinner' ? day?.dinnerRecipeId : day?.lunchRecipeId;
+                })()}
                 onSelect={(r) => handleSelectRecipe(r.id)}
               />
-            ) : pickerTab === 'recipe' ? (
-              <>
-                {/* Search filter input */}
-                <input
-                  type="text"
-                  value={recipeSearchQuery}
-                  onChange={(e) => setRecipeSearchQuery(e.target.value)}
-                  placeholder="Sök recept, kategori, ingrediens..."
-                  className="w-full h-11 bg-[#FCFAF5] border border-[#EBE7DF] rounded-2xl px-3.5 text-xs text-stone-900 focus:outline-none focus:ring-2 focus:ring-[#284235] shrink-0"
-                />
-
-                {/* Category Filter Pills */}
-                <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-1 shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => setPickerCategoryFilter('all')}
-                    className={`px-3 py-1.5 rounded-xl text-[11px] font-bold shrink-0 transition-all ${
-                      pickerCategoryFilter === 'all'
-                        ? 'bg-[#284235] text-white shadow-2xs'
-                        : 'bg-[#FCFAF5] text-stone-600 hover:bg-stone-100'
-                    }`}
-                  >
-                    Alla ({recipes.length})
-                  </button>
-                  {pickerCategories.map((cat) => (
-                    <button
-                      key={cat}
-                      type="button"
-                      onClick={() => setPickerCategoryFilter(cat)}
-                      className={`px-3 py-1.5 rounded-xl text-[11px] font-bold shrink-0 transition-all ${
-                        pickerCategoryFilter === cat
-                          ? 'bg-[#284235] text-white shadow-2xs'
-                          : 'bg-[#FCFAF5] text-stone-600 hover:bg-stone-100'
-                      }`}
-                    >
-                      {cat}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Scrollable recipe list */}
-                <div className="overflow-y-auto space-y-2 flex-1 divide-y divide-stone-100 pr-1">
-                  {filteredPickerRecipes.length === 0 ? (
-                    <div className="p-8 text-center text-stone-400 text-xs">
-                      Inga recept matchar din sökning
-                    </div>
-                  ) : (
-                    filteredPickerRecipes.map((r) => (
-                      <div
-                        key={r.id}
-                        onClick={() => handleSelectRecipe(r.id)}
-                        className="pt-2 pb-1 flex items-center justify-between cursor-pointer hover:bg-stone-50 rounded-2xl p-2 transition-colors touch-manipulation"
-                      >
-                        <div className="flex items-center gap-3 min-w-0 flex-1">
-                          <img
-                            src={r.coverImageUrl}
-                            alt={r.title}
-                            onError={(e) => {
-                              const el = e.currentTarget;
-                              el.onerror = null;
-                              el.src = 'https://images.unsplash.com/photo-1498837167922-ddd27525d352?auto=format&fit=crop&w=1200&q=80';
-                            }}
-                            className="w-12 h-12 rounded-xl object-cover shrink-0 shadow-2xs"
-                          />
-                          <div className="min-w-0 flex-1">
-                            <h4 className="font-serif font-bold text-sm text-stone-900 truncate">
-                              {formatRecipeTitle(r.title)}
-                            </h4>
-                            <div className="flex items-center gap-2 text-[11px] text-stone-400">
-                              <span>{r.category}</span>
-                              <span>•</span>
-                              <span>{formatCookingTime(r.prepTimeMinutes, r.cookTimeMinutes)}</span>
-                            </div>
-                          </div>
-                        </div>
-
-                        <ArrowRight className="w-4 h-4 text-stone-400 shrink-0 ml-2" />
-                      </div>
-                    ))
-                  )}
-                </div>
-              </>
             ) : (
               /* Custom Meal Tab */
               <div className="space-y-4 py-2 flex-1 overflow-y-auto pr-1">

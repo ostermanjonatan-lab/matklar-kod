@@ -92,6 +92,8 @@ const byTitle = (a: Recipe, b: Recipe) =>
 
 interface DinnerBrowserProps {
   recipes: Recipe[];
+  /** "middag" or "lunch", used in the search field and messages. The recipes are the dinner recipes either way. */
+  mealLabel?: 'middag' | 'lunch';
   /** Recipe to mark as chosen, if any */
   currentRecipeId?: string | null;
   onSelect: (recipe: Recipe) => void;
@@ -103,7 +105,7 @@ interface DinnerBrowserProps {
  * Used on the start page (Välj middag) and when planning a dinner in the meal plan.
  * It fills the height it is given; the parent decides padding and size.
  */
-export const DinnerBrowser: React.FC<DinnerBrowserProps> = ({ recipes, currentRecipeId, onSelect }) => {
+export const DinnerBrowser: React.FC<DinnerBrowserProps> = ({ recipes, mealLabel = 'middag', currentRecipeId, onSelect }) => {
   const [query, setQuery] = useState('');
   // Only dinners are chosen here, so the list starts in the Middag category
   const dinners = useMemo(() => recipes.filter((r) => r.category === 'Middag'), [recipes]);
@@ -111,6 +113,7 @@ export const DinnerBrowser: React.FC<DinnerBrowserProps> = ({ recipes, currentRe
   const [subcategory, setSubcategory] = useState<string | null>(null);
 
   const q = query.trim().toLowerCase();
+  const allLabel = mealLabel === 'lunch' ? 'Alla middagsrecept' : 'Alla middagar';
 
   const subcategories = useMemo(() => {
     const map = new Map<string, Recipe[]>();
@@ -152,7 +155,7 @@ export const DinnerBrowser: React.FC<DinnerBrowserProps> = ({ recipes, currentRe
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Sök middag"
+          placeholder={`Sök ${mealLabel}`}
           className="w-full h-11 bg-[#FCFAF5] border border-[#EBE7DF] rounded-xl pl-9 pr-3 text-base sm:text-sm text-stone-900 focus:outline-none focus:ring-2 focus:ring-[#284235]"
         />
       </div>
@@ -162,10 +165,10 @@ export const DinnerBrowser: React.FC<DinnerBrowserProps> = ({ recipes, currentRe
           type="button"
           onClick={() => setSubcategory(null)}
           className="shrink-0 mt-2 -ml-1 self-start flex items-center gap-1 min-h-[40px] pr-2 text-sm font-semibold text-stone-900 touch-manipulation"
-          aria-label="Tillbaka till alla middagar"
+          aria-label={`Tillbaka till ${allLabel.toLowerCase()}`}
         >
           <ChevronLeft className="w-5 h-5 text-stone-500" />
-          {subcategory === ALL ? 'Alla middagar' : subcategory}
+          {subcategory === ALL ? allLabel : subcategory}
         </button>
       )}
 
@@ -173,7 +176,7 @@ export const DinnerBrowser: React.FC<DinnerBrowserProps> = ({ recipes, currentRe
         {showRecipes ? (
           recipeList.length === 0 ? (
             <p className="py-6 text-sm text-stone-500">
-              {q ? `Inga middagar matchar "${query}".` : 'Det finns inga recept i kategorin Middag.'}
+              {q ? `Inga recept i Middag matchar "${query}".` : 'Det finns inga recept i kategorin Middag.'}
             </p>
           ) : (
             recipeList.map((recipe) => (
@@ -197,7 +200,7 @@ export const DinnerBrowser: React.FC<DinnerBrowserProps> = ({ recipes, currentRe
           <>
             <button type="button" onClick={() => setSubcategory(ALL)} className={rowClass}>
               <SlideshowThumb images={allDinnerImages} />
-              <span className="flex-1 min-w-0 text-sm font-semibold text-stone-900">Alla middagar</span>
+              <span className="flex-1 min-w-0 text-sm font-semibold text-stone-900">{allLabel}</span>
               <span className="text-xs text-stone-500 tabular-nums">{dinners.length}</span>
               <ChevronRight className="w-4 h-4 text-stone-300 shrink-0" />
             </button>
