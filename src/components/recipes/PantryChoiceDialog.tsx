@@ -56,17 +56,17 @@ export const PantryChoiceDialog: React.FC<PantryChoiceDialogProps> = ({ recipe, 
         <div className="grid grid-cols-2 gap-2">
           <button
             type="button"
-            onClick={() => onChoose(true)}
-            className="py-3 px-2 bg-[#284235] hover:bg-black active:scale-95 text-white font-bold rounded-2xl text-sm touch-manipulation min-h-[48px] shadow-sm transition-all"
-          >
-            Ja
-          </button>
-          <button
-            type="button"
             onClick={() => onChoose(false)}
             className="py-3 px-2 bg-[#FCFAF5] hover:bg-stone-100 border border-[#EBE7DF] active:scale-95 text-stone-800 font-semibold rounded-2xl text-sm touch-manipulation min-h-[48px] transition-all"
           >
-            Nej, köp det också
+            Köp det också
+          </button>
+          <button
+            type="button"
+            onClick={() => onChoose(true)}
+            className="py-3 px-2 bg-[#284235] hover:bg-black active:scale-95 text-white font-bold rounded-2xl text-sm touch-manipulation min-h-[48px] shadow-sm transition-all"
+          >
+            Har det hemma
           </button>
         </div>
       </div>
