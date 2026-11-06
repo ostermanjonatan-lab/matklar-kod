@@ -11,13 +11,15 @@ import {
 } from './formatters';
 
 /**
- * Draws a recipe as one tall picture (1080 px wide) to send in a chat or save on the phone:
- * the photo, the name, time and portions, the ingredients and the steps. Drawn straight on a
- * canvas with the app's own fonts, so it needs no extra library.
+ * Draws a recipe as one picture in 3:4 (1080 × 1440 px, standing) to send in a chat or save on
+ * the phone: the photo, the name, time and portions, and below that the ingredients to the left
+ * and the steps to the right. Long recipes get smaller text, then a lower photo, then no photo,
+ * so everything fits. Drawn straight on a canvas with the app's own fonts.
  */
 
 const WIDTH = 1080;
-const PAD = 80;
+const HEIGHT = 1440;
+const PAD = 64;
 const COLORS = {
   background: '#FCFAF5',
   text: '#1C1917',
@@ -84,38 +86,61 @@ function loadPhotoOnce(url: string): Promise<HTMLImageElement | null> {
 }
 
 interface Layout {
-  height: number;
+  /** Where the content ends. It fits when this is above the footer. */
+  bottom: number;
   draw: (ctx: CanvasRenderingContext2D) => void;
 }
 
-/** Works out where everything goes. Run once to get the height, then again to draw. */
-function layout(ctx: CanvasRenderingContext2D, recipe: Recipe, servings: number, photo: HTMLImageElement | null): Layout {
+/** Works out where everything goes for one text size (scale) and photo height. */
+function layout(
+  ctx: CanvasRenderingContext2D,
+  recipe: Recipe,
+  servings: number,
+  photo: HTMLImageElement | null,
+  scale: number,
+  photoHeight: number
+): Layout {
   const ops: ((c: CanvasRenderingContext2D) => void)[] = [];
   const inner = WIDTH - PAD * 2;
-  let y = 0;
+  const px = (n: number) => Math.round(n * scale);
+  const text = (font: string, color: string, value: string, x: number, y: number, align: CanvasTextAlign = 'left') =>
+    ops.push((c) => {
+      c.font = font;
+      c.fillStyle = color;
+      c.textAlign = align;
+      c.fillText(value, x, y);
+      c.textAlign = 'left';
+    });
+  const rule = (x: number, y: number, w: number) =>
+    ops.push((c) => {
+      c.fillStyle = COLORS.line;
+      c.fillRect(x, y, w, 2);
+    });
 
-  if (photo) {
-    const photoHeight = 760;
-    const scale = Math.max(WIDTH / photo.naturalWidth, photoHeight / photo.naturalHeight);
-    const w = photo.naturalWidth * scale;
-    const h = photo.naturalHeight * scale;
-    ops.push((c) => c.drawImage(photo, (WIDTH - w) / 2, (photoHeight - h) / 2, w, h));
-    y = photoHeight + 72;
+  let y: number;
+  if (photo && photoHeight > 0) {
+    const s = Math.max(WIDTH / photo.naturalWidth, photoHeight / photo.naturalHeight);
+    const w = photo.naturalWidth * s;
+    const h = photo.naturalHeight * s;
+    ops.push((c) => {
+      c.save();
+      c.beginPath();
+      c.rect(0, 0, WIDTH, photoHeight);
+      c.clip();
+      c.drawImage(photo, (WIDTH - w) / 2, (photoHeight - h) / 2, w, h);
+      c.restore();
+    });
+    y = photoHeight + px(36);
   } else {
-    y = 110;
+    y = PAD;
   }
 
   // Name
-  ctx.font = `700 68px ${SERIF}`;
+  const titleFont = `700 ${px(60)}px ${SERIF}`;
+  ctx.font = titleFont;
   for (const line of wrap(ctx, formatRecipeTitle(recipe.title), inner)) {
-    y += 68;
-    const yy = y;
-    ops.push((c) => {
-      c.font = `700 68px ${SERIF}`;
-      c.fillStyle = COLORS.text;
-      c.fillText(line, PAD, yy);
-    });
-    y += 14;
+    y += px(62);
+    text(titleFont, COLORS.text, line, PAD, y);
   }
 
   // Time, portions and difficulty
@@ -126,106 +151,88 @@ function layout(ctx: CanvasRenderingContext2D, recipe: Recipe, servings: number,
   ]
     .filter(Boolean)
     .join('  ·  ');
-  y += 46;
-  const metaY = y;
-  ops.push((c) => {
-    c.font = `500 32px ${SANS}`;
-    c.fillStyle = COLORS.muted;
-    c.fillText(meta, PAD, metaY);
-  });
+  y += px(44);
+  text(`500 ${px(28)}px ${SANS}`, COLORS.muted, meta, PAD, y);
 
-  const heading = (text: string) => {
-    y += 110;
-    const yy = y;
-    ops.push((c) => {
-      c.font = `700 46px ${SERIF}`;
-      c.fillStyle = COLORS.text;
-      c.fillText(text, PAD, yy);
-    });
-    y += 30;
-  };
-  const rule = (yy: number) =>
-    ops.push((c) => {
-      c.fillStyle = COLORS.line;
-      c.fillRect(PAD, yy, inner, 2);
-    });
+  // Two columns: ingredients to the left, steps to the right
+  const gap = px(44);
+  const leftW = Math.round((inner - gap) * 0.4);
+  const rightX = PAD + leftW + gap;
+  const rightW = WIDTH - PAD - rightX;
+  const columnTop = y + px(40);
+  const headingFont = `700 ${px(36)}px ${SERIF}`;
+  const bodySize = px(25);
+  const lineHeight = Math.round(bodySize * 1.42);
+  const bodyFont = `400 ${bodySize}px ${SANS}`;
+  const boldFont = `700 ${bodySize}px ${SANS}`;
 
-  // Ingredients: name to the left, amount to the right
-  if (recipe.ingredients.length > 0) {
-    heading('Ingredienser');
-    rule(y);
-    for (const ing of recipe.ingredients) {
-      const scaled = scaleIngredientAmount(ing.amount, recipe.servings, servings);
-      const amount = scaled !== null ? `${formatAmount(scaled)} ${formatUnit(ing.unit, scaled)}`.trim() : ing.unit || '';
-      const name = capitalizeFirst(formatIngredientName(ing.name, scaled, ing.unit));
-      ctx.font = `700 32px ${SANS}`;
-      const amountWidth = amount ? ctx.measureText(amount).width + 32 : 0;
-      ctx.font = `400 32px ${SANS}`;
-      const lines = wrap(ctx, name, inner - amountWidth);
-      const top = y;
-      lines.forEach((line, i) => {
-        const yy = top + 58 + i * 44;
-        ops.push((c) => {
-          c.font = `400 32px ${SANS}`;
-          c.fillStyle = COLORS.text;
-          c.fillText(line, PAD, yy);
-        });
-      });
-      if (amount) {
-        ops.push((c) => {
-          c.font = `700 32px ${SANS}`;
-          c.fillStyle = COLORS.green;
-          c.textAlign = 'right';
-          c.fillText(amount, WIDTH - PAD, top + 58);
-          c.textAlign = 'left';
-        });
-      }
-      y = top + 58 + (lines.length - 1) * 44 + 30;
-      rule(y);
-    }
+  // Ingredients: "400 g Spaghetti" with the amount in green
+  let ly = columnTop + px(36);
+  text(headingFont, COLORS.text, 'Ingredienser', PAD, ly);
+  ly += px(20);
+  rule(PAD, ly, leftW);
+  for (const ing of recipe.ingredients) {
+    const scaled = scaleIngredientAmount(ing.amount, recipe.servings, servings);
+    const amount = scaled !== null ? `${formatAmount(scaled)} ${formatUnit(ing.unit, scaled)}`.trim() : ing.unit || '';
+    const name = capitalizeFirst(formatIngredientName(ing.name, scaled, ing.unit));
+    ctx.font = boldFont;
+    const amountW = amount ? ctx.measureText(amount + ' ').width : 0;
+    ctx.font = bodyFont;
+    // The first line starts after the amount, the next lines use the whole column
+    const firstLines = wrap(ctx, name, leftW - amountW);
+    const lines = firstLines.length > 1 ? [firstLines[0], ...wrap(ctx, firstLines.slice(1).join(' '), leftW)] : firstLines;
+    let row = ly + px(14) + bodySize;
+    if (amount) text(boldFont, COLORS.green, amount, PAD, row);
+    lines.forEach((line, i) => {
+      text(bodyFont, COLORS.text, line, PAD + (i === 0 ? amountW : 0), row);
+      if (i < lines.length - 1) row += lineHeight;
+    });
+    ly = row + px(16);
+    rule(PAD, ly, leftW);
   }
 
   // Steps, numbered
-  if (recipe.instructions.length > 0) {
-    heading('Gör så här');
-    rule(y);
-    const textX = PAD + 64;
-    for (const [i, step] of recipe.instructions.entries()) {
-      ctx.font = `400 32px ${SANS}`;
-      const lines = wrap(ctx, step.text, WIDTH - PAD - textX);
-      const top = y;
-      ops.push((c) => {
-        c.font = `700 36px ${SERIF}`;
-        c.fillStyle = COLORS.faint;
-        c.fillText(String(i + 1), PAD, top + 60);
-      });
-      lines.forEach((line, li) => {
-        const yy = top + 60 + li * 48;
-        ops.push((c) => {
-          c.font = `400 32px ${SANS}`;
-          c.fillStyle = COLORS.text;
-          c.fillText(line, textX, yy);
-        });
-      });
-      y = top + 60 + (lines.length - 1) * 48 + 34;
-      rule(y);
-    }
+  let ry = columnTop + px(36);
+  text(headingFont, COLORS.text, 'Gör så här', rightX, ry);
+  ry += px(20);
+  rule(rightX, ry, rightW);
+  const numberW = px(40);
+  for (const [i, step] of recipe.instructions.entries()) {
+    ctx.font = bodyFont;
+    const lines = wrap(ctx, step.text, rightW - numberW);
+    let row = ry + px(14) + bodySize;
+    text(`700 ${px(28)}px ${SERIF}`, COLORS.faint, String(i + 1), rightX, row);
+    lines.forEach((line, li) => {
+      text(bodyFont, COLORS.text, line, rightX + numberW, row);
+      if (li < lines.length - 1) row += lineHeight;
+    });
+    ry = row + px(16);
+    rule(rightX, ry, rightW);
   }
 
-  // Where the picture comes from
-  y += 90;
-  const footY = y;
-  ops.push((c) => {
-    c.font = `500 26px ${SANS}`;
-    c.fillStyle = COLORS.faint;
-    c.fillText('Från MatKlar', PAD, footY);
-  });
-  y += 70;
+  text(`500 24px ${SANS}`, COLORS.faint, 'Från MatKlar', PAD, HEIGHT - 40);
 
   return {
-    height: Math.ceil(y),
+    bottom: Math.max(ly, ry),
     draw: (c) => ops.forEach((op) => op(c)),
   };
+}
+
+/** The largest text and photo that make the recipe fit. Last resort: the smallest text, cut off. */
+function fitLayout(ctx: CanvasRenderingContext2D, recipe: Recipe, servings: number, photo: HTMLImageElement | null): Layout {
+  const limit = HEIGHT - 80;
+  const tries: [number, number][] = [];
+  if (photo) {
+    for (let s = 1; s >= 0.75; s -= 0.05) tries.push([s, 560]);
+    for (let s = 0.9; s >= 0.6; s -= 0.05) tries.push([s, 400]);
+  }
+  for (let s = 1; s >= 0.5; s -= 0.05) tries.push([s, 0]);
+  let last: Layout | null = null;
+  for (const [s, ph] of tries) {
+    last = layout(ctx, recipe, servings, photo, s, ph);
+    if (last.bottom <= limit) return last;
+  }
+  return last!;
 }
 
 /** Makes the picture of the recipe, with the amounts for the given number of portions. */
@@ -244,14 +251,13 @@ export async function createRecipeImage(recipe: Recipe, servings: number): Promi
   const photo = await loadPhoto(recipe.coverImageUrl);
 
   const canvas = document.createElement('canvas');
-  const measure = canvas.getContext('2d')!;
-  const { height, draw } = layout(measure, recipe, servings, photo);
-
   canvas.width = WIDTH;
-  canvas.height = height;
+  canvas.height = HEIGHT;
   const ctx = canvas.getContext('2d')!;
+  const { draw } = fitLayout(ctx, recipe, servings, photo);
+
   ctx.fillStyle = COLORS.background;
-  ctx.fillRect(0, 0, WIDTH, height);
+  ctx.fillRect(0, 0, WIDTH, HEIGHT);
   ctx.textBaseline = 'alphabetic';
   draw(ctx);
 
