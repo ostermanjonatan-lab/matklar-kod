@@ -22,6 +22,7 @@ import {
   ShoppingCart
 } from 'lucide-react';
 import { PortionScaler } from './PortionScaler';
+import { findIngredientsInStep } from '../../utils/stepIngredients';
 import { StarRating } from './StarRating';
 import { EditRecipeModal } from './EditRecipeModal';
 import { useModalBackHandler } from '../../hooks/useModalBackHandler';
@@ -319,6 +320,17 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
   const toggleIngredientCheck = (index: number) => {
     setCheckedIngredients((prev) => ({ ...prev, [index]: !prev[index] }));
   };
+
+  // Ingredients (with an amount) mentioned in each step, shown under the step
+  const stepIngredients = useMemo(() => {
+    const result: Record<number, number[]> = {};
+    for (const inst of recipe.instructions) {
+      result[inst.stepNumber] = findIngredientsInStep(inst.text, recipe.ingredients).filter(
+        (idx) => typeof recipe.ingredients[idx].amount === 'number' && recipe.ingredients[idx].amount! > 0
+      );
+    }
+    return result;
+  }, [recipe.instructions, recipe.ingredients]);
 
   // Toggle single step completion
   const toggleStepComplete = (stepNumber: number) => {
@@ -729,6 +741,26 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
                         }
                         return <span key={sIdx}>{seg.text}</span>;
                       })}
+
+                      {stepIngredients[inst.stepNumber]?.length > 0 && (
+                        <p className={`mt-1.5 text-xs leading-relaxed ${isStepDone ? 'text-stone-400' : 'text-stone-500'}`}>
+                          {stepIngredients[inst.stepNumber].map((idx, i) => {
+                            const ing = recipe.ingredients[idx];
+                            const scaled = scaleIngredientAmount(ing.amount, recipe.servings, servings);
+                            const amountText = `${formatAmount(scaled)} ${formatUnit(ing.unit, scaled)}`.trim();
+                            const name = formatIngredientName(ing.name, scaled, ing.unit)
+                              .replace(/\s*\([^)]*\)/g, '')
+                              .trim()
+                              .toLowerCase();
+                            return (
+                              <React.Fragment key={idx}>
+                                {i > 0 && <span className="text-stone-400">{'\u00a0· '}</span>}
+                                <span className={`whitespace-nowrap ${isStepDone ? '' : 'font-medium text-stone-700'}`}>{amountText}</span> {name}
+                              </React.Fragment>
+                            );
+                          })}
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>
