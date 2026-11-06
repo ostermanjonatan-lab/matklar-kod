@@ -113,7 +113,7 @@ export const DinnerBrowser: React.FC<DinnerBrowserProps> = ({ recipes, mealLabel
   const [subcategory, setSubcategory] = useState<string | null>(null);
 
   const q = query.trim().toLowerCase();
-  const allLabel = mealLabel === 'lunch' ? 'Alla middagsrecept' : 'Alla middagar';
+  const allLabel = 'Alla måltider';
 
   const subcategories = useMemo(() => {
     const map = new Map<string, Recipe[]>();
