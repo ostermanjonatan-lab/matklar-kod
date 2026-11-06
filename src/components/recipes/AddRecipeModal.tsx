@@ -109,6 +109,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = ({ onClose, closeGu
       setSubcategories(parsed.subcategory.split(',').map((s: string) => s.trim()).filter(Boolean));
     }
     if (parsed.servings) setServings(parsed.servings);
+    if (parsed.difficulty) setDifficulty(parsed.difficulty);
     if (parsed.cookingTimeMinutes && parsed.cookingTimeMinutes > 0) {
       setCookingTimeMinutes(parsed.cookingTimeMinutes);
     }
@@ -162,12 +163,12 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = ({ onClose, closeGu
   // Commit: parse the (possibly user-edited) OCR review text into the form
   const handleApplyOcrReviewText = () => {
     if (!ocrReviewText.trim()) return;
-    const parsed = parseRawRecipeText(ocrReviewText);
+    const parsed = parseRawRecipeText(ocrReviewText, { fromOcr: true });
     applyParsedResult(parsed);
     setOcrReviewMode(false);
     setActiveImportMode('manual');
     setToastMessage(
-      `Recept inlagt! ${parsed.ingredients.length} ingredienser, ${parsed.instructions.length} steg.`
+      `${parsed.ingredients.length} ingredienser och ${parsed.instructions.length} steg hittades`
     );
     setTimeout(() => setToastMessage(null), 4000);
   };
@@ -181,7 +182,9 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = ({ onClose, closeGu
     applyParsedResult(parsed);
     setActiveImportMode('manual');
     setToastMessage(
-      `Text tolkad! ${parsed.ingredients.length} ingredienser och ${parsed.instructions.length} steg identifierades.`
+      parsed.ingredients.length === 0 && parsed.instructions.length === 0
+        ? 'Hittade inga ingredienser eller steg. Kontrollera texten.'
+        : `${parsed.ingredients.length} ingredienser och ${parsed.instructions.length} steg hittades`
     );
     setTimeout(() => setToastMessage(null), 4000);
   };

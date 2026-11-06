@@ -46,7 +46,8 @@ export function detectCategory(rawText?: string): RecipeCategory {
     c.includes('saft') ||
     c.includes('mocktail') ||
     c.includes('kaffe') ||
-    c.includes('te')
+    // "te" only as a word of its own, not inside "tomater" or "tagliatelle"
+    /(^|[^a-zåäöé])(te|chai|latte)([^a-zåäöé]|$)/.test(c)
   ) {
     return 'Dryck';
   }
@@ -144,7 +145,7 @@ export function detectSubcategories(
   // 3. Dryck
   else if (category === 'Dryck') {
     if (/smoothie|juice|shake|bowl/i.test(titleLower)) matches.push('Smoothies & Bowls');
-    if (/kaffe|te|latte|cappuccino|espresso|chai/i.test(titleLower)) matches.push('Kaffe & Te');
+    if (/kaffe|cappuccino|espresso|(^|[^a-zåäöé])(te|latte|chai)([^a-zåäöé]|$)/i.test(titleLower)) matches.push('Kaffe & Te');
     if (/mocktail|alkoholfritt|lemonad|saft/i.test(titleLower)) matches.push('Mocktails (Alkoholfritt)');
     if (/drink|cocktail|spritz|mojito|gin|vodka|rom/i.test(titleLower)) matches.push('Drinkar & Cocktails');
     if (matches.length === 0) matches.push('Måltidsdryck');
@@ -181,52 +182,58 @@ export function detectSubcategories(
     if (matches.length === 0) matches.push('Kalla såser');
   }
 
-  // 7. Middag
+  // 7. Middag. The title (and description, keywords) decides first. The ingredients are only
+  // used when that gives nothing, since words inside ingredient names mislead
+  // ("currypasta" is not pasta, "färsk koriander" is not färs).
   else {
-    if (/pasta|spaghetti|lasagne|tagliatelle|penne|makaroner|gnocchi|tortellini|fettuccine|ravioli|carbonara|bolognese/i.test(combined)) {
-      matches.push('Pasta');
-    }
-    if (/ris|jasminris|basmatiris|risotto|arborio|stekt ris/i.test(combined)) {
-      matches.push('Ris');
-    }
-    if (/potatis|potatismos|pommes|klyftpotatis|rostad potatis|hasselback|potatisgratäng|bakad potatis|färskpotatis|mandelpotatis|delikatesspotatis|potatissallad/i.test(combined)) {
-      matches.push('Potatis');
-    }
-    if (/burgare|hamburgare|smash burger|cheeseburger/i.test(combined)) {
-      matches.push('Burgare');
-    }
-    if (/kyckling|kalkon|höna|drumsticks/i.test(combined)) {
-      matches.push('Kyckling');
-    }
-    if (/fisk|lax|torsk|sej|kolja|tonfisk|sill|strömming|abborre|gös|hälleflundra|havskatt|rödspätta|makrill|fiskgratäng|fisksoppa/i.test(combined)) {
-      matches.push('Fisk');
-    }
-    if (/räk|räkor|kräft|kräftor|hummer|mussl|musslor|ostron|bläckfisk|skaldjur|scampi|gambas|krabb|havskräft|skagen/i.test(combined)) {
-      matches.push('Skaldjur');
-    }
-    if (/färs|köttfärs|blandfärs|nötfärs|fläskfärs|köttbullar|biff|oxfilé|ryggbiff|entrecôte|fläskfilé|karré|revbensspjäll|falukorv|korv|lamm|högrev|skinka|bacon/i.test(combined)) {
-      matches.push('Kött & Färs');
-    }
-    if (/wok|ramen|sushi|pad thai|tikka|teriyaki|satay|dumplings|bao|curry|asiatisk|kimchi|tandoori/i.test(combined)) {
-      matches.push('Asiatiskt');
-    }
-    if (/taco|fajita|enchilada|quesadilla|burrito|nacho|texmex/i.test(combined)) {
-      matches.push('Tacos & Texmex');
-    }
-    if (/soppa|gazpacho|buljong|minestrone|ramen|nudelsoppa/i.test(combined)) {
-      matches.push('Soppor');
-    }
-    if (/gryta|chili con carne|gulasch|kalops|stroganoff|boeuf|currygryta|daal|tagine|dillkött/i.test(combined)) {
-      matches.push('Grytor');
-    }
-    if (/gratäng|i ugn|ugnsbakad|ugnsstekt|paj|låda|ugnsform/i.test(combined)) {
-      matches.push('Ugn & Gratäng');
-    }
-    if (/kåldolmar|raggmunk|stekt fläsk|pyttipanna|ärtsoppa|kroppkakor|rotmos|blodpudding|pannbiff|janssons|husman/i.test(combined)) {
-      matches.push('Husmanskost');
-    }
-    if (/sallad|caesar|poke bowl/i.test(combined)) {
-      matches.push('Sallad');
+    const titleText = [title, description, keywords].join(' ').toLowerCase();
+    for (const mText of [titleText, combined]) {
+      if (/pasta|spaghetti|lasagne|tagliatelle|penne|makaroner|gnocchi|tortellini|fettuccine|ravioli|carbonara|bolognese/i.test(mText)) {
+        matches.push('Pasta');
+      }
+      if (/(^|[^a-zåäö])(ris|risotto)([^a-zåäö]|$)|jasminris|basmatiris|arborio|stekt ris/i.test(mText)) {
+        matches.push('Ris');
+      }
+      if (/potatis|potatismos|pommes|klyftpotatis|rostad potatis|hasselback|potatisgratäng|bakad potatis|färskpotatis|mandelpotatis|delikatesspotatis|potatissallad/i.test(mText)) {
+        matches.push('Potatis');
+      }
+      if (/burgare|hamburgare|smash burger|cheeseburger/i.test(mText)) {
+        matches.push('Burgare');
+      }
+      if (/kyckling|kalkon|höna|drumsticks/i.test(mText)) {
+        matches.push('Kyckling');
+      }
+      if (/fisk|lax|torsk|sej|kolja|tonfisk|sill|strömming|abborre|gös|hälleflundra|havskatt|rödspätta|makrill|fiskgratäng|fisksoppa/i.test(mText)) {
+        matches.push('Fisk');
+      }
+      if (/räk|räkor|kräft|kräftor|hummer|mussl|musslor|ostron|bläckfisk|skaldjur|scampi|gambas|krabb|havskräft|skagen/i.test(mText)) {
+        matches.push('Skaldjur');
+      }
+      if (/(^|[^a-zåäö])färs([^a-zåäök]|$)|köttfärs|blandfärs|nötfärs|fläskfärs|köttbullar|biff|oxfilé|ryggbiff|entrecôte|fläskfilé|karré|revbensspjäll|falukorv|korv|lamm|högrev|skinka|bacon/i.test(mText)) {
+        matches.push('Kött & Färs');
+      }
+      if (/wok|ramen|sushi|pad thai|tikka|teriyaki|satay|dumplings|bao|curry|asiatisk|kimchi|tandoori/i.test(mText)) {
+        matches.push('Asiatiskt');
+      }
+      if (/taco|fajita|enchilada|quesadilla|burrito|nacho|texmex/i.test(mText)) {
+        matches.push('Tacos & Texmex');
+      }
+      if (/soppa|gazpacho|buljong|minestrone|ramen|nudelsoppa/i.test(mText)) {
+        matches.push('Soppor');
+      }
+      if (/gryta|chili con carne|gulasch|kalops|stroganoff|boeuf|currygryta|daal|tagine|dillkött/i.test(mText)) {
+        matches.push('Grytor');
+      }
+      if (/gratäng|i ugn|ugnsbakad|ugnsstekt|paj|låda|ugnsform/i.test(mText)) {
+        matches.push('Ugn & Gratäng');
+      }
+      if (/kåldolmar|raggmunk|stekt fläsk|pyttipanna|ärtsoppa|kroppkakor|rotmos|blodpudding|pannbiff|janssons|husman/i.test(mText)) {
+        matches.push('Husmanskost');
+      }
+      if (/sallad|caesar|poke bowl/i.test(mText)) {
+        matches.push('Sallad');
+      }
+      if (matches.length > 0) break;
     }
     if (matches.length === 0) {
       matches.push('Husmanskost');

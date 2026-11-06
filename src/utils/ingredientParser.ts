@@ -10,6 +10,8 @@ export interface ParsedRecipeData {
   subcategories?: string[];
   servings: number;
   cookingTimeMinutes?: number;
+  /** 1 = lätt, 2 = medel, 3 = svår, when the text says so */
+  difficulty?: 1 | 2 | 3;
   ingredients: Ingredient[];
   instructions: Instruction[];
 }
@@ -974,28 +976,35 @@ export function parseFractionOrNumber(raw: string): number | null {
  * - Digit vs letter confusion: 'l dl' -> '1 dl', 'I tsk' -> '1 tsk', '4OOg' -> '400 g'
  * - Separates joined numbers and units: '400g' -> '400 g', '2st' -> '2 st'
  */
-export function cleanOcrArtifacts(rawText: string): string {
+export function cleanOcrArtifacts(rawText: string, options: { ocr?: boolean } = { ocr: true }): string {
   if (!rawText) return '';
 
-  let text = rawText
-    // Remove null bytes and unusual control characters
-    .replace(/[\x00-\x09\x0B\x0C\x0E-\x1F]/g, '')
+  // Remove null bytes and unusual control characters
+  let text = rawText.replace(/[\x00-\x09\x0B\x0C\x0E-\x1F]/g, '');
+
+  // Fixes for misread letters only make sense for scanned text. On pasted text they do harm,
+  // e.g. "Lägg i lök" would become "Lägg 1 lök".
+  if (options.ocr !== false) {
+    text = text
     // Replace OCR 'l' or 'I' or '|' when followed by standard units (preserving line breaks)
-    .replace(/(^|[\r\n]|[ \t])[lI|]\s*(liter|dl|cl|ml|l\b|msk|tsk|krm|g\b|kg|st|kruka|burk|burkar|pkt|påse|påsar|klyfta|klyftor|skiva|skivor)\b/gi, (_m, prefix, unit) => `${prefix}1 ${unit}`)
+    .replace(/(^|[\r\n]|[ \t])[lI|]\s*(liter|dl|cl|ml|l|msk|tsk|krm|g|kg|st|kruka|burk|burkar|pkt|påse|påsar|klyfta|klyftor|skiva|skivor)(?![a-zA-ZåäöÅÄÖéü])/g, (_m, prefix, unit) => `${prefix}1 ${unit}`)
     // Replace 'l/2' or 'I/2' with '1/2' (preserving line breaks)
     .replace(/(^|[\r\n]|[ \t])[lI|]\/([248])/g, (_m, prefix, denom) => `${prefix}1/${denom}`)
     // Replace capital 'O' in numbers e.g. 4OO -> 400, 5Og -> 50 g
     .replace(/(\d)[oO](\d)/g, '$10$2')
     .replace(/(\d)[oO]\s*(g|kg|ml|dl)\b/gi, '$10 $2')
-    // Separate fractions joined with units: e.g. "½dl" -> "½ dl"
-    .replace(/([½¼¾⅓⅔⅛])\s*([a-zA-ZåäöÅÄÖ]+)/g, '$1 $2')
     // Fix common OCR artifact where "½ dl" is misread as "14 dl" or "24 dl" or "1/4 dl"
     .replace(/\b(?:14|24)\s*dl\s*(tomatpuré|kakao|mjöl|socker|salt|vin|olja|soja|grädde|vatten)/gi, '½ dl $1')
     // Fix OCR 8 or 9 misread as 'g' after 'ca', e.g. "ca 4008" -> "ca 400 g", "ca 2508" -> "ca 250 g"
     .replace(/\bca\s*(\d{2,4})\s*[89]\b/gi, 'ca $1 g')
     .replace(/\bca\s*(\d{2,4})[89]\b/gi, 'ca $1 g')
     // Fix OCR '1agerblad' -> 'lagerblad'
-    .replace(/\b(\d+)\s*1agerblad\b/gi, '$1 lagerblad')
+    .replace(/\b(\d+)\s*1agerblad\b/gi, '$1 lagerblad');
+  }
+
+  text = text
+    // Separate fractions joined with units: e.g. "½dl" -> "½ dl"
+    .replace(/([½¼¾⅓⅔⅛])\s*([a-zA-ZåäöÅÄÖ]+)/g, '$1 $2')
     // Separate joined number and unit (e.g. "400g", "2st", "1msk", "2,5dl", "2burkar")
     .replace(/(\d+(?:[,\.]\d+)?)\s*(g|gram|kg|kilo|kilogram|hg|hekto|hektogram|dl|deciliter|cl|centiliter|ml|milliliter|liter|msk|matsked|matskedar|tsk|tesked|teskedar|krm|kryddmått|st|styck|stycken|kruka|krukor|burk|burkar|pkt|paket|skiva|skivor|klyfta|klyftor|blad|påse|påsar|förp|frp|förpackning|förpackningar|nypa|nypor|knippe|knippen|tärning|tärningar|kub|kuber|kopp|koppar|glas|näve|nävar|droppe|droppar|kanna|kannor|bit|bitar|tub|tuber|flaska|flaskor|rulle|rullar|bunt|buntar|stång|stänger|kvist|kvistar|kula|kulor|huvud|huvuden|ask|askar|stjälk|stjälkar|skopa|skopor|korg|korgar|kartong|kartonger|bägare|tråg)\b/gi, '$1 $2 ')
     // Separate multi-letter unit and following food word (e.g. "1dlrött" -> "1 dl rött", "3mskolio" -> "3 msk olio")
@@ -1688,10 +1697,18 @@ export function isInstructionLine(line: string): boolean {
 /**
  * Helper to determine whether an ingredient line wrapped across two lines in a cookbook column
  */
-function shouldMergeWithPreviousIngredient(prevLine: string, curLine: string): boolean {
+function shouldMergeWithPreviousIngredient(prevLine: string, curLine: string, loose: boolean = true): boolean {
   if (!prevLine || !curLine) return false;
   const prevTrimmed = prevLine.trim();
   const curTrimmed = curLine.trim();
+
+  // Pasted text keeps each ingredient on its own line. Only join when the line above clearly
+  // continues (ends with a comma or dash, or with "och", "eller" and the like) and the next line
+  // does not start with an amount of its own.
+  if (!loose) {
+    if (/^(\d|[½¼¾⅓⅔⅛]|ca\b)/i.test(curTrimmed)) return false;
+    return /[,–\-—]$/.test(prevTrimmed) || /\b(?:och|eller|till|av|med|på)$/i.test(prevTrimmed);
+  }
 
   // If previous line ends with comma, dash, or connecting modifier, always merge
   if (/[,–\-—]$/.test(prevTrimmed)) return true;
@@ -1713,13 +1730,13 @@ function shouldMergeWithPreviousIngredient(prevLine: string, curLine: string): b
 /**
  * Merges multi-line ingredient lines in a cookbook column
  */
-export function mergeIngredientLines(lines: string[]): string[] {
+export function mergeIngredientLines(lines: string[], loose: boolean = true): string[] {
   const merged: string[] = [];
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
     if (!line) continue;
 
-    if (merged.length > 0 && shouldMergeWithPreviousIngredient(merged[merged.length - 1], line)) {
+    if (merged.length > 0 && shouldMergeWithPreviousIngredient(merged[merged.length - 1], line, loose)) {
       merged[merged.length - 1] = merged[merged.length - 1] + ' ' + line;
     } else {
       merged.push(line);
@@ -2013,268 +2030,327 @@ export function extractRecipeTitleFromLines(rawLines: string[]): {
   };
 }
 
-export function parseRawRecipeText(text: string): ParsedRecipeData {
-  const cleaned = cleanOcrArtifacts(text);
-  const rawLines = cleaned
-    .split(/\r?\n+/)
-    .map((l) => l.trim())
+// ── Pasted recipe text ─────────────────────────────────────────────────────
+
+/** Lines copied along from recipe web pages that are not part of the recipe. */
+const CLUTTER_LINE =
+  /^(spara(d)?|dela|skriv ut|printa|betyg(sätt)?(\s.*)?|kommentarer?|kommentera|gilla|logga in|annons(er)?|hoppa till recept(et)?|visa fler|visa mer|läs mer|prenumerera|nyhetsbrev|köp ingredienser(na)?|handla ingredienser(na)?|lägg (i|till i) inköpslista(n)?|starta timer|kopiera länk|recept(et)? av\b.*|foto:.*|bild:.*|text:.*|publicerad.*|uppdaterad.*|\(\d[\d\s]*(röster|betyg)?\)|\d+[,.]?\d*\s*\(\d[\d\s]*\)|\d+[,.]?\d*\s*av\s*5.*|\d+\s*(kommentarer|röster|recensioner))$/i;
+
+/** "Ingredienser", "Du behöver" and similar, possibly followed by portions. */
+const INGREDIENT_HEADER =
+  /^(ingredienser|ingrediens|du behöver|det här behöver du|det behöver du|vad du behöver|vad behöver du|innehåll|handla)\b/i;
+
+/** "Gör så här", "Instruktioner" and similar. */
+const INSTRUCTION_HEADER =
+  /^(gör så här|gör såhär|så här gör du|så gör du|tillagning|instruktioner|instruktion|tillvägagångssätt|tillredning|beredning|arbetsgång|metod|steg för steg|steg)\s*:?$/i;
+
+/** Sub-headings inside the ingredient list ("Sås", "Till servering"). They are skipped. */
+const INGREDIENT_SUBHEADER =
+  /^(sås(en)?|dressing(en)?|garnering|servering|till servering|tillbehör|marinad(en)?|glasyr(en)?|fyllning(en)?|pajskal(et)?|botten|bottnen|kräm(en)?|topping|deg(en)?|smet(en)?|gryta(n)?|ris(et)?|pasta|röra|röran|salsa|salladen|sallad|till (såsen|garnering|servering|panering|gratinering|stekning|toppingen|degen|fyllningen|botten|krämen))\s*:?$/i;
+
+/** Words a step starts with ("Koka upp vattnet", "Låt puttra"). The whole first word must match. */
+const STEP_VERBS = new Set([
+  'ansa', 'använd', 'baka', 'blanda', 'blötlägg', 'bred', 'bryn', 'dekorera', 'dela', 'doppa', 'dra', 'fräs', 'fyll',
+  'forma', 'garnera', 'gör', 'grädda', 'gratinera', 'grilla', 'hacka', 'häll', 'jäs', 'kavla', 'klä', 'knåda', 'koka',
+  'krydda', 'lägg', 'låt', 'marinera', 'mixa', 'mosa', 'mät', 'ös', 'öppna', 'pensla', 'plocka', 'pressa', 'puttra',
+  'rensa', 'riv', 'ringla', 'rör', 'rulla', 'sätt', 'servera', 'sila', 'sjud', 'skala', 'skär', 'skiva', 'skölj',
+  'smaka', 'smält', 'späd', 'spritsa', 'ställ', 'stek', 'strimla', 'strö', 'ta', 'tillsätt', 'tina', 'toppa', 'torka',
+  'tryck', 'tvätta', 'vänd', 'värm', 'vispa', 'börja', 'förvärm', 'fördela', 'placera', 'låt', 'ugnsbaka', 'ångkoka',
+]);
+
+function startsWithStepVerb(line: string): boolean {
+  const first = line.trim().split(/\s+/)[0]?.toLowerCase().replace(/[^a-zåäöé]/g, '') || '';
+  return STEP_VERBS.has(first);
+}
+
+const QUANTITY_START = /^(ca\.?\s+|cirka\s+|c:a\s+)?(\d+([.,]\d+)?|\d+\s*[-–]\s*\d+|\d+\/\d+|[½¼¾⅓⅔⅛])\s*/i;
+const SENTENCE_END = /[.!?:)]$/;
+
+function stripBullet(line: string): string {
+  return line
+    .replace(/^\[\s?[xX ]?\s?\]\s*/, '')
+    .replace(/^[•·▪◦●○■□▢☐☑✓✔*]+\s*/, '')
+    .replace(/^[-–—]\s+/, '')
+    .trim();
+}
+
+/** Servings from lines like "4 portioner", "Portioner: 4", "8 bitar", "Ingredienser 4 portioner". */
+function findServings(line: string): number | null {
+  const m =
+    line.match(/(?:^|\s)(\d+)(?:\s*[-–]\s*\d+)?\s*(portioner|portion|port\.?|personer|pers\.?|bitar|stycken|st\b|bullar|skivor|muffins|kakor)(\s|$|,)/i) ||
+    line.match(/^(?:portioner|antal portioner|antal|serverar)\s*:?\s*(\d+)/i);
+  if (!m) return null;
+  const n = parseInt(m[1], 10);
+  return n > 0 && n <= 100 ? n : null;
+}
+
+/** A line that only gives the time, like "30 min", "Tid: 35 min", "Under 45 min". */
+function isTimeLine(line: string): boolean {
+  return (
+    line.length <= 40 &&
+    (/^(tid|tillagningstid|total tid|tidsåtgång|tillagning)\s*:?\s*\S/i.test(line) ||
+      /^(ca\.?\s*|cirka\s*|under\s*|över\s*|max\s*|ungefär\s*)?\d+([.,]\d+)?\s*(min|minuter|minut|tim|timme|timmar|h)\b/i.test(line))
+  );
+}
+
+/** "Svårighetsgrad: Enkel", "Nivå: Medel", or just "Lätt". */
+function findDifficulty(line: string, alone: boolean): 1 | 2 | 3 | null {
+  const m =
+    line.match(/^(?:svårighetsgrad|svårighet|nivå)\s*:?\s*(\S+)/i) ||
+    (alone ? line.match(/^(lätt|enkel|enkelt|lättlagad|medel|medelsvår|svår|avancerad)$/i) : null);
+  if (!m) return null;
+  const w = m[1].toLowerCase();
+  if (/^(lätt|enkel|enkelt|lättlagad)/.test(w)) return 1;
+  if (/^(medel|medelsvår|mellan)/.test(w)) return 2;
+  if (/^(svår|avancerad)/.test(w)) return 3;
+  return null;
+}
+
+/** The recipe name: plain sentence case, without markdown or trailing colon. */
+function cleanParsedTitle(line: string): string {
+  let t = line.replace(/^#+\s*/, '').replace(/\s*:$/, '').trim();
+  if (isAllCaps(t)) t = t.toLowerCase();
+  return t.charAt(0).toUpperCase() + t.slice(1);
+}
+
+/** Splits one long paragraph into sentences, for steps written as a single block. */
+function splitSentences(text: string): string[] {
+  return text
+    .split(/(?<=[.!?])\s+(?=[A-ZÅÄÖÉ0-9])/)
+    .map((t) => t.trim())
+    .filter((t) => t.length > 0);
+}
+
+/**
+ * Reads a recipe from free text: pasted from a web page, an e-mail or a note, or read from a
+ * photo (fromOcr). Finds the name, portions, time, difficulty, ingredients and steps. Lines that
+ * belong to the web page (Spara, Dela, Betyg …) are left out. Nothing is made up: when no
+ * ingredients or steps are found, those lists are empty.
+ */
+export function parseRawRecipeText(text: string, options: { fromOcr?: boolean } = {}): ParsedRecipeData {
+  const fromOcr = Boolean(options.fromOcr);
+  const cleaned = cleanOcrArtifacts(text, { ocr: fromOcr });
+
+  let lines = cleaned
+    .split(/\r?\n/)
+    .map((l) => stripBullet(l.trim()))
     .filter((l) => l.length > 0);
 
-  // Pre-process: expand two-column lines into separate ingredient + instruction lines
-  const lines: string[] = [];
-  for (const rawLine of rawLines) {
-    const split = splitTwoColumnLine(rawLine);
-    if (split) {
-      lines.push(split.ingredient);
-      lines.push(split.instruction);
-    } else {
-      lines.push(rawLine);
+  // Two-column cookbook pages only come from photos
+  if (fromOcr) {
+    const expanded: string[] = [];
+    for (const l of lines) {
+      const split = splitTwoColumnLine(l);
+      if (split) expanded.push(split.ingredient, split.instruction);
+      else expanded.push(l);
     }
+    lines = expanded;
   }
 
-  const extractedTitleData = extractRecipeTitleFromLines(lines);
-  let title = extractedTitleData.title;
-  let description = '';
-  let category: RecipeCategory = 'Middag';
-  let servings = 4;
-  let cookingTimeMinutes: number | undefined = undefined;
-  const ingredients: Ingredient[] = [];
-  const instructions: Instruction[] = [];
-  const ingredientBuffer: string[] = [];
+  let title = '';
+  const descriptionParts: string[] = [];
+  let servings: number | null = null;
+  let cookingTimeMinutes: number | undefined;
+  let difficulty: 1 | 2 | 3 | undefined;
+  const ingredientLines: string[] = [];
+  const steps: string[] = [];
+  let section: 'header' | 'ingredients' | 'instructions' = 'header';
+  let newStepPending = false;
 
-  let currentSection: 'header' | 'ingredients' | 'instructions' = 'header';
+  const startsWithQuantity = (l: string) => QUANTITY_START.test(l) && !/^\d+[.)]\s/.test(l);
+  const looksLikeIngredient = (l: string) =>
+    l.length <= 70 &&
+    !/[.!?]$/.test(l) &&
+    (startsWithQuantity(l) || isLikelyIngredientLine(l, true));
+  // A sentence that tells you what to do: numbered, ends like a sentence, or is long
+  const looksLikeStep = (l: string) =>
+    (/^\d+[.)]\s+\S/.test(l) && !isLikelyIngredientLine(l, false)) ||
+    (!startsWithQuantity(l) && startsWithStepVerb(l) && l.split(/\s+/).length >= 2) ||
+    (l.length > 25 && /[.!]$/.test(l)) ||
+    l.length > 70;
 
-  function flushIngredients() {
-    if (ingredientBuffer.length === 0) return;
-    const merged = mergeIngredientLines(ingredientBuffer);
-    for (const m of merged) {
-      const ing = parseIngredientLine(m);
-      if (ing) ingredients.push(ing);
-    }
-    ingredientBuffer.length = 0;
-  }
+  const addStep = (l: string) => {
+    const t = cleanLeadingStepNumber(l).trim();
+    if (t.length < 2) return;
+    const last = steps.length - 1;
+    // A wrapped line continues the step above, unless the line is numbered or a "Steg" mark came
+    const continues =
+      last >= 0 && !newStepPending && !SENTENCE_END.test(steps[last]) && !/^\d+[.)]\s/.test(l) && /^[a-zåäö(]/.test(t);
+    if (continues) steps[last] += ' ' + t;
+    else steps.push(t);
+    newStepPending = false;
+  };
 
   for (let i = 0; i < lines.length; i++) {
-    if (extractedTitleData.consumedIndices.has(i)) {
-      continue;
-    }
-
     const line = lines[i];
-    const lower = line.toLowerCase().trim();
+    const next = lines[i + 1] || '';
 
-    // ── Skip solitary page numbers (e.g. "33", "sida 33", "J 33", "- 33 -") ──
+    // Amount and food on separate lines, as some web pages copy ("500 g" / "torskfilé")
     if (
-      /^(?:sida\s*)?\d{1,3}$/i.test(line) ||
-      /^[a-zA-Z\s]{0,3}\d{1,3}$/.test(line) ||
-      /^[-–—\s]*\d{1,3}[-–—\s]*$/.test(line)
+      section !== 'instructions' &&
+      /^(ca\.?\s+)?(\d+([.,]\d+)?|\d+\s*[-–]\s*\d+|\d+\/\d+|[½¼¾⅓⅔⅛])(\s*[a-zåäö]{1,6}\.?)?$/i.test(line) &&
+      !isTimeLine(line) &&
+      next &&
+      !startsWithQuantity(next) &&
+      next.length <= 50 &&
+      !/[.!?]$/.test(next) &&
+      !INSTRUCTION_HEADER.test(next) &&
+      !INGREDIENT_HEADER.test(next) &&
+      (section === 'ingredients' || /^\d/.test(line))
     ) {
-      continue;
-    }
-
-    // ── Detect main ingredient section headers ────────────────────────────
-    const isIngredientHeader =
-      lower.includes('ingrediens') ||
-      lower.includes('du behöver') ||
-      lower.includes('det här behöver du') ||
-      lower.includes('det behöver du') ||
-      lower.includes('innehåll') ||
-      lower.startsWith('vad du behöver') ||
-      lower.startsWith('vad behöver du') ||
-      (lower.startsWith('till ') && lower.includes('portion')) ||
-      lower.startsWith('tillbehör:') ||
-      lower === 'ingredienser:' ||
-      lower === 'ingredienser' ||
-      lower === 'du behöver:' ||
-      lower === 'grundrecept' ||
-      lower === 'grundrecept:';
-
-    // ── Detect instruction/method section headers ─────────────────────────
-    const isInstructionHeader =
-      lower.includes('gör så här') ||
-      lower.includes('gör såhär') ||
-      lower.includes('gör gärna så här') ||
-      lower.includes('så här gör du') ||
-      lower.includes('så gör du') ||
-      lower.includes('tillagning') ||
-      lower.includes('instruktion') ||
-      lower.includes('tillredning') ||
-      lower.includes('beredning') ||
-      lower.includes('arbetsgång') ||
-      lower === 'metod:' ||
-      lower === 'metod' ||
-      lower === 'steg:';
-
-    // ── Detect sub-section headers within ingredients ─────────────────────
-    const isIngredientSubHeader =
-      lower === 'sås' || lower === 'sås:' ||
-      lower === 'garnering' || lower === 'garnering:' ||
-      lower === 'servering' || lower === 'servering:' ||
-      lower === 'till servering' || lower === 'till servering:' ||
-      lower === 'tillbehör' || lower === 'tillbehör:' ||
-      lower === 'marinad' || lower === 'marinad:' ||
-      lower === 'glasyr' || lower === 'glasyr:' ||
-      lower === 'fyllning' || lower === 'fyllning:' ||
-      lower === 'pajskal' || lower === 'pajskal:' ||
-      lower === 'till panering' || lower === 'till panering:' ||
-      lower === 'till gratinering' || lower === 'till gratinering:' ||
-      lower === 'deg' || lower === 'degen' || lower === 'deg:' ||
-      lower === 'smet' || lower === 'smeten' || lower === 'smet:';
-
-    if (isIngredientHeader) {
-      currentSection = 'ingredients';
-      continue;
-    }
-    if (isInstructionHeader) {
-      flushIngredients();
-      currentSection = 'instructions';
-      continue;
-    }
-    if (isIngredientSubHeader) {
-      continue;
-    }
-
-    // ── Portioner detection (broader patterns) ────────────────────────────
-    const portionMatch =
-      line.match(/^(\d+)(?:\s*[-–]\s*\d+)?\s*port(?:ioner?|\.)?$/i) ||
-      line.match(/(\d+)\s*port(?:ioner?|\.)/i) ||
-      line.match(/^(\d+)(?:\s*[-–]\s*\d+)?\s*person(?:er)?$/i);
-    if (portionMatch) {
-      servings = parseInt(portionMatch[1], 10) || 4;
-      continue;
-    }
-
-    if (currentSection === 'header') {
-      if (!cookingTimeMinutes && /(?:tid|minuter|timmar|min\b|h\b|tillagning)/i.test(line)) {
-        const parsedTime = parseRecipeTimeString(line);
-        if (parsedTime && parsedTime > 0) {
-          cookingTimeMinutes = parsedTime;
-        }
+      // "4 portioner" split the same way is a portion count, not an ingredient
+      const joined = `${line} ${next}`;
+      const n = findServings(joined);
+      if (n && /^\d+\s*(portioner|portion|personer|pers|bitar)$/i.test(joined)) {
+        servings = servings ?? n;
+      } else {
+        section = 'ingredients';
+        ingredientLines.push(joined);
       }
+      i++;
+      continue;
+    }
 
-      if (!title && line.length > 2 && line.length < 80) {
-        if (!/^(?:tid|tillagningstid)?\s*:?\s*\d+\s*(?:min|tim|h)/i.test(line)) {
-          title = formatRecipeTitle(line.replace(/^[#\*\-]+\s*/, '').replace(/^\d+\s+([A-ZÅÄÖ])/, '$1'));
-          continue;
-        }
-      }
+    // Page numbers from photos, and web page clutter
+    if (/^(sida\s*)?\d{1,3}$/i.test(line) || /^[-–—\s]*\d{1,3}[-–—\s]*$/.test(line)) continue;
+    if (CLUTTER_LINE.test(line)) continue;
 
-      // If line is clearly an ingredient with explicit unit, transition to ingredients
-      if (isLikelyIngredientLine(line, false)) {
-        currentSection = 'ingredients';
-        ingredientBuffer.push(line);
-      } else if (isInstructionLine(line)) {
-        currentSection = 'instructions';
-        const cleanText = cleanLeadingStepNumber(line);
-        if (cleanText.length > 2) {
-          instructions.push({ stepNumber: instructions.length + 1, text: cleanText });
-        }
-      } else if (line.length > 15 && !/^(?:tid|portion)/i.test(line)) {
-        const cleanLine = line.replace(/^\d+\s+([A-ZÅÄÖ])/, '$1');
-        description = (description ? description + ' ' : '') + cleanLine;
-      }
-    } else if (currentSection === 'ingredients') {
-      // If line is an instruction (step number or cooking verb), transition to instructions
-      if (isInstructionLine(line) && !isLikelyIngredientLine(line, true)) {
-        flushIngredients();
-        currentSection = 'instructions';
-        const cleanText = cleanLeadingStepNumber(line);
-        if (cleanText.length > 2) {
-          instructions.push({ stepNumber: instructions.length + 1, text: cleanText });
-        }
-      } else if (isLikelyIngredientLine(line, true) || (line.length <= 45 && !/[.!?]$/.test(line))) {
-        ingredientBuffer.push(line);
-      } else if (line.length > 40 && /[.!?]$/.test(line)) {
-        // Complete narrative sentence inside ingredient area
-        if (ingredientBuffer.length > 0 || ingredients.length > 0) {
-          flushIngredients();
-          currentSection = 'instructions';
-          const cleanText = cleanLeadingStepNumber(line);
-          if (cleanText.length > 2) {
-            instructions.push({ stepNumber: instructions.length + 1, text: cleanText });
-          }
-        } else {
-          description = (description ? description + ' ' : '') + line;
-        }
-      }
-    } else if (currentSection === 'instructions') {
-      const cleanText = cleanLeadingStepNumber(line);
-      const low = cleanText.toLowerCase();
-      if (
-        low === 'spara' ||
-        low === 'stäng' ||
-        low === 'dela' ||
-        low === 'skriv ut' ||
-        low === 'starta timer' ||
-        low === 'betygsätt' ||
-        low.startsWith('recept av') ||
-        low.startsWith('tips:') ||
-        low === 'tips'
-      ) {
+    // "Steg 1" on a line of its own marks the start of a step
+    if (/^steg\s*\d+\s*[:.]?$/i.test(line)) {
+      section = 'instructions';
+      newStepPending = true;
+      continue;
+    }
+
+    // Facts that can stand anywhere
+    const diff = findDifficulty(line, section === 'header');
+    if (diff && line.length <= 40) {
+      difficulty = difficulty ?? diff;
+      continue;
+    }
+    if (isTimeLine(line) && section !== 'instructions') {
+      const t = parseRecipeTimeString(line);
+      if (t && t > 0 && cookingTimeMinutes === undefined) cookingTimeMinutes = t;
+      continue;
+    }
+
+    // Section headings
+    if (INGREDIENT_HEADER.test(line) && line.length <= 50) {
+      const n = findServings(line);
+      if (n) servings = servings ?? n;
+      section = 'ingredients';
+      continue;
+    }
+    if (INSTRUCTION_HEADER.test(line)) {
+      section = 'instructions';
+      newStepPending = true;
+      continue;
+    }
+
+    // A line that only gives the portions
+    if (line.length <= 30 && !/[.!?]$/.test(line)) {
+      const n = findServings(line);
+      if (n && (/^\d+\s*(portioner|portion|port|personer|pers|bitar|stycken|st|bullar|skivor|muffins|kakor)\.?$/i.test(line) || /^(portioner|antal|serverar)/i.test(line) || /^(ca\.?|cirka)\s+\d/i.test(line))) {
+        servings = servings ?? n;
         continue;
       }
+    }
 
-      // If a line in instructions is clearly an ingredient WITH EXPLICIT UNIT (never durations like "3 timmar"):
-      if (isLikelyIngredientLine(line, false) && !isInstructionLine(line)) {
-        const ing = parseIngredientLine(line);
-        if (ing) ingredients.push(ing);
-      } else if (cleanText.length > 2) {
-        // If line starts with a new step (step number or cooking verb), add as new step
-        if (isInstructionLine(line) || instructions.length === 0) {
-          instructions.push({
-            stepNumber: instructions.length + 1,
-            text: cleanText,
-          });
-        } else {
-          // Continuation sentence of previous step
-          const lastIdx = instructions.length - 1;
-          instructions[lastIdx].text += ' ' + cleanText;
+    // The name: the first line that reads like a name
+    if (!title && section === 'header') {
+      if (line.length <= 90 && !/[.!?]$/.test(line) && !startsWithQuantity(line)) {
+        title = cleanParsedTitle(line);
+        // A name split over two lines ("Lax med" / "citron och dill")
+        if (/\b(med|och|på|i|à|till|utan)$/i.test(line) && next && /^[a-zåäö]/.test(next) && next.length <= 50) {
+          title += ' ' + next;
+          i++;
         }
+        continue;
       }
     }
-  }
 
-  flushIngredients();
-
-  // Fallback: If section headings were not found, heuristically distribute lines
-  if (ingredients.length === 0 && instructions.length === 0 && lines.length > 1) {
-    if (!title) {
-      title = formatRecipeTitle(lines[0]);
+    // Sub-headings inside the ingredients, like "Sås" or "Till servering"
+    if (section !== 'instructions' && line.length <= 30 && !/\d/.test(line)) {
+      const nextIsAmount = startsWithQuantity(next);
+      const words = line.split(/\s+/).length;
+      const isSubheader =
+        INGREDIENT_SUBHEADER.test(line) ||
+        (/:$/.test(line) && words <= 4) ||
+        // A short capitalised word right before an amount, like "Gryta" before "600 g kyckling"
+        (section === 'ingredients' &&
+          nextIsAmount &&
+          words <= 2 &&
+          /^[A-ZÅÄÖ]/.test(line) &&
+          !isLikelyIngredientLine(line, false) &&
+          !/(salt|peppar|olja|smör|vatten|socker|citron|lime)/i.test(line));
+      if (isSubheader) {
+        if (section === 'header') section = 'ingredients';
+        continue;
+      }
     }
-    for (let i = 1; i < lines.length; i++) {
-      if (extractedTitleData.consumedIndices.has(i)) continue;
-      const l = lines[i];
-      if (isInstructionLine(l)) {
-        instructions.push({
-          stepNumber: instructions.length + 1,
-          text: l.replace(/^(\d+[\.\)\-:]\s*)/, ''),
-        });
+
+    if (section === 'header') {
+      if (looksLikeIngredient(line)) {
+        section = 'ingredients';
+        ingredientLines.push(line);
+      } else if (looksLikeStep(line)) {
+        section = 'instructions';
+        addStep(line);
+      } else if (line.length > 15) {
+        descriptionParts.push(line);
+      }
+      continue;
+    }
+
+    if (section === 'ingredients') {
+      // A short line without a full stop is an ingredient, even without an amount ("vispad grädde"),
+      // unless it starts like a step ("Koka upp vattnet")
+      const stepLike = !startsWithQuantity(line) && startsWithStepVerb(line) && line.split(/\s+/).length >= 2;
+      if (!stepLike && (looksLikeIngredient(line) || (line.length <= 45 && !/[.!?]$/.test(line) && !/^\d+[.)]\s/.test(line)))) {
+        ingredientLines.push(line);
       } else {
-        const ing = parseIngredientLine(l);
-        if (ing) ingredients.push(ing);
+        section = 'instructions';
+        newStepPending = true;
+        addStep(line);
       }
+      continue;
+    }
+
+    // Instructions
+    addStep(line);
+  }
+
+  // Ingredients
+  const ingredients: Ingredient[] = [];
+  for (const m of mergeIngredientLines(ingredientLines, fromOcr)) {
+    const ing = parseIngredientLine(m);
+    if (ing) {
+      ing.name = ing.name.replace(/\(\s+/g, '(').replace(/\s+\)/g, ')').replace(/\s{2,}/g, ' ').trim();
+      ingredients.push(ing);
     }
   }
 
-  // Categorize and detect subcategory smartly
-  category = detectCategory(title || description);
+  // Steps written as one block of several sentences become one step per sentence
+  let stepTexts = steps;
+  if (stepTexts.length === 1 && splitSentences(stepTexts[0]).length >= 3) {
+    stepTexts = splitSentences(stepTexts[0]);
+  }
+  const instructions: Instruction[] = stepTexts.map((t, idx) => ({ stepNumber: idx + 1, text: t }));
+
+  const description = descriptionParts.join(' ').trim();
+  const category = detectCategory(title || description);
   const subcategories = detectSubcategories(title, category, ingredients, description);
 
   return {
-    title: title || 'Nytt skannat recept',
-    description: description.trim(),
+    title,
+    description,
     category,
     subcategory: subcategories.join(', '),
     subcategories,
     servings: servings || 4,
     cookingTimeMinutes,
-    ingredients: ingredients.length > 0 ? ingredients : [
-      { name: 'Huvudingrediens', amount: 400, unit: 'g', aisle: 'Skafferi', isPantryStaple: false },
-      { name: 'Smör eller Olja', amount: 2, unit: 'msk', aisle: 'Kryddor & Olja', isPantryStaple: true },
-      { name: 'Salt & Peppar', amount: null, unit: 'efter smak', aisle: 'Kryddor & Olja', isPantryStaple: true },
-    ],
-    instructions: instructions.length > 0 ? instructions : [
-      { stepNumber: 1, text: 'Förbered ingredienserna enligt receptet.' },
-      { stepNumber: 2, text: 'Tillaga och avnjut!' },
-    ],
+    difficulty,
+    ingredients,
+    instructions,
   };
 }

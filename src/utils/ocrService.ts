@@ -262,6 +262,6 @@ export async function performClientOCR(
 
   if (onProgress) onProgress(100, 'Strukturerar ingredienser och steg...');
 
-  const parsed = parseRawRecipeText(bestRawText);
+  const parsed = parseRawRecipeText(bestRawText, { fromOcr: true });
   return { rawText: bestRawText, parsed, preprocessedDataUrl: bestDataUrl };
 }
