@@ -1106,7 +1106,12 @@ export const ShoppingListView: React.FC = () => {
                     <div className="divide-y divide-[#EBE7DF]/70 w-full animate-fade-in">
                   {group.items.map((item) => {
                     const formattedAmt = formatAmount(item.amount);
-                    const displaySource = normalizeRecipeSource(item.recipeSource);
+                    // Recipe names without the portion count, e.g. "Köttbullar (4 port)" -> "Köttbullar"
+                    const sourceParts = (normalizeRecipeSource(item.recipeSource) || '')
+                      .split(' + ')
+                      .map((part) => part.replace(/\s*\(\s*\d+(?:[,.]\d+)?\s*port(?:ioner)?\.?\s*\)/gi, '').trim())
+                      .filter(Boolean);
+                    const displaySource = sourceParts.length > 0 ? Array.from(new Set(sourceParts)).join(' + ') : undefined;
 
                     return (
                       <div
