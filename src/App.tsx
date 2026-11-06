@@ -1,7 +1,7 @@
 import React, { useState, useLayoutEffect, useRef } from 'react';
 import { RecipeProvider, useRecipes } from './context/RecipeContext';
 import { TimerProvider } from './context/TimerContext';
-import { TimerBar } from './components/timer/TimerBar';
+import { BottomDock } from './components/layout/BottomDock';
 import { BottomNav } from './components/layout/BottomNav';
 import { DesktopNav } from './components/layout/DesktopNav';
 import { PwaInstallPrompt } from './components/layout/PwaInstallPrompt';
@@ -17,7 +17,10 @@ import { OpenedRecipeSheet } from './components/share/OpenedRecipeSheet';
 import { useModalBackHandler } from './hooks/useModalBackHandler';
 
 const AppContent: React.FC = () => {
-  const { activeTab, selectedRecipe, closeRecipeDetail } = useRecipes();
+  const { activeTab, selectedRecipe, closeRecipeDetail, recipes } = useRecipes();
+  // A minimized recipe stays open in the background, so ticked steps and portions are kept
+  const [minimizedId, setMinimizedId] = useState<string | null>(null);
+  const minimized = minimizedId ? recipes.find((r) => r.id === minimizedId) || null : null;
   const [showAddModal, setShowAddModal] = useState<boolean>(false);
   const [showAddShoppingModal, setShowAddShoppingModal] = useState<boolean>(false);
 
@@ -83,17 +86,28 @@ const AppContent: React.FC = () => {
         {activeTab === 'shopping' && <ShoppingListView />}
         {activeTab === 'settings' && <SettingsView />}
 
-        {/* Recipe Detail Popup Modal with blurred background */}
-        {/* The kitchen timer while no recipe is open. Inside a recipe it is shown there. */}
-        {!selectedRecipe && <TimerBar placement="app" />}
+        {/* Above the menu: a minimized recipe and the kitchen timer */}
+        {!selectedRecipe && <BottomDock minimized={minimized} onCloseMinimized={() => setMinimizedId(null)} />}
 
-        {selectedRecipe && (
-          <RecipeDetail
-            key={selectedRecipe.id}
-            recipe={selectedRecipe}
-            onBack={closeRecipeDetail}
-          />
-        )}
+        {/* The open recipe, and a minimized one kept in the background. The same key keeps the
+            view (and what was ticked in it) when it is minimized and opened again. */}
+        {[minimized, selectedRecipe && selectedRecipe.id !== minimized?.id ? selectedRecipe : null]
+          .filter((r): r is NonNullable<typeof r> => Boolean(r))
+          .map((r) => (
+            <RecipeDetail
+              key={r.id}
+              recipe={selectedRecipe?.id === r.id ? selectedRecipe : r}
+              hidden={selectedRecipe?.id !== r.id}
+              onBack={() => {
+                if (r.id === minimizedId) setMinimizedId(null);
+                closeRecipeDetail();
+              }}
+              onMinimize={() => {
+                setMinimizedId(r.id);
+                closeRecipeDetail();
+              }}
+            />
+          ))}
 
         {/* Global Add Recipe Modal */}
         {showAddModal && <AddRecipeModal onClose={() => setShowAddModal(false)} closeGuardRef={addCloseGuardRef} />}

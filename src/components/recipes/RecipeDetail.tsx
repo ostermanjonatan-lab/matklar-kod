@@ -25,6 +25,7 @@ import {
   Trash2,
   Play,
   X,
+  ChevronDown,
   Share2,
   Sun,
   ShoppingCart
@@ -44,6 +45,10 @@ import { useWakeLock } from '../../utils/wakeLock';
 interface RecipeDetailProps {
   recipe: Recipe;
   onBack: () => void;
+  /** Hides the recipe above the bottom menu. It stays open, with ticked steps and portions kept. */
+  onMinimize?: () => void;
+  /** True while minimized: the view is kept but not shown. */
+  hidden?: boolean;
 }
 
 /** "30 sek", "10 min", "1 min 30 sek" or "1 tim 30 min" for a timer button. */
@@ -72,7 +77,7 @@ function stepTimers(segments: ReturnType<typeof splitTextIntoTimerSegments>) {
   return result;
 }
 
-export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecipe, onBack }) => {
+export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecipe, onBack, onMinimize, hidden = false }) => {
   const {
     recipes,
     shoppingList,
@@ -221,22 +226,23 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
   // Close modal on Escape key if no child dialog is active
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !isEditingRecipe && !showMealPlanPicker && !showDeleteConfirm) {
+      if (e.key === 'Escape' && !hidden && !isEditingRecipe && !showMealPlanPicker && !showDeleteConfirm) {
         onBack();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onBack, isEditingRecipe, showMealPlanPicker, showDeleteConfirm]);
+  }, [onBack, hidden, isEditingRecipe, showMealPlanPicker, showDeleteConfirm]);
 
   // Lock body scroll while recipe modal is open
   useEffect(() => {
+    if (hidden) return;
     const originalOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     return () => {
       document.body.style.overflow = originalOverflow;
     };
-  }, []);
+  }, [hidden]);
 
   // Ensure recipe content always starts at the top when opened or changed
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
@@ -339,6 +345,7 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
 
   return (
     <div
+      hidden={hidden}
       className="fixed inset-0 z-50 bg-black/60 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4 md:p-6 animate-fade-in font-sans"
       onClick={(e) => {
         if (e.target === e.currentTarget) onBack();
@@ -372,6 +379,18 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
           >
             <X className="w-5 h-5 stroke-[2.2]" />
           </button>
+
+          {onMinimize && (
+            <button
+              type="button"
+              onClick={onMinimize}
+              className="w-10 h-10 ml-2 mr-auto rounded-full bg-white border border-[#EBE7DF] hover:bg-stone-50 active:scale-90 flex items-center justify-center text-stone-700 shadow-xs transition-all touch-manipulation cursor-pointer"
+              aria-label="Minimera receptet"
+              title="Minimera receptet"
+            >
+              <ChevronDown className="w-5 h-5 stroke-[2.2]" />
+            </button>
+          )}
 
           <div className="flex items-center gap-2">
             {isWakeLockSupported && (
@@ -946,7 +965,7 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
       )}
 
       {/* The running kitchen timer */}
-      <TimerBar placement="recipe" />
+      {!hidden && <TimerBar />}
 
       {showShareSheet && (
         <ShareRecipeSheet

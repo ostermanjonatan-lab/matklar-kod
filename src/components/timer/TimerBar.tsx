@@ -13,10 +13,10 @@ function formatTimerDisplay(totalSecs: number): string {
 }
 
 /**
- * Above the menu the box's bottom edge follows the menu's arc, which rises about 12 px towards
+ * Above the menu a box's bottom edge follows the menu's arc, which rises about 12 px towards
  * the middle across the width of the box. The shape is drawn for the box's measured size.
  */
-function useCurvedShape(active: boolean) {
+export function useCurvedShape(active: boolean) {
   const ref = useRef<HTMLDivElement | null>(null);
   const [path, setPath] = useState<string | null>(null);
   useLayoutEffect(() => {
@@ -41,49 +41,31 @@ function useCurvedShape(active: boolean) {
 }
 
 /**
- * The running kitchen timer. Inside a recipe it sits at the bottom of the screen. With the
- * recipe closed it sits above the menu and names the recipe; a tap on the name opens it.
+ * The running kitchen timer as one row. Above the menu it names the recipe, and a tap on the
+ * name opens it. The thin line shows how far the timer has gone.
  */
-export const TimerBar: React.FC<{ placement: 'recipe' | 'app' }> = ({ placement }) => {
+export const TimerRow: React.FC<{ inDock: boolean; nameShownAbove?: boolean }> = ({ inDock, nameShownAbove = false }) => {
   const { timer, toggleTimer, restartTimer, clearTimer } = useTimer();
   const { recipes, openRecipeDetail } = useRecipes();
-  const curved = placement === 'app';
-  const shape = useCurvedShape(curved && Boolean(timer));
   if (!timer) return null;
 
   const done = timer.secondsLeft === 0;
-  const recipe = placement === 'app' && timer.recipeId ? recipes.find((r) => r.id === timer.recipeId) : undefined;
+  const recipe = inDock && timer.recipeId ? recipes.find((r) => r.id === timer.recipeId) : undefined;
+  // Above the menu the timer names its recipe, unless that recipe is minimized just above it
   const caption =
-    placement === 'app' && timer.recipeTitle ? formatRecipeTitle(timer.recipeTitle) : `Timer på ${timer.label}`;
-
+    inDock && timer.recipeTitle && !nameShownAbove ? formatRecipeTitle(timer.recipeTitle) : `Timer på ${timer.label}`;
   const elapsed = timer.totalSeconds > 0 ? 1 - timer.secondsLeft / timer.totalSeconds : 1;
   const textButton = 'min-h-[44px] px-3 text-sm font-semibold touch-manipulation';
 
-
   const progress = !done && (
-    <div className={`h-[3px] bg-stone-100 ${curved ? '' : 'order-last'}`}>
+    <div className="h-[3px] bg-stone-100">
       <div className="h-full bg-[#284235] transition-[width] duration-300 ease-linear" style={{ width: `${elapsed * 100}%` }} />
     </div>
   );
 
   return (
-    <div
-      className={`fixed left-4 right-4 max-w-md mx-auto ${
-        placement === 'recipe'
-          ? 'bottom-[max(1rem,env(safe-area-inset-bottom,0px))] z-50'
-          : 'bottom-[calc(95px+env(safe-area-inset-bottom,0px))] z-30'
-      }`}
-      style={{ filter: 'drop-shadow(0 6px 16px rgba(28,25,23,0.13))' }}
-      role="timer"
-    >
-    <div
-      ref={shape.ref}
-      className={`flex flex-col rounded-2xl overflow-hidden animate-slide-up ${
-        done ? 'bg-[#284235] text-white' : 'bg-white text-stone-900'
-      } ${curved ? 'pb-3' : `border ${done ? 'border-[#284235]' : 'border-[#EBE7DF]'}`}`}
-      style={curved && shape.path ? { clipPath: `path('${shape.path}')` } : undefined}
-    >
-      {curved && progress}
+    <div className={done ? 'bg-[#284235] text-white' : 'text-stone-900'} role="timer">
+      {inDock && progress}
       <div className="flex items-center gap-2 pl-4 pr-1.5 py-2">
         <button
           type="button"
@@ -97,7 +79,7 @@ export const TimerBar: React.FC<{ placement: 'recipe' | 'app' }> = ({ placement 
               {done ? 'Klart' : formatTimerDisplay(timer.secondsLeft)}
             </span>
             <span className={`text-sm truncate ${done ? 'text-emerald-100' : 'text-stone-500'}`}>
-              {done ? caption : !timer.isRunning ? `Pausad · ${caption}` : caption}
+              {!done && !timer.isRunning ? `Pausad · ${caption}` : caption}
             </span>
           </div>
         </button>
@@ -122,9 +104,28 @@ export const TimerBar: React.FC<{ placement: 'recipe' | 'app' }> = ({ placement 
           <X className="w-5 h-5" />
         </button>
       </div>
-
-      {!curved && progress}
+      {!inDock && progress}
     </div>
+  );
+};
+
+/** The timer at the bottom of an open recipe. */
+export const TimerBar: React.FC = () => {
+  const { timer } = useTimer();
+  if (!timer) return null;
+  const done = timer.secondsLeft === 0;
+  return (
+    <div
+      className="fixed left-4 right-4 max-w-md mx-auto bottom-[max(1rem,env(safe-area-inset-bottom,0px))] z-50"
+      style={{ filter: 'drop-shadow(0 6px 16px rgba(28,25,23,0.13))' }}
+    >
+      <div
+        className={`rounded-2xl overflow-hidden border animate-slide-up ${
+          done ? 'border-[#284235] bg-[#284235]' : 'border-[#EBE7DF] bg-white'
+        }`}
+      >
+        <TimerRow inDock={false} />
+      </div>
     </div>
   );
 };
