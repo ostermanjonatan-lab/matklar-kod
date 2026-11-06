@@ -4,7 +4,7 @@ import type { Recipe, MealPlanDay, ShoppingItem, TabType, UserProfile, Household
 import { getRecipeSubcategories, NON_FOOD_SUBCATEGORIES } from '../types/recipe';
 import { INITIAL_RECIPES, INITIAL_MEAL_PLAN } from '../data/mockRecipes';
 import { recordFrequentItem } from '../utils/frequentItems';
-import { withLeftoverPortions } from '../utils/leftovers';
+import { withLeftoverPortions, syncLeftoverLunches } from '../utils/leftovers';
 import {
   WEEKDAY_NAMES,
   dayNameForDate,
@@ -1351,11 +1351,14 @@ export const RecipeProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 
     // Automatically remove references to deleted recipe from mealPlan so no ghost IDs linger
     setMealPlan((prev) => {
-      const updated = prev.map((item) => ({
+      const cleared = prev.map((item) => ({
         ...item,
         dinnerRecipeId: item.dinnerRecipeId === id ? null : item.dinnerRecipeId,
         lunchRecipeId: item.lunchRecipeId === id ? null : item.lunchRecipeId,
       }));
+      // Leftover lunches from a dinner that is now gone are removed too
+      const emptiedDinners = prev.filter((d) => d.dinnerRecipeId === id && d.dateStr).map((d) => d.dateStr!);
+      const updated = syncLeftoverLunches(cleared, emptiedDinners, (day) => day.customDinner?.trim() || null).plan;
       try {
         localStorage.setItem(MEAL_PLAN_STORAGE_KEY, JSON.stringify(updated));
       } catch (e) {
@@ -1432,14 +1435,35 @@ export const RecipeProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     }
   }, [isLiveSupabase, household?.id]);
 
+  // The name of a day's dinner, for leftover lunches that come from it
+  const recipesRef = useRef(recipes);
+  recipesRef.current = recipes;
+  const dinnerTitleOf = useCallback((day: MealPlanDay): string | null | undefined => {
+    if (day.dinnerRecipeId) {
+      return recipesRef.current.find((r) => r.id === day.dinnerRecipeId)?.title;
+    }
+    return day.customDinner?.trim() || null;
+  }, []);
+
+  // Leftover lunches follow when the dinners on these dates change. A lunch in another week
+  // (Monday's leftovers from Sunday) is saved in that week too.
+  const withSyncedLeftovers = useCallback((plan: MealPlanDay[], dates: string[], weekStart: string) => {
+    const { plan: synced, changed } = syncLeftoverLunches(plan, dates, dinnerTitleOf);
+    const otherWeeks = Array.from(new Set(changed.map((d) => getWeekStart(d)))).filter((w) => w !== weekStart);
+    return { plan: synced, otherWeeks };
+  }, [dinnerTitleOf]);
+
   const updatePlanDay = useCallback((dateStr: string, change: (day: MealPlanDay) => MealPlanDay) => {
     setMealPlan((prev) => {
       const current = prev.find((d) => d.dateStr === dateStr) || emptyPlanDay(dateStr);
-      const updated = normalizeMealPlan([...prev.filter((d) => d.dateStr !== dateStr), change(current)]);
-      commitMealPlan(updated, getWeekStart(dateStr));
+      const changedDay = normalizeMealPlan([...prev.filter((d) => d.dateStr !== dateStr), change(current)]);
+      const weekStart = getWeekStart(dateStr);
+      const { plan: updated, otherWeeks } = withSyncedLeftovers(changedDay, [dateStr], weekStart);
+      commitMealPlan(updated, weekStart);
+      otherWeeks.forEach((w) => commitMealPlan(updated, w));
       return updated;
     });
-  }, [commitMealPlan]);
+  }, [commitMealPlan, withSyncedLeftovers]);
 
   const setMealPlanForDate = useCallback((
     dateStr: string,
@@ -1490,11 +1514,13 @@ export const RecipeProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   const clearMealPlan = useCallback(() => {
     const weekDates = new Set(getWeekDates(planWeekStart));
     setMealPlan((prev) => {
-      const updated = prev.filter((d) => !weekDates.has(d.dateStr || ''));
+      const emptied = prev.filter((d) => !weekDates.has(d.dateStr || ''));
+      const { plan: updated, otherWeeks } = withSyncedLeftovers(emptied, Array.from(weekDates), planWeekStart);
       commitMealPlan(updated, planWeekStart);
+      otherWeeks.forEach((w) => commitMealPlan(updated, w));
       return updated;
     });
-  }, [planWeekStart, commitMealPlan]);
+  }, [planWeekStart, commitMealPlan, withSyncedLeftovers]);
 
   const generateShoppingListFromWeek = useCallback((skipPantryStaples: boolean): number => {
     // Dinners that also become leftover lunches are bought for the extra portions

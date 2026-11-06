@@ -19,24 +19,8 @@ export default async function handler(req: any, res: any) {
 
   // Only ordinary web pages. Addresses inside a network (localhost, 10.x, 192.168.x and the like)
   // are refused, so the function cannot be used to reach the server's own surroundings.
-  let parsedUrl: URL;
-  try {
-    parsedUrl = new URL(targetUrl);
-  } catch {
-    return sendError(res, 400, 'Ogiltig adress');
-  }
-  const host = parsedUrl.hostname.toLowerCase();
-  const isPrivateHost =
-    host === 'localhost' ||
-    host.endsWith('.local') ||
-    host.endsWith('.internal') ||
-    host === '::1' ||
-    host === '[::1]' ||
-    /^(127|10|0)\./.test(host) ||
-    /^192\.168\./.test(host) ||
-    /^169\.254\./.test(host) ||
-    /^172\.(1[6-9]|2\d|3[01])\./.test(host);
-  if (!/^https?:$/.test(parsedUrl.protocol) || isPrivateHost) {
+  // Redirects are checked the same way in fetchPublic.
+  if (!isPublicUrl(targetUrl)) {
     return sendError(res, 400, 'Adressen går inte att hämta');
   }
 
@@ -47,8 +31,7 @@ export default async function handler(req: any, res: any) {
       ? 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)'
       : 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36';
 
-    const response = await fetch(targetUrl, {
-      redirect: 'follow',
+    const response = await fetchPublic(targetUrl, {
       // The app gives up after 8 seconds, so there is no point waiting longer here
       signal: AbortSignal.timeout(7000),
       headers: {
@@ -88,8 +71,7 @@ export default async function handler(req: any, res: any) {
       (html.includes('isPrerenderCrawler') || ((html.includes('id="__next"') || html.includes('id="root"')) && !html.includes('recipeIngredient') && !html.includes('schema.org')))
     ) {
       try {
-        const crawlerRes = await fetch(targetUrl, {
-          redirect: 'follow',
+        const crawlerRes = await fetchPublic(targetUrl, {
           // The first try may already have used some of the app's 8 seconds
           signal: AbortSignal.timeout(4000),
           headers: {
@@ -160,4 +142,61 @@ function sendError(res: any, status: number, message: string) {
     status,
     headers: { 'Content-Type': 'application/json' },
   });
+}
+
+/** True for http(s) addresses that are not inside a private network. */
+function isPublicUrl(value: string): boolean {
+  let url: URL;
+  try {
+    url = new URL(value);
+  } catch {
+    return false;
+  }
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') return false;
+  const host = url.hostname.toLowerCase().replace(/^\[|\]$/g, '');
+  if (
+    host === 'localhost' ||
+    host.endsWith('.localhost') ||
+    host.endsWith('.local') ||
+    host.endsWith('.internal')
+  ) {
+    return false;
+  }
+  // IPv4, also when written inside an IPv6 address (::ffff:127.0.0.1)
+  const v4 = host.match(/(?:^|:)(\d{1,3})\.(\d{1,3})\.\d{1,3}\.\d{1,3}$/);
+  if (v4) {
+    const [a, b] = [Number(v4[1]), Number(v4[2])];
+    if (
+      a === 0 || a === 10 || a === 127 ||
+      (a === 169 && b === 254) ||
+      (a === 172 && b >= 16 && b <= 31) ||
+      (a === 192 && b === 168) ||
+      (a === 100 && b >= 64 && b <= 127)
+    ) {
+      return false;
+    }
+  }
+  // IPv6 loopback, unspecified, unique local (fc00::/7) and link local (fe80::/10)
+  if (host.includes(':')) {
+    if (host === '::' || host === '::1' || /^f[cd]/.test(host) || /^fe[89ab]/.test(host)) return false;
+    // ::ffff:7f00:1 and the like (IPv4 written in hex)
+    if (/^::ffff:[0-9a-f]{1,4}:[0-9a-f]{1,4}$/.test(host)) return false;
+  }
+  return true;
+}
+
+/** fetch that follows at most 5 redirects, and only to public addresses. */
+async function fetchPublic(url: string, init: RequestInit): Promise<Response> {
+  let current = url;
+  for (let i = 0; i <= 5; i++) {
+    const response = await fetch(current, { ...init, redirect: 'manual' });
+    const location = response.status >= 300 && response.status < 400 ? response.headers.get('location') : null;
+    if (!location) return response;
+    const next = new URL(location, current).toString();
+    if (!isPublicUrl(next)) {
+      throw new Error('Sidan skickade vidare till en adress som inte går att hämta');
+    }
+    current = next;
+  }
+  throw new Error('Sidan skickade vidare för många gånger');
 }

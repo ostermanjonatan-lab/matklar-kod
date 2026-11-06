@@ -48,3 +48,32 @@ export function parseLeftoverLunch(customLunch?: string | null): { day: string; 
   const m = customLunch?.trim().match(PATTERN);
   return m ? { day: m[1].toLowerCase(), title: m[2] } : null;
 }
+
+/**
+ * Keeps leftover lunches in step with the dinners they come from. After the dinners on
+ * changedDates have changed, a leftover lunch from one of them gets the new dish's name, or is
+ * removed when that dinner is gone. dinnerTitle returns undefined when the dish is not known
+ * (a recipe not loaded yet), and the lunch is then left as it is.
+ * Returns the plan and the dates whose lunch was changed.
+ */
+export function syncLeftoverLunches(
+  plan: MealPlanDay[],
+  changedDates: string[],
+  dinnerTitle: (day: MealPlanDay) => string | null | undefined
+): { plan: MealPlanDay[]; changed: string[] } {
+  const changed: string[] = [];
+  const sources = new Set(changedDates);
+  const result = plan.map((day) => {
+    if (!day.dateStr) return day;
+    const source = leftoverSourceDate(day.dateStr, day.customLunch);
+    if (!source || !sources.has(source)) return day;
+    const dinner = plan.find((d) => d.dateStr === source);
+    const title = dinner ? dinnerTitle(dinner) : null;
+    if (title === undefined) return day;
+    const text = title ? leftoverLunchText(source, title) : '';
+    if (text === day.customLunch) return day;
+    changed.push(day.dateStr);
+    return { ...day, customLunch: text };
+  });
+  return { plan: changed.length > 0 ? result : plan, changed };
+}
