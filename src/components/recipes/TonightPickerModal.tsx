@@ -2,7 +2,6 @@ import React, { useMemo, useState } from 'react';
 import { Check, ChevronLeft, ChevronRight, Search, X } from 'lucide-react';
 import type { Recipe } from '../../types/recipe';
 import { getRecipeSubcategories } from '../../types/recipe';
-import { STANDARD_CATEGORIES } from '../../data/categories';
 import { formatCookingTime, formatRecipeTitle } from '../../utils/formatters';
 
 interface TonightPickerModalProps {
@@ -20,8 +19,8 @@ const byTitle = (a: Recipe, b: Recipe) =>
   formatRecipeTitle(a.title).localeCompare(formatRecipeTitle(b.title), 'sv');
 
 /**
- * Choose tonight's dinner by hand. Step by step: category, then subcategory, then recipe.
- * Typing in the search field skips the steps and shows matching recipes directly.
+ * Choose tonight's dinner by hand among the dinner recipes: first a subcategory (Pasta, Fisk...),
+ * then the recipe. Typing in the search field skips the step and shows matching dinners directly.
  */
 export const TonightPickerModal: React.FC<TonightPickerModalProps> = ({
   recipes,
@@ -30,77 +29,45 @@ export const TonightPickerModal: React.FC<TonightPickerModalProps> = ({
   onClose,
 }) => {
   const [query, setQuery] = useState('');
-  const [category, setCategory] = useState<string | null>(null);
+  // Only dinners are chosen here, so the list starts in the Middag category
+  const category = 'Middag';
+  const dinners = useMemo(() => recipes.filter((r) => r.category === category), [recipes]);
   const [subcategory, setSubcategory] = useState<string | null>(null);
 
   const q = query.trim().toLowerCase();
 
-  const categories = useMemo(() => {
-    const names = new Set<string>(recipes.map((r) => r.category).filter(Boolean));
-    const ordered = [
-      ...STANDARD_CATEGORIES.filter((c) => names.has(c)),
-      ...Array.from(names).filter((c) => !STANDARD_CATEGORIES.includes(c as never)).sort((a, b) => a.localeCompare(b, 'sv')),
-    ];
-    return ordered.map((name) => {
-      const inCat = recipes.filter((r) => r.category === name);
-      return { name, count: inCat.length, image: inCat.find((r) => r.coverImageUrl)?.coverImageUrl };
-    });
-  }, [recipes]);
-
   const subcategories = useMemo(() => {
-    if (!category) return [];
     const map = new Map<string, Recipe[]>();
-    recipes
-      .filter((r) => r.category === category)
-      .forEach((r) => {
+    dinners.forEach((r) => {
         getRecipeSubcategories(r).forEach((s) => map.set(s, [...(map.get(s) || []), r]));
       });
     return Array.from(map.entries())
       .map(([name, list]) => ({ name, count: list.length, image: list.find((r) => r.coverImageUrl)?.coverImageUrl }))
       .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, 'sv'));
-  }, [recipes, category]);
+  }, [dinners]);
 
   const recipeList = useMemo(() => {
     if (q) {
-      return recipes
+      return dinners
         .filter(
           (r) =>
             r.title.toLowerCase().includes(q) ||
-            r.category.toLowerCase().includes(q) ||
             getRecipeSubcategories(r).some((s) => s.toLowerCase().includes(q))
         )
         .sort(byTitle);
     }
-    if (!category || !subcategory) return [];
-    return recipes
-      .filter(
-        (r) => r.category === category && (subcategory === ALL || getRecipeSubcategories(r).includes(subcategory))
-      )
+    if (!subcategory && subcategories.length > 0) return [];
+    return dinners
+      .filter((r) => !subcategory || subcategory === ALL || getRecipeSubcategories(r).includes(subcategory))
       .sort(byTitle);
-  }, [recipes, q, category, subcategory]);
+  }, [dinners, q, subcategory, subcategories.length]);
 
-  const openCategory = (name: string) => {
-    setCategory(name);
-    // A category without subcategories goes straight to its recipes
-    const hasSubs = recipes.some((r) => r.category === name && getRecipeSubcategories(r).length > 0);
-    setSubcategory(hasSubs ? null : ALL);
-  };
+  const goBack = () => setSubcategory(null);
 
-  const goBack = () => {
-    if (subcategory !== null && subcategories.length > 0) setSubcategory(null);
-    else {
-      setCategory(null);
-      setSubcategory(null);
-    }
-  };
-
-  const showRecipes = Boolean(q) || subcategory !== null;
-  const title = q
-    ? 'Middag i kväll'
-    : subcategory && subcategory !== ALL
-    ? subcategory
-    : category || 'Middag i kväll';
-  const canGoBack = !q && category !== null;
+  // Without subcategories the recipes are shown straight away
+  const showRecipes = Boolean(q) || subcategory !== null || subcategories.length === 0;
+  const title = !q && subcategory && subcategory !== ALL ? subcategory : 'Middag i kväll';
+  const canGoBack = !q && subcategory !== null;
 
   const Thumb = ({ src }: { src?: string }) =>
     src ? (
@@ -135,9 +102,6 @@ export const TonightPickerModal: React.FC<TonightPickerModalProps> = ({
               </button>
             )}
             <div className="flex-1 min-w-0">
-              {canGoBack && subcategory && subcategory !== ALL && (
-                <div className="text-xs text-stone-500 truncate">{category}</div>
-              )}
               <h3 className="font-serif font-bold text-lg text-stone-900 truncate">{title}</h3>
             </div>
             <button
@@ -155,7 +119,7 @@ export const TonightPickerModal: React.FC<TonightPickerModalProps> = ({
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Sök bland alla recept"
+              placeholder="Sök middag"
               className="w-full h-11 bg-[#FCFAF5] border border-[#EBE7DF] rounded-xl pl-9 pr-3 text-base sm:text-sm text-stone-900 focus:outline-none focus:ring-2 focus:ring-[#284235]"
             />
           </div>
@@ -164,7 +128,9 @@ export const TonightPickerModal: React.FC<TonightPickerModalProps> = ({
         <div className="flex-1 overflow-y-auto px-4 divide-y divide-[#EBE7DF]">
           {showRecipes ? (
             recipeList.length === 0 ? (
-              <p className="py-6 text-sm text-stone-500">Inga recept matchar "{query}".</p>
+              <p className="py-6 text-sm text-stone-500">
+                {q ? `Inga middagar matchar "${query}".` : 'Det finns inga recept i kategorin Middag.'}
+              </p>
             ) : (
               recipeList.map((recipe) => (
                 <button key={recipe.id} type="button" onClick={() => onSelect(recipe)} className={rowClass}>
@@ -174,7 +140,6 @@ export const TonightPickerModal: React.FC<TonightPickerModalProps> = ({
                       {formatRecipeTitle(recipe.title)}
                     </span>
                     <span className="block text-xs text-stone-500">
-                      {q ? `${recipe.category}, ` : ''}
                       {formatCookingTime(recipe.prepTimeMinutes, recipe.cookTimeMinutes)}
                     </span>
                   </span>
@@ -184,14 +149,12 @@ export const TonightPickerModal: React.FC<TonightPickerModalProps> = ({
                 </button>
               ))
             )
-          ) : category ? (
+          ) : (
             <>
               <button type="button" onClick={() => setSubcategory(ALL)} className={rowClass}>
-                <Thumb src={categories.find((c) => c.name === category)?.image} />
-                <span className="flex-1 min-w-0 text-sm font-semibold text-stone-900">Alla</span>
-                <span className="text-xs text-stone-500 tabular-nums">
-                  {categories.find((c) => c.name === category)?.count}
-                </span>
+                <Thumb src={dinners.find((r) => r.coverImageUrl)?.coverImageUrl} />
+                <span className="flex-1 min-w-0 text-sm font-semibold text-stone-900">Alla middagar</span>
+                <span className="text-xs text-stone-500 tabular-nums">{dinners.length}</span>
                 <ChevronRight className="w-4 h-4 text-stone-300 shrink-0" />
               </button>
               {subcategories.map((sub) => (
@@ -203,15 +166,6 @@ export const TonightPickerModal: React.FC<TonightPickerModalProps> = ({
                 </button>
               ))}
             </>
-          ) : (
-            categories.map((cat) => (
-              <button key={cat.name} type="button" onClick={() => openCategory(cat.name)} className={rowClass}>
-                <Thumb src={cat.image} />
-                <span className="flex-1 min-w-0 text-sm font-semibold text-stone-900 truncate">{cat.name}</span>
-                <span className="text-xs text-stone-500 tabular-nums">{cat.count}</span>
-                <ChevronRight className="w-4 h-4 text-stone-300 shrink-0" />
-              </button>
-            ))
           )}
         </div>
       </div>
