@@ -136,7 +136,17 @@ export const BottomNav: React.FC<BottomNavProps> = ({ onAddRecipeClick, onAddSho
         </div>
       </div>
 
-      <nav className="fixed bottom-0 left-0 right-0 z-40 bg-[#FCFAF5] border-t border-[#EBE7DF] pb-safe shadow-[0_-4px_20px_rgba(0,0,0,0.06)] font-sans">
+      <nav className="fixed bottom-0 left-0 right-0 z-40 bg-[#FCFAF5] pb-safe font-sans">
+        {/* Gently curved top edge: a low arc that rises about 14 px towards the middle */}
+        <svg
+          className="absolute bottom-full left-0 w-full h-[14px] -mb-px pointer-events-none drop-shadow-[0_-3px_6px_rgba(0,0,0,0.06)]"
+          viewBox="0 0 100 14"
+          preserveAspectRatio="none"
+          aria-hidden="true"
+        >
+          <path d="M0,14 Q50,-14 100,14 Z" fill="#FCFAF5" />
+          <path d="M0,14 Q50,-14 100,14" fill="none" stroke="#EBE7DF" strokeWidth="1" vectorEffect="non-scaling-stroke" />
+        </svg>
         <div className="max-w-md mx-auto flex items-center justify-between px-3 py-1.5">
           {/* Recept */}
           <button
