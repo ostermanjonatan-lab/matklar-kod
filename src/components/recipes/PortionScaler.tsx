@@ -1,5 +1,5 @@
 import React from 'react';
-import { Minus, Plus, Users } from 'lucide-react';
+import { Minus, Plus } from 'lucide-react';
 
 interface PortionScalerProps {
   currentServings: number;
@@ -35,45 +35,32 @@ export const PortionScaler: React.FC<PortionScalerProps> = ({
   const isScaled = currentServings !== baseServings;
 
   return (
-    <div className="bg-stone-50 border border-stone-200 rounded-2xl p-3 sm:p-3.5 flex flex-wrap items-center justify-between shadow-xs w-full max-w-full gap-2 min-w-0">
-      <div className="flex items-center gap-2.5 min-w-[9rem] flex-1">
-        <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-800 flex items-center justify-center shrink-0">
-          <Users className="w-5 h-5" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="text-sm sm:text-base font-bold text-stone-900 leading-tight">
-              {currentServings} {currentServings === 1 ? 'portion' : 'portioner'}
-            </span>
-            {isScaled && (
-              <button
-                type="button"
-                onClick={handleReset}
-                className="text-[10px] font-semibold text-emerald-800 bg-emerald-100/70 px-2 py-0.5 rounded-md hover:bg-emerald-200 transition-colors touch-manipulation shrink-0"
-                title="Återställ till original"
-              >
-                Orig: {baseServings}
-              </button>
-            )}
-          </div>
-          <p className="text-[11px] text-stone-500 truncate mt-0.5">
-            {isScaled ? 'Mängderna har anpassats' : `Originalrecept för ${baseServings} pers`}
-          </p>
-        </div>
+    <div className="flex items-center justify-between gap-3 w-full min-w-0">
+      <div className="min-w-0">
+        <div className="text-sm font-semibold text-stone-900">Portioner</div>
+        {isScaled && (
+          <button
+            type="button"
+            onClick={handleReset}
+            className="text-xs text-stone-500 mt-0.5 text-left touch-manipulation"
+          >
+            Receptet är för {baseServings}. <span className="font-semibold text-[#284235] underline underline-offset-2">Återställ</span>
+          </button>
+        )}
       </div>
 
-      <div className="flex items-center gap-1.5 bg-white border border-stone-200 p-1 rounded-2xl shadow-xs shrink-0 ml-auto">
+      <div className="flex items-center gap-1 bg-white border border-stone-200 p-1 rounded-2xl shrink-0">
         <button
           type="button"
           onClick={handleDecrement}
           disabled={currentServings <= minServings}
-          className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center text-stone-700 bg-stone-100 hover:bg-stone-200 active:scale-90 disabled:opacity-30 disabled:pointer-events-none transition-all touch-manipulation"
+          className="w-9 h-9 rounded-xl flex items-center justify-center text-stone-700 bg-stone-100 active:bg-stone-200 active:scale-90 disabled:opacity-30 disabled:pointer-events-none transition-all touch-manipulation"
           aria-label="Minska portioner"
         >
           <Minus className="w-4 h-4 stroke-[2.5]" />
         </button>
 
-        <span className="w-6 sm:w-7 text-center text-sm sm:text-base font-bold text-stone-900 tabular-nums">
+        <span className="w-8 text-center text-base font-bold text-stone-900 tabular-nums" aria-live="polite">
           {currentServings}
         </span>
 
@@ -81,7 +68,7 @@ export const PortionScaler: React.FC<PortionScalerProps> = ({
           type="button"
           onClick={handleIncrement}
           disabled={currentServings >= maxServings}
-          className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center text-white bg-emerald-700 hover:bg-emerald-800 active:scale-90 disabled:opacity-30 disabled:pointer-events-none transition-all touch-manipulation shadow-xs"
+          className="w-9 h-9 rounded-xl flex items-center justify-center text-white bg-[#284235] active:scale-90 disabled:opacity-30 disabled:pointer-events-none transition-all touch-manipulation"
           aria-label="Öka portioner"
         >
           <Plus className="w-4 h-4 stroke-[2.5]" />
