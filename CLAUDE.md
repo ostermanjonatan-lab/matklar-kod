@@ -9,6 +9,7 @@ Svensk app för recept, veckoplan och inköpslista. React, TypeScript och Vite, 
 - Typkontroll: `npx tsc -p tsconfig.app.json --noEmit`. Projektet har inga automatiska tester.
 - Kör appen utan Supabase när du testar, så att riktiga hushållsdata inte ändras.
 - `.env.local` och `supabase-config.json` innehåller nycklar och ska inte läggas i Git.
+- Tangentbordet ska aldrig öppnas av sig självt när en ruta visas. Använd inte `autoFocus` och fokusera inte textfält när en ruta öppnas.
 
 ## Var saker finns
 

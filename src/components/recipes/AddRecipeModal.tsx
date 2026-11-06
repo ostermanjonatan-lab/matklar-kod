@@ -479,7 +479,6 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = ({ onClose }) => {
                 }}
                 placeholder="https://www.ica.se/recept/..."
                 className="w-full h-12 bg-white border border-[#EBE7DF] rounded-2xl px-3.5 text-sm text-stone-900 focus:outline-none focus:ring-2 focus:ring-[#284235] shadow-xs disabled:bg-stone-50 disabled:text-stone-500"
-                autoFocus
               />
 
               {/* Progress bar during URL recipe fetching */}
@@ -569,7 +568,6 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = ({ onClose }) => {
               onChange={(e) => setPastedRecipeText(e.target.value)}
               placeholder="Klistra in hela recepttexten här...&#10;&#10;T.ex:&#10;Krämig Kycklingpasta&#10;&#10;Ingredienser:&#10;400 g tagliatelle&#10;500 g kycklingfilé&#10;2 dl vispgrädde&#10;1 klyfta vitlök&#10;Salt och peppar&#10;&#10;Gör så här:&#10;1. Koka pastan al dente.&#10;2. Stek kycklingen gyllenbrun..."
               className="w-full bg-white border border-[#EBE7DF] rounded-2xl p-3.5 text-xs text-stone-900 leading-relaxed focus:outline-none focus:ring-2 focus:ring-[#284235] font-sans resize-y"
-              autoFocus
             />
 
             <div className="flex gap-2">

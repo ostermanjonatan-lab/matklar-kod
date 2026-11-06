@@ -186,7 +186,6 @@ export const AddShoppingItemModal: React.FC<AddShoppingItemModalProps> = ({ onCl
                 onChange={(e) => setSmartInput(e.target.value)}
                 placeholder="T.ex. 1 kg vetemjöl, 2 st mjölk, 500g smör, kaffe..."
                 className="w-full h-12 bg-[#FCFAF5] border border-[#EBE7DF] rounded-2xl px-4 pr-10 text-sm text-stone-900 focus:outline-none focus:ring-2 focus:ring-[#284235] focus:border-transparent placeholder:text-stone-400"
-                autoFocus
               />
               {smartInput && (
                 <button

@@ -873,7 +873,6 @@ export const ShoppingListView: React.FC = () => {
                       onChange={(e) => setManualSmartInput(e.target.value)}
                       placeholder="T.ex. 1 kg vetemjöl, 2 st mjölk, 500g smör, kaffe..."
                       className="w-full h-12 bg-[#FCFAF5] border border-[#EBE7DF] focus:border-[#284235] rounded-2xl px-4 pr-10 text-sm text-stone-900 focus:outline-none focus:ring-2 focus:ring-[#284235]/20 font-medium placeholder:text-stone-400 shadow-2xs"
-                      autoFocus
                     />
                     {manualSmartInput && (
                       <button
@@ -1196,7 +1195,6 @@ export const ShoppingListView: React.FC = () => {
               onChange={(e) => setEditingCommentText(e.target.value)}
               placeholder="T.ex. Ekologisk, Gärna Arla, Ta 2 paket..."
               className="w-full h-11 bg-[#FCFAF5] border border-[#EBE7DF] rounded-2xl px-3.5 text-sm text-stone-900 focus:outline-none focus:ring-2 focus:ring-[#284235]"
-              autoFocus
             />
 
             <div className="flex gap-2">
@@ -1463,7 +1461,6 @@ export const ShoppingListView: React.FC = () => {
                     onChange={(e) => setNewStoreNameInput(e.target.value)}
                     placeholder="T.ex. Willys, ICA Maxi..."
                     className="flex-1 h-9 bg-white border border-[#EBE7DF] rounded-xl px-3 text-xs text-stone-900 focus:outline-none focus:ring-2 focus:ring-[#284235]"
-                    autoFocus
                   />
                   <button
                     type="submit"
@@ -1509,7 +1506,6 @@ export const ShoppingListView: React.FC = () => {
                         value={renameStoreInput}
                         onChange={(e) => setRenameStoreInput(e.target.value)}
                         className="flex-1 h-8 bg-white border border-[#EBE7DF] rounded-lg px-2.5 text-xs text-stone-900 focus:outline-none focus:ring-2 focus:ring-[#284235]"
-                        autoFocus
                       />
                       <button
                         type="submit"

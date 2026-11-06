@@ -212,7 +212,6 @@ export const SubcategorySelector: React.FC<SubcategorySelectorProps> = ({
           <div className="flex items-center gap-1.5">
             <input
               type="text"
-              autoFocus
               value={customInput}
               onChange={(e) => setCustomInput(e.target.value)}
               onKeyDown={(e) => {

@@ -350,7 +350,6 @@ export const AlltidHemmaView: React.FC<AlltidHemmaViewProps> = ({ onNavigateToSh
                 onChange={(e) => setSmartInput(e.target.value)}
                 placeholder="T.ex. 1 kg vetemjöl, 2 st mjölk, 500g smör, kaffe..."
                 className="w-full h-12 bg-[#FCFAF5] border border-[#EBE7DF] focus:border-[#284235] rounded-2xl px-4 pr-10 text-sm text-stone-900 focus:outline-none focus:ring-2 focus:ring-[#284235]/20 font-medium placeholder:text-stone-400 shadow-2xs"
-                autoFocus
               />
               {smartInput && (
                 <button
@@ -720,7 +719,6 @@ export const AlltidHemmaView: React.FC<AlltidHemmaViewProps> = ({ onNavigateToSh
                   value={editName}
                   onChange={(e) => setEditName(e.target.value)}
                   className="w-full h-11 bg-[#FCFAF5] border border-[#EBE7DF] rounded-2xl px-3.5 text-sm text-stone-900 focus:outline-none focus:ring-2 focus:ring-[#284235]"
-                  autoFocus
                 />
               </div>
 

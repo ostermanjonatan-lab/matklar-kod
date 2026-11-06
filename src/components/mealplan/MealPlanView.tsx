@@ -1335,7 +1335,6 @@ export const MealPlanView: React.FC = () => {
                   onChange={(e) => setRecipeSearchQuery(e.target.value)}
                   placeholder="Sök recept, kategori, ingrediens..."
                   className="w-full h-11 bg-[#FCFAF5] border border-[#EBE7DF] rounded-2xl px-3.5 text-xs text-stone-900 focus:outline-none focus:ring-2 focus:ring-[#284235] shrink-0"
-                  autoFocus
                 />
 
                 {/* Category Filter Pills */}
@@ -1428,7 +1427,6 @@ export const MealPlanView: React.FC = () => {
                     }}
                     placeholder="T.ex. Rester från igår, Äta ute, Pizza..."
                     className="w-full h-11 bg-[#FCFAF5] border border-[#EBE7DF] rounded-2xl px-3.5 text-xs text-stone-900 focus:outline-none focus:ring-2 focus:ring-[#284235]"
-                    autoFocus
                   />
                 </div>
 

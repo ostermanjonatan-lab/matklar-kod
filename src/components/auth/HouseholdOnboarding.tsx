@@ -240,7 +240,6 @@ export const HouseholdOnboarding: React.FC<HouseholdOnboardingProps> = ({
                   onChange={(e) => setHhName(e.target.value)}
                   placeholder="T.ex. Vårt Kök, Familjen Andersson..."
                   className="w-full h-11 bg-stone-50 border border-stone-300 rounded-xl px-3.5 text-sm text-stone-900 focus:outline-none focus:ring-2 focus:ring-emerald-700 font-medium"
-                  autoFocus
                 />
               </div>
 
@@ -307,7 +306,6 @@ export const HouseholdOnboarding: React.FC<HouseholdOnboardingProps> = ({
                   onChange={(e) => setJoinCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
                   placeholder="T.ex. 482195"
                   className="w-full h-12 bg-stone-50 border border-stone-300 rounded-xl px-4 text-xl font-mono tracking-widest text-center text-stone-900 focus:outline-none focus:ring-2 focus:ring-emerald-700 font-bold"
-                  autoFocus
                 />
                 <p className="text-[11px] text-stone-500 mt-1.5 text-center">
                   Ange den 6-siffriga koden (t.ex. 482195)

@@ -376,7 +376,6 @@ export const HouseholdShareModal: React.FC<HouseholdShareModalProps> = ({ onClos
                   onChange={(e) => setNewHhNameInput(e.target.value)}
                   placeholder="T.ex. Sommarstugan, Kollektivet..."
                   className="w-full h-10 bg-white border border-stone-300 rounded-xl px-3 text-xs text-stone-900 focus:outline-none focus:ring-2 focus:ring-emerald-700 font-medium"
-                  autoFocus
                 />
 
                 <button
@@ -418,7 +417,6 @@ export const HouseholdShareModal: React.FC<HouseholdShareModalProps> = ({ onClos
                   onChange={(e) => setJoinCodeInput(e.target.value.replace(/\D/g, '').slice(0, 6))}
                   placeholder="T.ex. 482195"
                   className="w-full h-11 bg-white border border-stone-300 rounded-xl px-3 text-base font-mono tracking-widest text-center text-stone-900 focus:outline-none focus:ring-2 focus:ring-emerald-700 font-bold"
-                  autoFocus
                 />
 
                 <button
@@ -540,7 +538,6 @@ export const HouseholdShareModal: React.FC<HouseholdShareModalProps> = ({ onClos
                       onChange={(e) => setHouseholdNameInput(e.target.value)}
                       placeholder="Namn på hushållet"
                       className="flex-1 h-10 bg-white border border-emerald-600 rounded-xl px-3 text-sm font-bold text-stone-900 focus:outline-none focus:ring-2 focus:ring-emerald-700"
-                      autoFocus
                     />
                     <button
                       type="submit"
@@ -692,7 +689,6 @@ export const HouseholdShareModal: React.FC<HouseholdShareModalProps> = ({ onClos
                         onChange={(e) => setNewMemberName(e.target.value)}
                         placeholder="T.ex. Elin eller Sambon"
                         className="w-full h-10 bg-white border border-stone-300 rounded-xl px-3 text-xs text-stone-900 focus:outline-none focus:ring-2 focus:ring-emerald-700"
-                        autoFocus
                       />
                     </div>
                   </div>
@@ -746,7 +742,6 @@ export const HouseholdShareModal: React.FC<HouseholdShareModalProps> = ({ onClos
                               value={editingMemberName}
                               onChange={(e) => setEditingMemberName(e.target.value)}
                               className="w-full h-9 bg-white border border-stone-300 rounded-xl px-3 text-xs font-semibold text-stone-900 focus:outline-none focus:ring-2 focus:ring-emerald-700"
-                              autoFocus
                             />
                           </div>
 
