@@ -49,6 +49,22 @@ export const ShareRecipeSheet: React.FC<ShareRecipeSheetProps> = ({ recipe, serv
       }
     }
     // No share menu with files (a computer): save the picture instead
+    saveImage();
+  };
+
+  // On iPhone the share menu is the way to save to Bilder, so it opens there. Elsewhere the
+  // picture is downloaded and ends up among the phone's downloads and in the photo gallery.
+  const saveImage = async () => {
+    if (!image) return;
+    if (/iPhone|iPad|iPod/.test(navigator.userAgent) && navigator.canShare?.({ files: [image] })) {
+      try {
+        await navigator.share({ files: [image] });
+        onClose();
+      } catch {
+        // Cancelled
+      }
+      return;
+    }
     const url = URL.createObjectURL(image);
     const a = document.createElement('a');
     a.href = url;
@@ -109,14 +125,28 @@ export const ShareRecipeSheet: React.FC<ShareRecipeSheetProps> = ({ recipe, serv
           >
             Skicka länk
           </button>
-          <button
-            type="button"
-            onClick={shareImage}
-            disabled={!image}
-            className="w-full min-h-[48px] rounded-xl bg-stone-100 text-stone-800 disabled:text-stone-400 text-sm font-semibold touch-manipulation"
-          >
-            {image ? 'Dela som bild' : imageFailed ? 'Bilden gick inte att göra' : 'Gör bilden'}
-          </button>
+          {imageFailed ? (
+            <p className="text-sm text-stone-500 py-2">Bilden gick inte att göra.</p>
+          ) : (
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={shareImage}
+                disabled={!image}
+                className="flex-1 min-h-[48px] rounded-xl bg-stone-100 text-stone-800 disabled:text-stone-400 text-sm font-semibold touch-manipulation"
+              >
+                {image ? 'Dela som bild' : 'Gör bilden'}
+              </button>
+              <button
+                type="button"
+                onClick={saveImage}
+                disabled={!image}
+                className="flex-1 min-h-[48px] rounded-xl bg-stone-100 text-stone-800 disabled:text-stone-400 text-sm font-semibold touch-manipulation"
+              >
+                Spara bild
+              </button>
+            </div>
+          )}
           <button
             type="button"
             onClick={copyText}
