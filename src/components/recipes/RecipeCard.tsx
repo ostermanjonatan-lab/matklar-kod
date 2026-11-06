@@ -1,11 +1,10 @@
 import React, { useState, useRef } from 'react';
 import { categoryLabel } from '../../data/categories';
-import { DifficultyDots } from './DifficultyPicker';
 import { DIFFICULTY_LABELS } from '../../utils/recipeDifficulty';
 import type { Recipe } from '../../types/recipe';
 import { isRecipeNew } from '../../types/recipe';
 import { useRecipes } from '../../context/RecipeContext';
-import { Heart, Clock, Check, ShoppingCart } from 'lucide-react';
+import { Heart, Check, ShoppingCart } from 'lucide-react';
 import { formatCookingTime, formatRecipeTitle } from '../../utils/formatters';
 
 interface RecipeCardProps {
@@ -86,35 +85,11 @@ export const RecipeCard = React.memo<RecipeCardProps>(
       setTimeout(() => setAddedToCart(false), 2000);
     };
 
-    const getSourceBadge = () => {
-      if (recipe.sourceType === 'recipe_image' || recipe.recipeDocumentUrl) {
-        return (
-          <span
-            className="bg-black/70 text-stone-100 text-[10px] font-medium px-2.5 py-0.5 rounded-full border border-white/10 shadow-xs shrink-0 pointer-events-auto"
-            title="Originalfoto/dokument bifogat"
-          >
-            Foto
-          </span>
-        );
-      }
-      if (recipe.sourceType === 'pdf') {
-        return (
-          <span
-            className="bg-black/70 text-stone-100 text-[10px] font-medium px-2.5 py-0.5 rounded-full border border-white/10 shadow-xs shrink-0 pointer-events-auto"
-            title="PDF bifogad"
-          >
-            PDF
-          </span>
-        );
-      }
-      return null;
-    };
-
     return (
       <div
         onClick={handleCardClick}
         style={{ contentVisibility: 'auto', containIntrinsicSize: '300px' }}
-        className="group relative aspect-[16/11] md:aspect-[4/5] w-full rounded-3xl border border-[#EBE7DF] shadow-xs hover:shadow-lg transition-all duration-300 overflow-hidden cursor-pointer active:scale-[0.985] bg-stone-900"
+        className="group relative aspect-[16/11] md:aspect-[4/5] w-full rounded-2xl overflow-hidden cursor-pointer active:scale-[0.985] transition-transform bg-stone-900"
       >
         {/* Cover Image */}
         <img
@@ -130,106 +105,56 @@ export const RecipeCard = React.memo<RecipeCardProps>(
         />
 
         {/* Mjuk botten-gradient så att bilden förblir ljus och aptitretande */}
-        <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/85 via-black/40 via-40% to-transparent pointer-events-none" />
+        <div className="absolute inset-x-0 bottom-0 h-3/5 bg-gradient-to-t from-black/75 via-black/30 via-45% to-transparent pointer-events-none" />
+        <div className="absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-black/25 to-transparent pointer-events-none" />
 
-        {/* Top badges: category and, when there is one, the source document */}
-        <div
-          className="absolute top-3.5 left-3.5 right-15 flex items-center gap-1.5 z-10 overflow-hidden flex-nowrap pointer-events-none"
-        >
-          {/* Main Category */}
-          <span className="bg-white/95 text-stone-900 text-[11px] font-bold px-2.5 py-1 rounded-full shadow-xs shrink-0 pointer-events-auto">
-            {categoryLabel(recipe.category)}
-          </span>
-
-          {/* Optional Source Badge (Foto/PDF) */}
-          {getSourceBadge()}
-
-        </div>
-
-        {/* Favorite Heart Button */}
+        {/* Favorite: a plain white heart on the photo */}
         <button
           type="button"
           onClick={handleHeartClick}
-          className="absolute top-3.5 right-3.5 w-10 h-10 rounded-full bg-white/95 flex items-center justify-center text-stone-700 hover:text-rose-600 transition-all duration-150 active:scale-125 shadow-xs touch-manipulation z-10"
+          className="absolute top-1.5 right-1.5 w-11 h-11 flex items-center justify-center text-white active:scale-110 transition-transform touch-manipulation z-10 drop-shadow-[0_1px_3px_rgba(0,0,0,0.6)]"
           aria-label={recipe.isFavorite ? 'Ta bort favorit' : 'Lägg till som favorit'}
         >
-          <Heart
-            className={`w-4 h-4 transition-colors duration-200 ${
-              recipe.isFavorite
-                ? 'fill-rose-500 text-rose-500 scale-110'
-                : 'text-stone-700'
-            }`}
-          />
+          <Heart className={`w-5 h-5 ${recipe.isFavorite ? 'fill-rose-500 text-rose-500' : ''}`} />
         </button>
 
-        {/* Bottom Content: Title, Time & Rating directly over image */}
-        <div className="absolute bottom-0 inset-x-0 p-4 sm:p-5 pr-15 sm:pr-16 flex flex-col justify-end z-10">
-          <h3 className="font-serif text-base sm:text-lg md:text-xl font-bold text-white leading-snug tracking-tight drop-shadow-[0_2px_4px_rgba(0,0,0,0.85)] line-clamp-2 group-hover:text-emerald-100 transition-colors">
+        {/* Name, and below it one line: category · time · difficulty · source · new */}
+        <div className="absolute bottom-0 inset-x-0 p-4 sm:p-5 pr-14 sm:pr-16 flex flex-col justify-end z-10">
+          <h3 className="font-serif text-lg md:text-xl font-bold text-white leading-snug tracking-tight drop-shadow-[0_1px_3px_rgba(0,0,0,0.6)] line-clamp-2">
             {formatRecipeTitle(recipe.title)}
           </h3>
-
-          <div className="mt-2 flex items-center gap-2 text-white/95 text-xs font-semibold flex-wrap">
-            {/* Cooking time */}
-            <div className="flex items-center gap-1.5 bg-black/60 px-2.5 py-1 rounded-full border border-white/20 shadow-2xs">
-              <Clock className="w-3.5 h-3.5 text-stone-200" />
-              <span>{formatCookingTime(recipe.prepTimeMinutes, recipe.cookTimeMinutes)}</span>
-            </div>
-
-            {/* Difficulty */}
-            {recipe.difficulty && (
-              <div className="flex items-center gap-1.5 bg-black/60 px-2.5 py-1 rounded-full border border-white/20 shadow-2xs">
-                <DifficultyDots level={recipe.difficulty} />
-                <span>{DIFFICULTY_LABELS[recipe.difficulty]}</span>
-              </div>
-            )}
-
-            {/* New badge */}
-            {isRecipeNew(recipe) ? (
-              <div className="bg-black/60 px-2.5 py-1 rounded-full border border-white/20 shadow-2xs">
-                <span className="text-emerald-300 font-semibold text-xs">Ny</span>
-              </div>
-            ) : null}
-          </div>
+          <p className="mt-1 text-[13px] text-white/85 drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)] truncate">
+            {[
+              categoryLabel(recipe.category),
+              formatCookingTime(recipe.prepTimeMinutes, recipe.cookTimeMinutes),
+              recipe.difficulty ? DIFFICULTY_LABELS[recipe.difficulty] : '',
+              recipe.sourceType === 'recipe_image' ? 'Foto' : recipe.sourceType === 'pdf' || recipe.recipeDocumentUrl ? 'PDF' : '',
+            ]
+              .filter(Boolean)
+              .join(' · ')}
+            {isRecipeNew(recipe) && <span className="text-emerald-200"> · Ny</span>}
+          </p>
         </div>
 
-        {/* Add to Shopping List Button (Bottom Right Corner) */}
+        {/* Add to the shopping list: a plain white cart, a dot when it is already there */}
         <button
           type="button"
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
           onClick={handleShoppingClick}
-          className={`absolute bottom-3.5 right-3.5 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-150 active:scale-125 shadow-md touch-manipulation z-20 ${
-            addedToCart
-              ? 'bg-emerald-600 text-white'
-              : isInShoppingList
-              ? 'bg-white/95 text-emerald-700 hover:text-emerald-800'
-              : 'bg-white/95 text-stone-700 hover:text-[#284235] hover:bg-white'
-          }`}
+          className="absolute bottom-2 right-2 w-11 h-11 flex items-center justify-center text-white active:scale-110 transition-transform touch-manipulation z-20 drop-shadow-[0_1px_3px_rgba(0,0,0,0.6)]"
           aria-label={
             addedToCart
               ? 'Receptet tillagt i inköpslistan'
               : isInShoppingList
-              ? 'Receptet finns i inköpslistan (klicka för att lägga till igen)'
+              ? 'Receptet finns i inköpslistan, tryck för att lägga till igen'
               : 'Lägg till receptet i inköpslistan'
           }
-          title={
-            isInShoppingList
-              ? 'Finns i inköpslistan (klicka för att lägga till igen)'
-              : 'Lägg till i inköpslistan'
-          }
         >
-          {addedToCart ? (
-            <Check className="w-4 h-4 text-white stroke-[2.5]" />
-          ) : (
-            <ShoppingCart
-              className={`w-4 h-4 transition-colors ${
-                isInShoppingList ? 'text-emerald-600 stroke-[2.2]' : ''
-              }`}
-            />
-          )}
+          {addedToCart ? <Check className="w-5 h-5 stroke-[2.5]" /> : <ShoppingCart className="w-5 h-5" />}
           {isInShoppingList && !addedToCart && (
-            <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-white" />
+            <span className="absolute top-2 right-1.5 w-2 h-2 bg-emerald-400 rounded-full" />
           )}
         </button>
       </div>
