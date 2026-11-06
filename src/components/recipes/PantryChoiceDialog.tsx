@@ -50,7 +50,7 @@ export const PantryChoiceDialog: React.FC<PantryChoiceDialogProps> = ({ recipe, 
         </ul>
 
         <p className="text-xs text-stone-500">
-          Resten av receptet läggs i inköpslistan.
+          Resten av {recipe.title || 'receptet'} läggs i inköpslistan.
         </p>
 
         <div className="grid grid-cols-2 gap-2">

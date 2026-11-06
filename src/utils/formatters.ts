@@ -21,6 +21,14 @@ export function scaleIngredientAmount(
 /**
  * Format numeric amount into human-friendly representation (e.g. 1.5 -> 1 ½, 0.25 -> ¼)
  */
+/**
+ * Amount for the shopping list: decimal comma instead of fractions, e.g. 1,5 (not 1 ½).
+ */
+export function formatShoppingAmount(amount: number | null | undefined): string {
+  if (amount === null || amount === undefined || isNaN(amount)) return '';
+  return amount.toLocaleString('sv-SE', { maximumFractionDigits: 2 });
+}
+
 export function formatAmount(amount: number | null | undefined): string {
   if (amount === null || amount === undefined || isNaN(amount)) {
     return '';

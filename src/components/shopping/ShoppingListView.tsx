@@ -36,7 +36,7 @@ import {
   Tag,
   MoreVertical,
 } from 'lucide-react';
-import { formatAmount, capitalizeFirst, formatUnit, formatIngredientName, stripPreparation } from '../../utils/formatters';
+import { formatShoppingAmount, capitalizeFirst, formatUnit, formatIngredientName, stripPreparation } from '../../utils/formatters';
 import { parseSmartItemInput } from '../../utils/ingredientParser';
 import { normalizeRecipeSource } from '../../utils/shoppingAggregator';
 import { copyTextToClipboard } from '../../utils/recipeShare';
@@ -49,7 +49,6 @@ import {
   saveActiveStoreId,
   loadCollapsedAisles,
   saveCollapsedAisles,
-  moveAisle,
   reorderAisleByIndex,
 } from '../../utils/storeLayoutService';
 
@@ -88,8 +87,37 @@ export const ShoppingListView: React.FC = () => {
   const [renameStoreInput, setRenameStoreInput] = useState<string>('');
   const [draggedModalAisleIndex, setDraggedModalAisleIndex] = useState<number | null>(null);
 
-  // Drag & drop state for main list cards
-  const [draggedCardAisle, setDraggedCardAisle] = useState<string | null>(null);
+  // Long press on a row opens its menu (comment, category, remove)
+  const longPressTimerRef = useRef<number | null>(null);
+  const longPressStartRef = useRef<{ x: number; y: number } | null>(null);
+  const longPressFiredRef = useRef(false);
+
+  const cancelLongPress = () => {
+    if (longPressTimerRef.current !== null) {
+      window.clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+    longPressStartRef.current = null;
+  };
+
+  const startLongPress = (item: ShoppingItem, e: React.PointerEvent) => {
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    cancelLongPress();
+    longPressFiredRef.current = false;
+    longPressStartRef.current = { x: e.clientX, y: e.clientY };
+    longPressTimerRef.current = window.setTimeout(() => {
+      longPressTimerRef.current = null;
+      longPressFiredRef.current = true;
+      if (navigator.vibrate) navigator.vibrate(10);
+      setItemMenu(item);
+    }, 500);
+  };
+
+  const moveLongPress = (e: React.PointerEvent) => {
+    const start = longPressStartRef.current;
+    if (!start) return;
+    if (Math.abs(e.clientX - start.x) > 8 || Math.abs(e.clientY - start.y) > 8) cancelLongPress();
+  };
 
   // Active store layout
   const activeStore = useMemo(() => {
@@ -142,25 +170,25 @@ export const ShoppingListView: React.FC = () => {
   const renderAisleIcon = (aisle: string) => {
     switch (aisle) {
       case 'Frukt & Grönt':
-        return <Carrot className="w-4 h-4 text-emerald-800" />;
+        return <Carrot className="w-4 h-4 text-stone-500" />;
       case 'Mejeri':
-        return <Milk className="w-4 h-4 text-sky-800" />;
+        return <Milk className="w-4 h-4 text-stone-500" />;
       case 'Kött & Chark':
-        return <Beef className="w-4 h-4 text-rose-800" />;
+        return <Beef className="w-4 h-4 text-stone-500" />;
       case 'Fisk & Skaldjur':
-        return <Fish className="w-4 h-4 text-cyan-800" />;
+        return <Fish className="w-4 h-4 text-stone-500" />;
       case 'Skafferi':
-        return <Wheat className="w-4 h-4 text-amber-800" />;
+        return <Wheat className="w-4 h-4 text-stone-500" />;
       case 'Kryddor & Olja':
-        return <Flame className="w-4 h-4 text-orange-800" />;
+        return <Flame className="w-4 h-4 text-stone-500" />;
       case 'Bröd & Bageri':
-        return <Croissant className="w-4 h-4 text-yellow-800" />;
+        return <Croissant className="w-4 h-4 text-stone-500" />;
       case 'Fryst':
-        return <Snowflake className="w-4 h-4 text-blue-800" />;
+        return <Snowflake className="w-4 h-4 text-stone-500" />;
       case 'Drycker':
-        return <CupSoda className="w-4 h-4 text-purple-800" />;
+        return <CupSoda className="w-4 h-4 text-stone-500" />;
       default:
-        return <Package className="w-4 h-4 text-stone-600" />;
+        return <Package className="w-4 h-4 text-stone-500" />;
     }
   };
 
@@ -216,17 +244,6 @@ export const ShoppingListView: React.FC = () => {
 
   // All items in the shopping list
   const filteredItems = shoppingList;
-
-  // Reorder aisle in active store layout
-  const handleMoveAisle = (aisleName: string, direction: 'up' | 'down') => {
-    const visibleAisles = groupedByAisle.map((g) => g.aisleName);
-    const newOrder = moveAisle(activeStore.aisleOrder, aisleName, direction, visibleAisles);
-    const updatedLayouts = storeLayouts.map((layout) =>
-      layout.id === activeStore.id ? { ...layout, aisleOrder: newOrder } : layout
-    );
-    setStoreLayouts(updatedLayouts);
-    saveStoreLayouts(updatedLayouts);
-  };
 
   // Toggle single aisle collapse/expand
   const handleToggleCollapseAisle = (aisleName: string) => {
@@ -328,32 +345,6 @@ export const ShoppingListView: React.FC = () => {
     saveStoreLayouts(updated);
   };
 
-  // Drag-and-drop on category card in main list
-  const handleCardDragStart = (aisleName: string) => {
-    setDraggedCardAisle(aisleName);
-  };
-
-  const handleCardDragOver = (e: React.DragEvent, targetAisle: string) => {
-    e.preventDefault();
-    if (!draggedCardAisle || draggedCardAisle === targetAisle) return;
-    const visibleAisles = groupedByAisle.map((g) => g.aisleName);
-    const fromVisibleIdx = visibleAisles.indexOf(draggedCardAisle);
-    const toVisibleIdx = visibleAisles.indexOf(targetAisle);
-    if (fromVisibleIdx === -1 || toVisibleIdx === -1) return;
-
-    const direction = toVisibleIdx > fromVisibleIdx ? 'down' : 'up';
-    const newOrder = moveAisle(activeStore.aisleOrder, draggedCardAisle, direction, visibleAisles);
-    const updated = storeLayouts.map((l) =>
-      l.id === activeStore.id ? { ...l, aisleOrder: newOrder } : l
-    );
-    setStoreLayouts(updated);
-    saveStoreLayouts(updated);
-  };
-
-  const handleCardDragEnd = () => {
-    setDraggedCardAisle(null);
-  };
-
   // Group items by Aisle using activeStore.aisleOrder
   const groupedByAisle = useMemo(() => {
     const map = new Map<string, ShoppingItem[]>();
@@ -411,6 +402,7 @@ export const ShoppingListView: React.FC = () => {
     const percent = total > 0 ? Math.round((checked / total) * 100) : 0;
     return { checkedCount: checked, totalCount: total, progressPercent: percent };
   }, [shoppingList]);
+  const remainingCount = totalCount - checkedCount;
 
   const handleCopyShoppingListText = async () => {
     if (shoppingList.length === 0) return;
@@ -423,7 +415,7 @@ export const ShoppingListView: React.FC = () => {
       text += `${group.aisleName}:\n`;
       group.items.forEach((item) => {
         const checkMark = item.checked ? '✓ ' : '• ';
-        const amtStr = formatAmount(item.amount);
+        const amtStr = formatShoppingAmount(item.amount);
         const unit = formatUnit(item.unit || '', item.amount).trim();
         const rawName = (item.name || '').trim();
         const name = capitalizeFirst(formatIngredientName(rawName, item.amount, item.unit)).trim();
@@ -466,8 +458,8 @@ export const ShoppingListView: React.FC = () => {
           <div className="hidden md:flex items-center justify-between gap-4 h-16">
             {/* Left side: Title, Subtab switch & Status badge */}
             <div className="flex items-center gap-4 min-w-0">
-              <h1 className="font-serif text-2xl font-bold text-stone-900 leading-tight w-[190px] shrink-0 whitespace-nowrap">
-                {activeSubTab === 'list' ? 'Inköpslista' : 'Alltid hemma'}
+              <h1 className="sr-only">
+                {activeSubTab === 'list' ? 'Inköpslista' : 'Hemmet'}
               </h1>
 
                 {/* Subtab Switcher: Inköpslista / Hemmet (Always stationary at fixed offset) */}
@@ -483,13 +475,13 @@ export const ShoppingListView: React.FC = () => {
                   >
                     <ShoppingCart className="w-3.5 h-3.5" />
                     <span>Inköpslista</span>
-                    {totalCount > 0 && (
+                    {remainingCount > 0 && (
                       <span
                         className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
                           activeSubTab === 'list' ? 'bg-[#FCFAF5] text-stone-700' : 'bg-stone-300/80 text-stone-700'
                         }`}
                       >
-                        {totalCount}
+                        {remainingCount}
                       </span>
                     )}
                   </button>
@@ -664,13 +656,13 @@ export const ShoppingListView: React.FC = () => {
               >
                 <ShoppingCart className="w-3.5 h-3.5" />
                 <span>Inköpslista</span>
-                {totalCount > 0 && (
+                {remainingCount > 0 && (
                   <span
                     className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
                       activeSubTab === 'list' ? 'bg-[#FCFAF5] text-stone-700' : 'bg-stone-300/80 text-stone-700'
                     }`}
                   >
-                    {totalCount}
+                    {remainingCount}
                   </span>
                 )}
               </button>
@@ -706,11 +698,9 @@ export const ShoppingListView: React.FC = () => {
               <>
                 <div className="flex flex-wrap items-center justify-between mb-2.5 gap-2 min-w-0">
                   <div className="min-w-fit flex-1">
-                    <h1 className="font-serif text-xl font-bold text-stone-900 leading-tight">Inköpslista</h1>
-                    <p className="text-[11px] text-stone-500 truncate">
-                      <span className="font-semibold text-[#284235]">
-                        {checkedCount} av {totalCount} klara
-                      </span>
+                    <h1 className="sr-only">Inköpslista</h1>
+                    <p className="text-sm text-stone-600 tabular-nums">
+                      {totalCount > 0 ? `${checkedCount} av ${totalCount} klara` : 'Listan är tom'}
                     </p>
                   </div>
 
@@ -729,10 +719,11 @@ export const ShoppingListView: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setShowAddForm((prev) => !prev)}
-                      className="px-3.5 py-2 rounded-2xl bg-[#284235] hover:bg-black text-white font-semibold text-xs flex items-center gap-1.5 shadow-xs active:scale-95 transition-all touch-manipulation min-h-[40px] shrink-0"
+                      className="w-10 h-10 rounded-full bg-white border border-[#EBE7DF] text-stone-700 flex items-center justify-center hover:bg-stone-50 active:scale-95 transition-all touch-manipulation shrink-0 shadow-xs"
+                      title="Lägg till vara"
+                      aria-label="Lägg till vara"
                     >
                       <Plus className="w-4 h-4" />
-                      <span>Lägg till</span>
                     </button>
                   </div>
                 </div>
@@ -907,7 +898,7 @@ export const ShoppingListView: React.FC = () => {
                     </span>
                     {parsedManualPreview.amount !== null && (
                       <span className="bg-emerald-100/80 text-emerald-950 font-bold px-2 py-0.5 rounded-lg text-[11px] tabular-nums">
-                        {formatAmount(parsedManualPreview.amount)} {formatUnit(parsedManualPreview.unit, parsedManualPreview.amount)}
+                        {formatShoppingAmount(parsedManualPreview.amount)} {formatUnit(parsedManualPreview.unit, parsedManualPreview.amount)}
                       </span>
                     )}
                     <span className="bg-white border border-stone-200/80 text-stone-600 px-2 py-0.5 rounded-lg text-[11px] flex items-center gap-1.5 shadow-2xs">
@@ -994,118 +985,40 @@ export const ShoppingListView: React.FC = () => {
         {/* SHOPPING LIST CONTENT GROUPED BY AISLE */}
         {groupedByAisle.length > 0 ? (
           <>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 items-start w-full">
-              {groupedByAisle.map((group, groupIdx) => {
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-2 md:gap-y-4 items-start w-full">
+              {groupedByAisle.map((group) => {
                 const isCollapsed = collapsedAisles.has(group.aisleName);
-                const checkedInAisle = group.items.filter((i) => i.checked).length;
-                const allDoneInAisle = checkedInAisle === group.items.length && group.items.length > 0;
+                const remainingInAisle = group.items.filter((i) => !i.checked).length;
 
                 return (
-                  <div
-                    key={group.aisleName}
-                    onDragOver={(e) => handleCardDragOver(e, group.aisleName)}
-                    className={`w-full bg-white rounded-3xl border shadow-xs overflow-hidden transition-all duration-200 ${
-                      draggedCardAisle === group.aisleName
-                        ? 'opacity-50 ring-2 ring-[#284235] border-[#284235]'
-                        : 'border-[#EBE7DF]'
-                    }`}
-                  >
-                    {/* Aisle Header (Collapsible Tab & Reorderable) */}
-                    <div
+                  <section key={group.aisleName} className="w-full">
+                    {/* Aisle heading: tap to collapse. Order is changed under "Ordna". */}
+                    <button
+                      type="button"
                       onClick={() => handleToggleCollapseAisle(group.aisleName)}
-                      className={`bg-stone-50/90 px-3.5 sm:px-4 py-3 flex items-center justify-between cursor-pointer select-none hover:bg-stone-100 active:bg-stone-200/50 transition-colors touch-manipulation ${
-                        isCollapsed ? '' : 'border-b border-[#EBE7DF]'
-                      }`}
+                      aria-expanded={!isCollapsed}
+                      className="w-full min-h-[44px] pt-3 pb-1.5 flex items-center gap-2 text-left border-b border-stone-300/70 select-none touch-manipulation"
                     >
-                    <div className="flex items-center gap-2 min-w-0 flex-1">
-                      {/* Drag Handle */}
-                      <div
-                        draggable
-                        onDragStart={(e) => {
-                          e.stopPropagation();
-                          handleCardDragStart(group.aisleName);
-                        }}
-                        onDragEnd={handleCardDragEnd}
-                        onClick={(e) => e.stopPropagation()}
-                        className="text-stone-300 hover:text-stone-600 active:text-stone-900 cursor-grab active:cursor-grabbing p-1 -ml-1.5 touch-none"
-                        title="Dra för att flytta kategori"
-                        aria-label="Dra för att flytta kategori"
-                      >
-                        <GripVertical className="w-4 h-4" />
-                      </div>
-
-                      <div className="w-7 h-7 rounded-xl bg-white border border-[#EBE7DF] flex items-center justify-center shrink-0">
-                        {renderAisleIcon(group.aisleName)}
-                      </div>
-
-                      <div className="min-w-0 flex items-center gap-2 truncate">
-                        <span className="font-semibold text-sm text-stone-800 truncate">
-                          {group.aisleName}
-                        </span>
-
-                        {/* Status badge */}
-                        {allDoneInAisle ? (
-                          <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100/70 border border-emerald-200/80 px-2 py-0.5 rounded-full flex items-center gap-1 shrink-0">
-                            <Check className="w-3 h-3" /> Klart
-                          </span>
-                        ) : checkedInAisle > 0 ? (
-                          <span className="text-[10px] font-medium text-stone-600 bg-stone-200/70 px-2 py-0.5 rounded-full shrink-0">
-                            {group.items.length - checkedInAisle} kvar
-                          </span>
-                        ) : (
-                          <span className="text-[11px] font-semibold text-stone-400 shrink-0">
-                            {group.items.length} st
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Right side controls: Move Up/Down + Collapse Chevron */}
-                    <div className="flex items-center gap-0.5 shrink-0 ml-1.5" onClick={(e) => e.stopPropagation()}>
-                      <button
-                        type="button"
-                        onClick={() => handleMoveAisle(group.aisleName, 'up')}
-                        disabled={groupIdx === 0}
-                        className="w-7 h-7 rounded-lg text-stone-400 hover:text-stone-800 hover:bg-stone-200/70 disabled:opacity-20 disabled:pointer-events-none flex max-[359px]:hidden items-center justify-center transition-all touch-manipulation active:scale-90"
-                        title={`Flytta upp ${group.aisleName}`}
-                        aria-label={`Flytta upp ${group.aisleName}`}
-                      >
-                        <ArrowUp className="w-3.5 h-3.5" />
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => handleMoveAisle(group.aisleName, 'down')}
-                        disabled={groupIdx === groupedByAisle.length - 1}
-                        className="w-7 h-7 rounded-lg text-stone-400 hover:text-stone-800 hover:bg-stone-200/70 disabled:opacity-20 disabled:pointer-events-none flex max-[359px]:hidden items-center justify-center transition-all touch-manipulation active:scale-90"
-                        title={`Flytta ner ${group.aisleName}`}
-                        aria-label={`Flytta ner ${group.aisleName}`}
-                      >
-                        <ArrowDown className="w-3.5 h-3.5" />
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => handleToggleCollapseAisle(group.aisleName)}
-                        className="w-7 h-7 rounded-lg flex items-center justify-center text-stone-400 hover:text-stone-800 hover:bg-stone-200/70 transition-all touch-manipulation"
-                        title={isCollapsed ? 'Fäll ut flik' : 'Fäll ihop flik'}
-                        aria-label={isCollapsed ? `Fäll ut ${group.aisleName}` : `Fäll ihop ${group.aisleName}`}
-                        aria-expanded={!isCollapsed}
-                      >
-                        <ChevronDown
-                          className={`w-4 h-4 transition-transform duration-200 ${
-                            isCollapsed ? '-rotate-90 text-stone-500' : 'rotate-0 text-stone-700'
-                          }`}
-                        />
-                      </button>
-                    </div>
-                  </div>
+                      <span className={`font-semibold text-[15px] truncate ${remainingInAisle === 0 ? 'text-stone-400' : 'text-stone-900'}`}>
+                        {group.aisleName}
+                      </span>
+                      {remainingInAisle === 0 ? (
+                        <Check className="w-4 h-4 text-[#284235] shrink-0" aria-label="Klart" />
+                      ) : (
+                        <span className="text-sm text-stone-400 tabular-nums shrink-0">{remainingInAisle}</span>
+                      )}
+                      <ChevronDown
+                        className={`w-4 h-4 ml-auto shrink-0 text-stone-400 transition-transform duration-200 ${
+                          isCollapsed ? '-rotate-90' : ''
+                        }`}
+                      />
+                    </button>
 
                   {/* Items in Aisle (collapsible) */}
                   {!isCollapsed && (
-                    <div className="divide-y divide-[#EBE7DF]/70 w-full animate-fade-in">
-                  {group.items.map((item) => {
-                    const formattedAmt = formatAmount(item.amount);
+                    <div className="divide-y divide-[#EBE7DF] w-full animate-fade-in">
+                  {[...group.items].sort((a, b) => Number(a.checked) - Number(b.checked)).map((item) => {
+                    const formattedAmt = formatShoppingAmount(item.amount);
                     // Recipe names without the portion count, e.g. "Köttbullar (4 port)" -> "Köttbullar"
                     const sourceParts = (normalizeRecipeSource(item.recipeSource) || '')
                       .split(' + ')
@@ -1116,10 +1029,24 @@ export const ShoppingListView: React.FC = () => {
                     return (
                       <div
                         key={item.id}
-                        onClick={() => toggleShoppingItem(item.id)}
-                        className={`pl-3 pr-1.5 py-3 flex items-center gap-3 cursor-pointer transition-colors active:bg-stone-50 touch-manipulation w-full ${
-                          item.checked ? 'bg-stone-50/60' : 'hover:bg-stone-50/40'
-                        }`}
+                        onClick={() => {
+                          if (longPressFiredRef.current) {
+                            longPressFiredRef.current = false;
+                            return;
+                          }
+                          toggleShoppingItem(item.id);
+                        }}
+                        onPointerDown={(e) => startLongPress(item, e)}
+                        onPointerMove={moveLongPress}
+                        onPointerUp={cancelLongPress}
+                        onPointerCancel={cancelLongPress}
+                        onPointerLeave={cancelLongPress}
+                        onContextMenu={(e) => {
+                          e.preventDefault();
+                          cancelLongPress();
+                          setItemMenu(item);
+                        }}
+                        className="py-2.5 flex items-center gap-3 cursor-pointer transition-colors active:bg-stone-100/70 md:hover:bg-stone-100/40 touch-manipulation select-none [-webkit-touch-callout:none] w-full"
                         style={{ minHeight: '56px' }}
                       >
                         <button
@@ -1190,7 +1117,7 @@ export const ShoppingListView: React.FC = () => {
                             e.stopPropagation();
                             setItemMenu(item);
                           }}
-                          className="w-9 h-9 rounded-full flex items-center justify-center text-stone-400 active:bg-stone-100 shrink-0 touch-manipulation"
+                          className="hidden md:flex w-9 h-9 rounded-full items-center justify-center text-stone-400 hover:bg-stone-100 shrink-0"
                           aria-label={`Fler val för ${item.name}`}
                         >
                           <MoreVertical className="w-4 h-4" />
@@ -1200,10 +1127,14 @@ export const ShoppingListView: React.FC = () => {
                   })}
                 </div>
               )}
-            </div>
+            </section>
           );
         })}
             </div>
+
+            <p className="md:hidden text-xs text-stone-400 pt-1">
+              Håll inne en vara för att ändra eller ta bort den.
+            </p>
 
             {/* List Management Bottom Actions */}
             <div className="flex flex-col sm:flex-row gap-2.5 pt-4 max-w-md mx-auto w-full">
@@ -1233,7 +1164,7 @@ export const ShoppingListView: React.FC = () => {
             <div className="w-14 h-14 rounded-2xl bg-[#FCFAF5] text-stone-500 flex items-center justify-center mx-auto mb-3">
               <CheckCircle2 className="w-7 h-7 stroke-[1.5] text-[#284235]" />
             </div>
-            <h3 className="font-serif text-lg font-bold text-stone-900">Inköpslistan är tom!</h3>
+            <h3 className="font-serif text-lg font-bold text-stone-900">Inköpslistan är tom</h3>
             <p className="text-xs text-stone-500 mt-1 max-w-xs mx-auto leading-relaxed">
               Gå till dina recept eller veckoplanen och tryck på "Köp ingredienser", eller lägg till manuellt.
             </p>
@@ -1242,7 +1173,7 @@ export const ShoppingListView: React.FC = () => {
               onClick={() => setShowAddForm(true)}
               className="mt-4 px-5 py-3 rounded-2xl bg-[#284235] text-white font-bold text-xs shadow-xs touch-manipulation min-h-[44px]"
             >
-              + Lägg till första varan
+              Lägg till vara
             </button>
           </div>
         )}
