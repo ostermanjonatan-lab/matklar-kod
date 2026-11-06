@@ -1,4 +1,4 @@
-import React, { useState, useLayoutEffect } from 'react';
+import React, { useState, useLayoutEffect, useRef } from 'react';
 import { RecipeProvider, useRecipes } from './context/RecipeContext';
 import { BottomNav } from './components/layout/BottomNav';
 import { DesktopNav } from './components/layout/DesktopNav';
@@ -19,7 +19,19 @@ const AppContent: React.FC = () => {
   const [showAddShoppingModal, setShowAddShoppingModal] = useState<boolean>(false);
 
   // Synchronize Modals with Android back button
-  useModalBackHandler(showAddModal, () => setShowAddModal(false), 'add-recipe-modal');
+  // Lägg till recept asks before input is lost. When it stays open on the phone's back button,
+  // the back step is set up again (new id) so the next back press is caught too.
+  const addCloseGuardRef = useRef<(() => boolean) | null>(null);
+  const [addBackRound, setAddBackRound] = useState<number>(0);
+  useModalBackHandler(
+    showAddModal,
+    () => {
+      const staysOpen = addCloseGuardRef.current?.() ?? false;
+      if (staysOpen) setAddBackRound((n) => n + 1);
+      else setShowAddModal(false);
+    },
+    `add-recipe-modal-${addBackRound}`
+  );
   useModalBackHandler(showAddShoppingModal, () => setShowAddShoppingModal(false), 'add-shopping-modal');
   useModalBackHandler(!!selectedRecipe, closeRecipeDetail, 'recipe-detail-modal');
 
@@ -75,7 +87,7 @@ const AppContent: React.FC = () => {
         )}
 
         {/* Global Add Recipe Modal */}
-        {showAddModal && <AddRecipeModal onClose={() => setShowAddModal(false)} />}
+        {showAddModal && <AddRecipeModal onClose={() => setShowAddModal(false)} closeGuardRef={addCloseGuardRef} />}
 
         {/* Global Add Shopping Item Modal */}
         {showAddShoppingModal && (
