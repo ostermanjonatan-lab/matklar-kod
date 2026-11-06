@@ -4,9 +4,9 @@ import type { Recipe } from '../../types/recipe';
 import { getRecipeSubcategories } from '../../types/recipe';
 import { formatCookingTime, formatRecipeTitle } from '../../utils/formatters';
 
-interface TonightPickerModalProps {
+interface DinnerPickerModalProps {
   recipes: Recipe[];
-  /** Recipe already planned for tonight, if any */
+  /** Recipe to mark as chosen, if any */
   currentRecipeId?: string | null;
   onSelect: (recipe: Recipe) => void;
   onClose: () => void;
@@ -19,10 +19,10 @@ const byTitle = (a: Recipe, b: Recipe) =>
   formatRecipeTitle(a.title).localeCompare(formatRecipeTitle(b.title), 'sv');
 
 /**
- * Choose tonight's dinner by hand among the dinner recipes: first a subcategory (Pasta, Fisk...),
+ * Find a dinner among the dinner recipes: first a subcategory (Pasta, Fisk...),
  * then the recipe. Typing in the search field skips the step and shows matching dinners directly.
  */
-export const TonightPickerModal: React.FC<TonightPickerModalProps> = ({
+export const DinnerPickerModal: React.FC<DinnerPickerModalProps> = ({
   recipes,
   currentRecipeId,
   onSelect,
@@ -66,7 +66,7 @@ export const TonightPickerModal: React.FC<TonightPickerModalProps> = ({
 
   // Without subcategories the recipes are shown straight away
   const showRecipes = Boolean(q) || subcategory !== null || subcategories.length === 0;
-  const title = !q && subcategory && subcategory !== ALL ? subcategory : 'Middag i kväll';
+  const title = !q && subcategory && subcategory !== ALL ? subcategory : 'Välj middag';
   const canGoBack = !q && subcategory !== null;
 
   const Thumb = ({ src }: { src?: string }) =>
@@ -83,7 +83,7 @@ export const TonightPickerModal: React.FC<TonightPickerModalProps> = ({
       className="fixed inset-0 z-50 bg-black/50 flex items-end sm:items-center justify-center animate-fade-in font-sans"
       role="dialog"
       aria-modal="true"
-      aria-label="Välj middag i kväll"
+      aria-label="Välj middag"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}

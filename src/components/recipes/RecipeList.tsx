@@ -6,7 +6,7 @@ import { RecipeCard } from './RecipeCard';
 import { PantryChoiceDialog, hasPantryStaples } from './PantryChoiceDialog';
 import { RandomPickerModal } from './RandomPickerModal';
 import { RecipeFilterModal } from './RecipeFilterModal';
-import { TonightPickerModal } from './TonightPickerModal';
+import { DinnerPickerModal } from './DinnerPickerModal';
 import { STANDARD_CATEGORIES } from '../../data/categories';
 import { useModalBackHandler } from '../../hooks/useModalBackHandler';
 import {
@@ -19,10 +19,7 @@ import {
   ShoppingCart,
   Dices,
   ListChecks,
-  Trash2,
 } from 'lucide-react';
-import { formatCookingTime, formatRecipeTitle } from '../../utils/formatters';
-import { todayISO } from '../../utils/mealPlanDates';
 
 
 type SortOption = 'default' | 'oldest' | 'time_asc' | 'time_desc' | 'name_asc' | 'name_desc';
@@ -80,46 +77,10 @@ export const RecipeList: React.FC = () => {
     shoppingList,
     searchQuery,
     setSearchQuery,
-    getMealPlanForDate,
-    setMealPlanForDate,
   } = useRecipes();
 
-  const [showTonightPicker, setShowTonightPicker] = useState<boolean>(false);
-
-  // Removing tonight's dinner, with a short undo
-  const [removedTonight, setRemovedTonight] = useState<{ recipeId: string | null; custom: string } | null>(null);
-  const removedTonightTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  useModalBackHandler(showTonightPicker, () => setShowTonightPicker(false), 'tonight-picker');
-
-  // Tonight's dinner from the meal plan, if any
-  const tonight = useMemo(() => {
-    const day = getMealPlanForDate(todayISO());
-    if (!day) return null;
-    const recipe = day.dinnerRecipeId ? recipes.find((r) => r.id === day.dinnerRecipeId) : undefined;
-    if (recipe) return { recipe, text: formatRecipeTitle(recipe.title) };
-    if (day.customDinner?.trim()) return { recipe: undefined, text: day.customDinner.trim() };
-    return null;
-  }, [getMealPlanForDate, recipes]);
-
-  const handleRemoveTonight = () => {
-    const day = getMealPlanForDate(todayISO());
-    if (!day) return;
-    setRemovedTonight({ recipeId: day.dinnerRecipeId || null, custom: day.customDinner || '' });
-    setMealPlanForDate(todayISO(), 'dinner', null, '');
-    if (removedTonightTimerRef.current) clearTimeout(removedTonightTimerRef.current);
-    removedTonightTimerRef.current = setTimeout(() => setRemovedTonight(null), 5000);
-  };
-
-  const handleUndoRemoveTonight = () => {
-    if (!removedTonight) return;
-    if (removedTonight.recipeId) {
-      setMealPlanForDate(todayISO(), 'dinner', removedTonight.recipeId);
-    } else {
-      setMealPlanForDate(todayISO(), 'dinner', null, removedTonight.custom);
-    }
-    if (removedTonightTimerRef.current) clearTimeout(removedTonightTimerRef.current);
-    setRemovedTonight(null);
-  };
+  const [showDinnerPicker, setShowDinnerPicker] = useState<boolean>(false);
+  useModalBackHandler(showDinnerPicker, () => setShowDinnerPicker(false), 'dinner-picker');
 
   const deferredSearchQuery = useDeferredValue(searchQuery);
 
@@ -525,30 +486,15 @@ export const RecipeList: React.FC = () => {
         />
       )}
 
-      {/* Undo after removing tonight's dinner */}
-      {removedTonight && (
-        <div className="fixed top-16 left-4 right-4 z-50 max-w-md mx-auto bg-stone-900 text-white pl-4 pr-2 py-2 rounded-2xl shadow-xl flex items-center justify-between gap-2 animate-slide-down text-xs font-semibold">
-          <span className="truncate">Kvällens middag är borttagen</span>
-          <button
-            type="button"
-            onClick={handleUndoRemoveTonight}
-            className="px-3 min-h-[36px] rounded-xl text-emerald-300 hover:bg-white/10 font-bold shrink-0 touch-manipulation"
-          >
-            Ångra
-          </button>
-        </div>
-      )}
-
-      {/* Choose tonight's dinner by hand */}
-      {showTonightPicker && (
-        <TonightPickerModal
+      {/* Find a dinner by category. The chosen recipe opens. */}
+      {showDinnerPicker && (
+        <DinnerPickerModal
           recipes={recipes}
-          currentRecipeId={tonight?.recipe?.id}
           onSelect={(rec) => {
-            setMealPlanForDate(todayISO(), 'dinner', rec.id);
-            setShowTonightPicker(false);
+            setShowDinnerPicker(false);
+            openRecipeDetail(rec);
           }}
-          onClose={() => setShowTonightPicker(false)}
+          onClose={() => setShowDinnerPicker(false)}
         />
       )}
 
@@ -776,80 +722,24 @@ export const RecipeList: React.FC = () => {
 
       {/* Main Content Area */}
       <div className="w-full max-w-md md:max-w-5xl lg:max-w-7xl mx-auto px-4 md:px-6 pt-2 md:pt-4 space-y-4 md:space-y-6">
-        {/* Tonight's dinner from the meal plan. "I kväll" with Välj and Slumpa on top, the dish below. */}
-        <div className="flex items-center gap-3 border-b border-[#EBE7DF] pb-3">
-          {tonight?.recipe?.coverImageUrl ? (
-            <button
-              type="button"
-              onClick={() => openRecipeDetail(tonight.recipe!)}
-              className="shrink-0 touch-manipulation"
-              aria-label={`Öppna ${tonight.text}`}
-            >
-              <img
-                src={tonight.recipe.coverImageUrl}
-                alt=""
-                className="w-14 h-14 rounded-xl object-cover bg-stone-200"
-              />
-            </button>
-          ) : null}
-
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-xs text-stone-500 truncate">
-                I kväll
-                {tonight?.recipe
-                  ? `, ${formatCookingTime(tonight.recipe.prepTimeMinutes, tonight.recipe.cookTimeMinutes)}`
-                  : ''}
-              </span>
-              <div className="flex items-center gap-1.5 shrink-0">
-                <button
-                  type="button"
-                  onClick={() => setShowTonightPicker(true)}
-                  className="px-3 rounded-xl bg-white border border-[#EBE7DF] hover:bg-stone-50 active:scale-95 text-stone-700 font-semibold text-xs flex items-center gap-1.5 transition-all touch-manipulation min-h-[36px]"
-                  aria-label={tonight ? 'Byt middag i kväll' : 'Välj middag i kväll'}
-                >
-                  <ListChecks className="w-4 h-4" />
-                  <span>{tonight ? 'Byt' : 'Välj'}</span>
-                </button>
-                {tonight && (
-                  <button
-                    type="button"
-                    onClick={handleRemoveTonight}
-                    className="w-9 rounded-xl bg-white border border-[#EBE7DF] hover:bg-rose-50 hover:text-rose-700 active:scale-95 text-stone-500 flex items-center justify-center transition-all touch-manipulation min-h-[36px]"
-                    aria-label="Ta bort kvällens middag"
-                    title="Ta bort kvällens middag"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                )}
-                {/* Slumpa only when nothing is planned for tonight */}
-                {!tonight && (
-                  <button
-                    type="button"
-                    onClick={() => setShowRandomPicker(true)}
-                    className="px-3 rounded-xl bg-white border border-[#EBE7DF] hover:bg-stone-50 active:scale-95 text-stone-700 font-semibold text-xs flex items-center gap-1.5 transition-all touch-manipulation min-h-[36px]"
-                  >
-                    <Dices className="w-4 h-4" />
-                    <span>Slumpa</span>
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {tonight?.recipe ? (
-              <button
-                type="button"
-                onClick={() => openRecipeDetail(tonight.recipe!)}
-                className="w-full mt-1 text-left text-sm font-semibold leading-snug text-stone-900 line-clamp-2 touch-manipulation"
-              >
-                {tonight.text}
-              </button>
-            ) : (
-              <div className={`mt-1 text-sm leading-snug line-clamp-2 ${tonight ? 'font-semibold text-stone-900' : 'text-stone-500'}`}>
-                {tonight ? tonight.text : 'Inget planerat'}
-              </div>
-            )}
-          </div>
+        {/* Find a dinner by category, or get a random one */}
+        <div className="grid grid-cols-2 gap-2 border-b border-[#EBE7DF] pb-3">
+          <button
+            type="button"
+            onClick={() => setShowDinnerPicker(true)}
+            className="min-h-[44px] px-3 rounded-xl bg-white border border-[#EBE7DF] hover:bg-stone-50 active:scale-[0.98] text-stone-800 font-semibold text-sm flex items-center justify-center gap-2 transition-all touch-manipulation"
+          >
+            <ListChecks className="w-4 h-4 text-stone-500" />
+            <span>Välj middag</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowRandomPicker(true)}
+            className="min-h-[44px] px-3 rounded-xl bg-white border border-[#EBE7DF] hover:bg-stone-50 active:scale-[0.98] text-stone-800 font-semibold text-sm flex items-center justify-center gap-2 transition-all touch-manipulation"
+          >
+            <Dices className="w-4 h-4 text-stone-500" />
+            <span>Slumpa</span>
+          </button>
         </div>
 
         {/* Number of recipes. "Träffar" only after a search or filter */}
