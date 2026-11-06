@@ -1,23 +1,6 @@
 import React, { useState } from 'react';
 import { useRecipes } from '../../context/RecipeContext';
-import {
-  X,
-  Users,
-  Copy,
-  Check,
-  Plus,
-  KeyRound,
-  Pencil,
-  Trash2,
-  UserCheck,
-  UserPlus,
-  RotateCw,
-  Home,
-  Crown,
-  Shield,
-  ShieldAlert,
-  LogOut,
-} from 'lucide-react';
+import { X, Copy, Check, Plus, Pencil, Trash2, ChevronRight } from 'lucide-react';
 
 interface HouseholdShareModalProps {
   onClose: () => void;
@@ -64,6 +47,11 @@ export const HouseholdShareModal: React.FC<HouseholdShareModalProps> = ({ onClos
   const [editingMemberId, setEditingMemberId] = useState<string | null>(null);
   const [editingMemberName, setEditingMemberName] = useState<string>('');
 
+  // Inline confirmation instead of the browser's own dialog
+  const [confirming, setConfirming] = useState<
+    { kind: 'removeMember'; id: string; name: string } | { kind: 'newCode' } | { kind: 'deleteOrLeave' } | null
+  >(null);
+
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3000);
@@ -93,7 +81,7 @@ export const HouseholdShareModal: React.FC<HouseholdShareModalProps> = ({ onClos
     if (!trimmed) return;
     setHouseholdName(trimmed);
     setIsEditingName(false);
-    showToast(`Hushållet döptes om till "${trimmed}"`);
+    showToast(`Hushållet heter nu ${trimmed}`);
   };
 
   const handleAddMember = (e: React.FormEvent) => {
@@ -108,7 +96,7 @@ export const HouseholdShareModal: React.FC<HouseholdShareModalProps> = ({ onClos
 
     setNewMemberName('');
     setShowAddMember(false);
-    showToast(`${trimmed} lades till i hushållet`);
+    showToast(`${trimmed} är tillagd`);
   };
 
   const handleStartEditMember = (member: any) => {
@@ -126,7 +114,7 @@ export const HouseholdShareModal: React.FC<HouseholdShareModalProps> = ({ onClos
     });
 
     setEditingMemberId(null);
-    showToast(`Namnet ändrades till "${trimmed}"`);
+    showToast(`Namnet är ändrat till ${trimmed}`);
   };
 
   const handleRemoveMember = async (memberId: string, memberName: string) => {
@@ -142,23 +130,21 @@ export const HouseholdShareModal: React.FC<HouseholdShareModalProps> = ({ onClos
 
     const adminId = household.creatorId || household.members[0]?.id;
     if (memberId === adminId) {
-      showToast('Administratören och skaparen av hushållet kan inte tas bort');
+      showToast('Den som skapade hushållet kan inte tas bort');
       return;
     }
 
-    if (window.confirm(`Vill du ta bort ${memberName} från hushållet?`)) {
-      const removed = await removeMemberFromHousehold(memberId);
-      if (removed) {
-        showToast(`${memberName} togs bort från hushållet`);
-      }
+    const removed = await removeMemberFromHousehold(memberId);
+    setConfirming(null);
+    if (removed) {
+      showToast(`${memberName} är borttagen från hushållet`);
     }
   };
 
   const handleLeaveHousehold = async (hhId: string, hhName: string) => {
-    if (window.confirm(`Vill du lämna hushållet "${hhName}"?`)) {
-      await leaveHousehold(hhId);
-      showToast(`Du har lämnat "${hhName}"`);
-    }
+    await leaveHousehold(hhId);
+    setConfirming(null);
+    showToast(`Du har lämnat ${hhName}`);
   };
 
   const handleDeleteHousehold = (hhId: string, hhName: string) => {
@@ -171,10 +157,9 @@ export const HouseholdShareModal: React.FC<HouseholdShareModalProps> = ({ onClos
       return;
     }
 
-    if (window.confirm(`Är du säker på att du vill ta bort hushållet "${hhName}"?`)) {
-      deleteHousehold(hhId);
-      showToast(`Hushållet "${hhName}" togs bort`);
-    }
+    deleteHousehold(hhId);
+    setConfirming(null);
+    showToast(`${hhName} är borttaget`);
   };
 
   const handleJoin = async (e: React.FormEvent) => {
@@ -183,11 +168,11 @@ export const HouseholdShareModal: React.FC<HouseholdShareModalProps> = ({ onClos
 
     const success = await joinHouseholdByCode(joinCodeInput.trim(), currentUser.displayName, currentUser.roleTitle);
     if (success) {
-      showToast(`Gick med i hushåll ${joinCodeInput.toUpperCase()}`);
+      showToast('Du har gått med i hushållet');
       setShowJoinForm(false);
       setJoinCodeInput('');
     } else {
-      showToast(`Hittade inget hushåll med koden "${joinCodeInput.toUpperCase()}"`);
+      showToast(`Inget hushåll har koden ${joinCodeInput}`);
     }
   };
 
@@ -196,31 +181,44 @@ export const HouseholdShareModal: React.FC<HouseholdShareModalProps> = ({ onClos
     if (!newHhNameInput.trim()) return;
 
     createHousehold(newHhNameInput.trim(), currentUser.displayName, currentUser.roleTitle, false);
-    showToast(`Skapade hushållet "${newHhNameInput.trim()}"`);
+    showToast(`${newHhNameInput.trim()} är skapat`);
     setShowCreateForm(false);
     setNewHhNameInput('');
   };
 
 
+  const input = 'w-full h-11 bg-white border border-stone-300 rounded-xl px-3 text-base sm:text-sm text-stone-900 focus:outline-none focus:ring-2 focus:ring-[#284235]';
+  const primaryBtn = 'min-h-[44px] px-4 rounded-xl bg-[#284235] hover:bg-black disabled:opacity-40 text-white text-sm font-semibold touch-manipulation';
+  const textBtn = 'text-sm text-[#284235] font-semibold py-2 touch-manipulation';
+  const rowBtn = 'w-full min-h-[52px] py-3 flex items-center gap-3 text-left touch-manipulation active:bg-stone-100/70';
+  const adminId = household?.creatorId || household?.members[0]?.id;
+  const otherHouseholds = households.filter((h) => h.id !== household?.id);
+
+  const ConfirmBox = ({ text, label, onConfirm }: { text: string; label: string; onConfirm: () => void }) => (
+    <div className="pb-3 space-y-2.5 animate-fade-in">
+      <p className="text-sm text-stone-700">{text}</p>
+      <div className="flex gap-2">
+        <button type="button" onClick={() => setConfirming(null)} className="flex-1 min-h-[44px] rounded-xl bg-stone-100 text-stone-700 text-sm font-semibold touch-manipulation">
+          Avbryt
+        </button>
+        <button type="button" onClick={onConfirm} className="flex-1 min-h-[44px] rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-sm font-semibold touch-manipulation">
+          {label}
+        </button>
+      </div>
+    </div>
+  );
+
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 animate-fade-in font-sans">
+    <div className="fixed inset-0 z-50 bg-black/50 flex items-end sm:items-center justify-center p-0 sm:p-4 animate-fade-in font-sans">
       <div className="bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
         {/* Header */}
-        <div className="bg-stone-900 text-white px-5 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-stone-800 border border-stone-700 text-emerald-400 flex items-center justify-center">
-              <Users className="w-4 h-4" />
-            </div>
-            <div>
-              <h3 className="font-bold text-base leading-tight">Hushåll & Medlemmar</h3>
-              <p className="text-xs text-stone-400">Växla, byt namn eller lägg till medlemmar</p>
-            </div>
-          </div>
-
+        <div className="px-5 pt-4 pb-3 flex items-center justify-between border-b border-[#EBE7DF]">
+          <h3 className="font-serif font-bold text-lg text-stone-900">Hushåll och medlemmar</h3>
           <button
             type="button"
             onClick={onClose}
-            className="w-11 h-11 rounded-2xl bg-stone-800 text-stone-300 hover:text-white flex items-center justify-center touch-manipulation"
+            className="w-10 h-10 -mr-2 rounded-full flex items-center justify-center text-stone-500 hover:bg-stone-100 touch-manipulation"
+            aria-label="Stäng"
           >
             <X className="w-5 h-5" />
           </button>
@@ -228,339 +226,75 @@ export const HouseholdShareModal: React.FC<HouseholdShareModalProps> = ({ onClos
 
         {/* Toast */}
         {toastMessage && (
-          <div className="bg-emerald-900 text-white px-4 py-2.5 text-xs font-semibold flex items-center gap-2 animate-fade-in border-b border-emerald-800">
-            <Check className="w-4 h-4 text-emerald-300 shrink-0" />
+          <div className="bg-stone-900 text-white px-5 py-2.5 text-sm flex items-center gap-2 animate-fade-in">
+            <Check className="w-4 h-4 text-emerald-400 shrink-0" />
             <span>{toastMessage}</span>
           </div>
         )}
 
-        {/* Body */}
-        <div className="p-5 space-y-4 overflow-y-auto flex-1 text-xs">
-          {/* Section: Väntande förfrågningar (Admin only) */}
+        <div className="px-5 pb-6 overflow-y-auto flex-1 text-sm">
+          {/* Join requests (admin) */}
           {isHouseholdAdmin && joinRequests && joinRequests.length > 0 && (
-            <div className="bg-amber-50/90 border border-amber-200/90 rounded-2xl p-4 space-y-3 shadow-xs animate-fade-in">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-lg bg-amber-200/80 text-amber-900 flex items-center justify-center">
-                    <ShieldAlert className="w-3.5 h-3.5" />
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-stone-900 text-xs flex items-center gap-1.5">
-                      <span>Väntande förfrågningar</span>
-                      <span className="px-1.5 py-0.2 rounded-full bg-amber-200 text-amber-900 font-mono text-[10px] font-bold">
-                        {joinRequests.length}
-                      </span>
-                    </h4>
-                    <p className="text-[10px] text-amber-800/80">
-                      Endast du som admin kan släppa in nya medlemmar
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-2 pt-1">
-                {joinRequests.map((req) => (
-                  <div
-                    key={req.id}
-                    className="bg-white rounded-xl p-3 border border-amber-200/70 shadow-2xs flex items-center justify-between gap-3"
+            <div className="mt-4 bg-amber-50 border border-amber-200 rounded-2xl px-4 py-1 divide-y divide-amber-200/70">
+              {joinRequests.map((req) => (
+                <div key={req.id} className="py-3 flex items-center gap-3">
+                  <span className="flex-1 min-w-0 text-stone-900">
+                    <span className="font-semibold">{req.displayName}</span> vill gå med
+                  </span>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const ok = await rejectJoinRequest(req.id);
+                      if (ok) showToast(`Förfrågan från ${req.displayName} är nekad`);
+                    }}
+                    className="px-3 min-h-[40px] rounded-xl bg-white border border-stone-200 text-stone-700 text-sm font-semibold touch-manipulation"
                   >
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-800 font-bold text-xs flex items-center justify-center shrink-0">
-                        {(req.displayName || 'M').charAt(0).toUpperCase()}
-                      </div>
-                      <div className="min-w-0">
-                        <span className="font-bold text-stone-900 text-xs block truncate">
-                          {req.displayName}
-                        </span>
-                        <span className="text-[10px] text-stone-400 block">
-                          Vill gå med i hushållet
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      <button
-                        type="button"
-                        onClick={async () => {
-                          const ok = await approveJoinRequest(req.id);
-                          if (ok) showToast(`${req.displayName} godkändes och lades till!`);
-                        }}
-                        className="px-3 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 active:scale-95 text-white font-semibold text-[11px] flex items-center gap-1 shadow-2xs transition-all touch-manipulation min-h-[36px]"
-                      >
-                        <Check className="w-3.5 h-3.5 stroke-[2.5]" />
-                        <span>Godkänn</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={async () => {
-                          const ok = await rejectJoinRequest(req.id);
-                          if (ok) showToast(`Förfrågan från ${req.displayName} nekades`);
-                        }}
-                        className="px-2.5 py-1.5 rounded-lg bg-stone-100 hover:bg-rose-50 hover:text-rose-700 text-stone-600 font-semibold text-[11px] border border-stone-200 transition-all touch-manipulation min-h-[36px]"
-                        title="Neka förfrågan"
-                      >
-                        <X className="w-3.5 h-3.5" />
-                        <span>Neka</span>
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                    Neka
+                  </button>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const ok = await approveJoinRequest(req.id);
+                      if (ok) showToast(`${req.displayName} är med i hushållet`);
+                    }}
+                    className="px-3 min-h-[40px] rounded-xl bg-[#284235] text-white text-sm font-semibold touch-manipulation"
+                  >
+                    Godkänn
+                  </button>
+                </div>
+              ))}
             </div>
           )}
 
-          {/* Section: Mina Hushåll (Växla & Hantera) */}
-          <div className="bg-white rounded-2xl border border-stone-200 p-4 space-y-3 shadow-xs">
-            <div className="flex items-center justify-between">
-              <div>
-                <label className="font-bold text-stone-900 block text-xs">
-                  Mina Hushåll ({households.length})
-                </label>
-                <p className="text-[11px] text-stone-400">
-                  Klicka på ett hushåll för att växla
-                </p>
-              </div>
-
-              <div className="flex items-center gap-1.5">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowCreateForm(!showCreateForm);
-                    setShowJoinForm(false);
-                  }}
-                  className="px-2.5 py-1.5 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 font-semibold text-[11px] flex items-center gap-1 transition-all"
-                  title="Skapa ytterligare hushåll"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>Nytt</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowJoinForm(!showJoinForm);
-                    setShowCreateForm(false);
-                  }}
-                  className="px-2.5 py-1.5 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 font-semibold text-[11px] flex items-center gap-1 transition-all"
-                  title="Gå med med kod"
-                >
-                  <KeyRound className="w-3.5 h-3.5" />
-                  <span>Gå med</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Create inline form */}
-            {showCreateForm && (
-              <form
-                onSubmit={handleCreate}
-                className="bg-stone-50 border border-emerald-600/40 rounded-xl p-3.5 space-y-3 animate-slide-down"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="font-semibold text-stone-800 text-xs flex items-center gap-1.5">
-                    <Home className="w-3.5 h-3.5 text-emerald-700" />
-                    Skapa nytt hushåll
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setShowCreateForm(false)}
-                    className="text-stone-400 hover:text-stone-700"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-
-                <input
-                  type="text"
-                  value={newHhNameInput}
-                  onChange={(e) => setNewHhNameInput(e.target.value)}
-                  placeholder="T.ex. Sommarstugan, Kollektivet..."
-                  className="w-full h-10 bg-white border border-stone-300 rounded-xl px-3 text-xs text-stone-900 focus:outline-none focus:ring-2 focus:ring-emerald-700 font-medium"
-                />
-
-                <button
-                  type="submit"
-                  disabled={!newHhNameInput.trim()}
-                  className="w-full py-2.5 bg-emerald-700 hover:bg-emerald-800 disabled:opacity-50 text-white font-semibold text-xs rounded-xl active:scale-95 shadow-xs transition-all touch-manipulation min-h-[40px]"
-                >
-                  Skapa hushåll
-                </button>
-              </form>
-            )}
-
-            {/* Join inline form */}
-            {showJoinForm && (
-              <form
-                onSubmit={handleJoin}
-                className="bg-stone-50 border border-emerald-600/40 rounded-xl p-3.5 space-y-3 animate-slide-down"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="font-semibold text-stone-800 text-xs flex items-center gap-1.5">
-                    <KeyRound className="w-3.5 h-3.5 text-emerald-700" />
-                    Gå med i hushåll med kod
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setShowJoinForm(false)}
-                    className="text-stone-400 hover:text-stone-700"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  maxLength={6}
-                  value={joinCodeInput}
-                  onChange={(e) => setJoinCodeInput(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                  placeholder="T.ex. 482195"
-                  className="w-full h-11 bg-white border border-stone-300 rounded-xl px-3 text-base font-mono tracking-widest text-center text-stone-900 focus:outline-none focus:ring-2 focus:ring-emerald-700 font-bold"
-                />
-
-                <button
-                  type="submit"
-                  disabled={!joinCodeInput.trim()}
-                  className="w-full py-2.5 bg-emerald-700 hover:bg-emerald-800 disabled:opacity-50 text-white font-semibold text-xs rounded-xl active:scale-95 shadow-xs transition-all touch-manipulation min-h-[40px]"
-                >
-                  Anslut & Växla
-                </button>
-              </form>
-            )}
-
-            {/* List of households */}
-            <div className="space-y-1.5">
-              {households.map((hh) => {
-                const isActive = household?.id === hh.id;
-
-                return (
-                  <div
-                    key={hh.id}
-                    className={`p-3 rounded-xl border flex items-center justify-between transition-all ${
-                      isActive
-                        ? 'bg-emerald-50/80 border-emerald-400/80 shadow-xs'
-                        : 'bg-stone-50 border-stone-200 hover:bg-stone-100'
-                    }`}
-                  >
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (!isActive) switchHousehold(hh.id);
-                      }}
-                      className="flex items-center gap-2.5 text-left flex-1 min-w-0"
-                    >
-                      <div
-                        className={`w-8 h-8 rounded-xl flex items-center justify-center text-xs font-bold shrink-0 ${
-                          isActive ? 'bg-emerald-700 text-white' : 'bg-stone-200 text-stone-700'
-                        }`}
-                      >
-                        <Home className="w-4 h-4" />
-                      </div>
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-1.5">
-                          <span className="font-semibold text-stone-900 text-xs truncate">
-                            {hh.name}
-                          </span>
-                          {isActive && (
-                            <span className="px-1.5 py-0.5 rounded-full bg-emerald-200 text-emerald-900 text-[10px] font-bold">
-                              Aktivt
-                            </span>
-                          )}
-                        </div>
-                        <span className="text-[10px] text-stone-400 block font-mono">
-                          Kod: {hh.joinCode} • {hh.members?.length || 1} medlem{(hh.members?.length || 1) > 1 ? 'mar' : ''}
-                        </span>
-                      </div>
-                    </button>
-
-                    <div className="flex items-center gap-1 shrink-0 ml-2">
-                      {!isActive && (
-                        <button
-                          type="button"
-                          onClick={() => switchHousehold(hh.id)}
-                          className="px-2.5 py-1.5 bg-stone-200 hover:bg-emerald-600 hover:text-white rounded-lg text-[11px] font-semibold text-stone-700 transition-all flex items-center gap-1"
-                        >
-                          <RotateCw className="w-3 h-3" />
-                          <span>Växla</span>
-                        </button>
-                      )}
-
-                      {/* If admin: trash icon (delete). If member: LogOut icon (leave) */}
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteHousehold(hh.id, hh.name)}
-                        className={`p-1.5 rounded-lg transition-colors ${
-                          hh.creatorId === currentUser.id || hh.members[0]?.id === currentUser.id
-                            ? 'text-stone-400 hover:text-red-600 hover:bg-red-50'
-                            : 'text-stone-400 hover:text-amber-700 hover:bg-amber-50'
-                        }`}
-                        title={
-                          hh.creatorId === currentUser.id || hh.members[0]?.id === currentUser.id
-                            ? `Ta bort ${hh.name}`
-                            : `Lämna ${hh.name}`
-                        }
-                      >
-                        {hh.creatorId === currentUser.id || hh.members[0]?.id === currentUser.id ? (
-                          <Trash2 className="w-3.5 h-3.5" />
-                        ) : (
-                          <LogOut className="w-3.5 h-3.5" />
-                        )}
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Active Household Card with Edit Name & Sharing Code */}
           {household && (
-            <div className="bg-stone-50 border border-stone-200 rounded-2xl p-4 space-y-3 shadow-xs">
-              <div className="text-center">
-                <div className="flex items-center justify-center gap-1.5">
-                  <span className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider">
-                    Aktivt Hushåll
-                  </span>
-                  {isHouseholdAdmin && (
-                    <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded-md bg-amber-100 text-amber-900 border border-amber-300 text-[10px] font-bold">
-                      <Crown className="w-2.5 h-2.5 text-amber-700" />
-                      Du är admin
-                    </span>
-                  )}
-                </div>
-
+            <>
+              {/* Name and your role */}
+              <div className="pt-4">
                 {isEditingName ? (
-                  <form onSubmit={handleSaveHouseholdName} className="mt-1.5 flex items-center gap-2">
+                  <form onSubmit={handleSaveHouseholdName} className="flex items-center gap-2">
                     <input
                       type="text"
                       value={householdNameInput}
                       onChange={(e) => setHouseholdNameInput(e.target.value)}
                       placeholder="Namn på hushållet"
-                      className="flex-1 h-10 bg-white border border-emerald-600 rounded-xl px-3 text-sm font-bold text-stone-900 focus:outline-none focus:ring-2 focus:ring-emerald-700"
+                      aria-label="Namn på hushållet"
+                      className={input}
                     />
-                    <button
-                      type="submit"
-                      className="h-10 px-3.5 bg-emerald-700 hover:bg-emerald-800 active:scale-95 text-white font-semibold text-xs rounded-xl transition-all"
-                    >
-                      Spara
-                    </button>
+                    <button type="submit" className={primaryBtn}>Spara</button>
                     <button
                       type="button"
                       onClick={() => {
                         setHouseholdNameInput(household.name);
                         setIsEditingName(false);
                       }}
-                      className="h-10 px-2.5 text-stone-500 hover:text-stone-800 text-xs font-medium"
+                      className="px-2 min-h-[44px] text-stone-600 text-sm"
                     >
                       Avbryt
                     </button>
                   </form>
                 ) : (
-                  <div className="flex items-center justify-center gap-1.5 mt-0.5">
-                    <h2 className="text-xl font-bold text-stone-900">
-                      {household.name}
-                    </h2>
+                  <div className="flex items-center gap-1">
+                    <h2 className="font-serif text-2xl font-bold text-stone-900 truncate">{household.name}</h2>
                     {isHouseholdAdmin && (
                       <button
                         type="button"
@@ -568,326 +302,269 @@ export const HouseholdShareModal: React.FC<HouseholdShareModalProps> = ({ onClos
                           setHouseholdNameInput(household.name);
                           setIsEditingName(true);
                         }}
-                        className="p-1.5 text-stone-400 hover:text-emerald-700 rounded-lg hover:bg-stone-200/70 transition-colors"
-                        title="Byt namn på hushållet"
+                        className="w-10 h-10 rounded-full flex items-center justify-center text-stone-400 hover:text-stone-800 hover:bg-stone-100 touch-manipulation shrink-0"
+                        aria-label="Byt namn på hushållet"
                       >
-                        <Pencil className="w-3.5 h-3.5" />
+                        <Pencil className="w-4 h-4" />
                       </button>
                     )}
                   </div>
                 )}
+                <p className="text-stone-600">Du är {isHouseholdAdmin ? 'admin' : 'medlem'}</p>
               </div>
 
-              {/* Sharing Code Display */}
-              <div className="bg-white border border-stone-300 rounded-xl py-3 px-4 flex items-center justify-between shadow-xs">
-                <div className="text-left">
-                  <span className="text-[10px] text-stone-400 font-semibold block uppercase">
-                    Delningskod
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xl font-bold text-stone-900 tracking-widest font-mono">
-                      {household.joinCode}
-                    </span>
-                    {isHouseholdAdmin && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const newCode = regenerateHouseholdCode();
-                          showToast(`Ny 6-siffrig kod genererad: ${newCode}`);
-                        }}
-                        className="p-1 text-stone-400 hover:text-emerald-700 rounded-lg hover:bg-stone-100 transition-colors"
-                        title="Skapa ny 6-siffrig kod"
-                      >
-                        <RotateCw className="w-3.5 h-3.5" />
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={handleCopyCode}
-                  className="px-4 py-2.5 rounded-xl bg-stone-900 hover:bg-black active:scale-95 text-white font-semibold text-xs flex items-center gap-1.5 shadow-sm transition-all touch-manipulation min-h-[44px]"
-                >
-                  {copiedCode ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
-                  <span>{copiedCode ? 'Kopierad' : 'Dela kod'}</span>
-                </button>
-              </div>
-
-              <p className="text-[11px] text-stone-500 text-center leading-relaxed">
-                Dela koden med din sambo eller familj så synkas recept, veckoplan och inköpslistor.
-              </p>
-            </div>
-          )}
-
-          {/* Members List & Management */}
-          {household && (
-            <div className="bg-white rounded-2xl border border-stone-200 p-4 space-y-3 shadow-xs">
-              <div className="flex items-center justify-between">
-                <div>
-                  <label className="font-bold text-stone-900 block text-xs">
-                    Medlemmar ({household.members?.length || 0})
-                  </label>
-                  <p className="text-[11px] text-stone-400">
-                    {isHouseholdAdmin
-                      ? 'Som administratör kan du hantera hushållets medlemmar'
-                      : 'Endast administratören kan ta bort andra medlemmar'}
-                  </p>
-                </div>
-
-                {isHouseholdAdmin && (
+              {/* The code: the one box */}
+              <div className="mt-4 bg-[#FCFAF5] border border-[#EBE7DF] rounded-2xl p-4">
+                <div className="text-xs text-stone-500">Delningskod</div>
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-3xl font-bold text-stone-900 tracking-[0.15em] tabular-nums">{household.joinCode}</span>
                   <button
                     type="button"
-                    onClick={() => setShowAddMember(!showAddMember)}
-                    className="px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-800 hover:bg-emerald-100 font-semibold text-xs flex items-center gap-1.5 transition-all touch-manipulation min-h-[36px]"
+                    onClick={handleCopyCode}
+                    className="px-3.5 min-h-[44px] rounded-xl bg-[#284235] hover:bg-black text-white text-sm font-semibold flex items-center gap-1.5 touch-manipulation shrink-0"
                   >
-                    <UserPlus className="w-3.5 h-3.5" />
-                    <span>Lägg till</span>
+                    {copiedCode ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                    {copiedCode ? 'Kopierad' : 'Dela kod'}
                   </button>
-                )}
-              </div>
-
-              {/* Informational note for non-admins */}
-              {!isHouseholdAdmin && (
-                <div className="bg-amber-50/80 border border-amber-200 rounded-xl p-3 flex items-start gap-2.5 text-amber-900">
-                  <Shield className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
-                  <div className="text-[11px] leading-relaxed">
-                    <span className="font-bold block">Du är ansluten som medlem</span>
-                    Endast hushållets admin ({household.members.find(m => m.id === (household.creatorId || household.members[0]?.id))?.displayName || 'skaparen'}) kan ta bort andra medlemmar och ändra inställningar.
-                  </div>
                 </div>
-              )}
-
-              {/* Add Member Form */}
-              {showAddMember && isHouseholdAdmin && (
-                <form
-                  onSubmit={handleAddMember}
-                  className="bg-stone-50 border border-emerald-600/40 rounded-xl p-3.5 space-y-3 animate-slide-down"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="font-semibold text-stone-800 text-xs flex items-center gap-1.5">
-                      <UserPlus className="w-3.5 h-3.5 text-emerald-700" />
-                      Lägg till ny medlem
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => setShowAddMember(false)}
-                      className="text-stone-400 hover:text-stone-700"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-
-                  <div className="space-y-2">
-                    <div>
-                      <label className="text-[10px] uppercase font-bold text-stone-500 block mb-1">
-                        Namn
-                      </label>
-                      <input
-                        type="text"
-                        value={newMemberName}
-                        onChange={(e) => setNewMemberName(e.target.value)}
-                        placeholder="T.ex. Elin eller Sambon"
-                        className="w-full h-10 bg-white border border-stone-300 rounded-xl px-3 text-xs text-stone-900 focus:outline-none focus:ring-2 focus:ring-emerald-700"
+                <p className="text-xs text-stone-500 mt-1">Den som ska gå med skriver in koden i sin app.</p>
+                {isHouseholdAdmin &&
+                  (confirming?.kind === 'newCode' ? (
+                    <div className="pt-3">
+                      <ConfirmBox
+                        text="Den gamla koden slutar fungera. Inbjudningar med den behöver skickas igen."
+                        label="Byt kod"
+                        onConfirm={() => {
+                          const newCode = regenerateHouseholdCode();
+                          setConfirming(null);
+                          showToast(`Ny kod: ${newCode}`);
+                        }}
                       />
                     </div>
-                  </div>
+                  ) : (
+                    <button type="button" onClick={() => setConfirming({ kind: 'newCode' })} className={`${textBtn} mt-1`}>
+                      Byt till ny kod
+                    </button>
+                  ))}
+              </div>
 
-                  <button
-                    type="submit"
-                    disabled={!newMemberName.trim()}
-                    className="w-full py-2.5 bg-emerald-700 hover:bg-emerald-800 disabled:opacity-50 text-white font-semibold text-xs rounded-xl active:scale-95 shadow-xs transition-all touch-manipulation min-h-[42px]"
-                  >
-                    Spara medlem
-                  </button>
-                </form>
-              )}
+              {/* Members */}
+              <h4 className="text-xs font-semibold text-stone-500 pt-6 pb-1">Medlemmar ({household.members?.length || 0})</h4>
+              <ul className="divide-y divide-[#EBE7DF] border-y border-[#EBE7DF]">
+                {household.members.map((member) => {
+                  const isMemberAdmin = member.id === adminId || member.roleTitle === 'Admin';
+                  const isCurrent = currentUser.id === member.id || currentUser.displayName === member.displayName;
 
-              {/* Member Cards */}
-              <div className="space-y-2 pt-1">
-                {household.members && household.members.length > 0 ? (
-                  household.members.map((member) => {
-                    const adminId = household.creatorId || household.members[0]?.id;
-                    const isMemberAdmin = member.id === adminId || member.roleTitle === 'Admin';
-                    const isCurrent = currentUser.id === member.id || currentUser.displayName === member.displayName;
-                    const isEditingThis = editingMemberId === member.id;
-
-                    if (isEditingThis) {
-                      return (
-                        <form
-                          key={member.id}
-                          onSubmit={(e) => handleSaveMemberEdit(e, member.id)}
-                          className="p-3.5 bg-stone-50 border border-emerald-600/50 rounded-xl space-y-2.5 animate-fade-in shadow-xs"
-                        >
-                          <div className="flex items-center justify-between">
-                            <span className="font-semibold text-stone-800 text-xs flex items-center gap-1.5">
-                              <Pencil className="w-3.5 h-3.5 text-emerald-700" />
-                              Ändra namn
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => setEditingMemberId(null)}
-                              className="text-stone-400 hover:text-stone-700"
-                            >
-                              <X className="w-4 h-4" />
-                            </button>
-                          </div>
-
-                          <div>
-                            <label className="text-[10px] uppercase font-bold text-stone-500 block mb-1">
-                              Namn
-                            </label>
-                            <input
-                              type="text"
-                              value={editingMemberName}
-                              onChange={(e) => setEditingMemberName(e.target.value)}
-                              className="w-full h-9 bg-white border border-stone-300 rounded-xl px-3 text-xs font-semibold text-stone-900 focus:outline-none focus:ring-2 focus:ring-emerald-700"
-                            />
-                          </div>
-
-                          <div className="flex items-center gap-2 pt-1">
-                            <button
-                              type="submit"
-                              disabled={!editingMemberName.trim()}
-                              className="flex-1 py-2 bg-emerald-700 hover:bg-emerald-800 disabled:opacity-50 text-white font-semibold text-xs rounded-xl active:scale-95 transition-all touch-manipulation min-h-[38px]"
-                            >
-                              Spara ändring
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setEditingMemberId(null)}
-                              className="px-3 py-2 text-stone-500 hover:text-stone-800 text-xs font-medium"
-                            >
-                              Avbryt
-                            </button>
-                          </div>
-                        </form>
-                      );
-                    }
-
+                  if (editingMemberId === member.id) {
                     return (
-                      <div
-                        key={member.id}
-                        className={`p-3 rounded-xl border flex items-center justify-between transition-all ${
-                          isCurrent
-                            ? 'bg-emerald-50/70 border-emerald-300 shadow-xs'
-                            : 'bg-white border-stone-200 hover:bg-stone-50'
-                        }`}
-                      >
+                      <li key={member.id} className="py-3">
+                        <form onSubmit={(e) => handleSaveMemberEdit(e, member.id)} className="flex items-center gap-2">
+                          <input
+                            type="text"
+                            value={editingMemberName}
+                            onChange={(e) => setEditingMemberName(e.target.value)}
+                            aria-label="Namn"
+                            className={input}
+                          />
+                          <button type="submit" disabled={!editingMemberName.trim()} className={primaryBtn}>Spara</button>
+                          <button type="button" onClick={() => setEditingMemberId(null)} className="px-2 min-h-[44px] text-stone-600 text-sm">
+                            Avbryt
+                          </button>
+                        </form>
+                      </li>
+                    );
+                  }
+
+                  return (
+                    <li key={member.id}>
+                      <div className="py-2 flex items-center gap-3">
+                        {/* Tapping a name uses that profile on this phone */}
                         <button
                           type="button"
                           onClick={() => {
                             if (isMemberAdmin && !isHouseholdAdmin) {
-                              showToast('Endast skaparen av hushållet har tillgång till administratörsprofilen');
+                              showToast('Bara den som skapade hushållet kan använda admins profil');
                               return;
                             }
                             setCurrentUser(member);
                           }}
-                          className="flex items-center gap-3 text-left flex-1 min-w-0"
+                          className="flex items-center gap-3 text-left flex-1 min-w-0 min-h-[44px] touch-manipulation"
                         >
-                          <div
-                            className={`w-9 h-9 rounded-xl flex items-center justify-center text-xs font-bold shrink-0 ${
-                              isCurrent
-                                ? 'bg-emerald-700 text-white'
-                                : isMemberAdmin
-                                ? 'bg-amber-100 text-amber-900 border border-amber-300'
-                                : 'bg-stone-200 text-stone-700'
-                            }`}
-                          >
-                            {isMemberAdmin && !isCurrent ? (
-                              <Crown className="w-4 h-4 text-amber-700" />
-                            ) : (
-                              member.initials || member.displayName.charAt(0).toUpperCase()
-                            )}
-                          </div>
-                          <div className="min-w-0">
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                              <span className="font-semibold text-stone-900 text-xs truncate">
-                                {member.displayName}
-                              </span>
-
-                              {isMemberAdmin && (
-                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300/80 text-[10px] font-bold shrink-0">
-                                  <Crown className="w-2.5 h-2.5 text-amber-700" />
-                                  Admin
-                                </span>
-                              )}
-
-                              {isCurrent && (
-                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-emerald-200/70 text-emerald-800 text-[10px] font-bold shrink-0">
-                                  <UserCheck className="w-2.5 h-2.5" />
-                                  Du
-                                </span>
-                              )}
-
-                              {!isMemberAdmin && !isCurrent && (
-                                <span className="text-[10px] text-stone-400 font-medium">
-                                  Medlem
-                                </span>
-                              )}
-                            </div>
-                          </div>
+                          <span className="w-8 h-8 rounded-full bg-stone-100 text-stone-700 text-xs font-semibold flex items-center justify-center shrink-0">
+                            {member.initials || member.displayName.charAt(0).toUpperCase()}
+                          </span>
+                          <span className="flex-1 min-w-0 truncate text-stone-900">
+                            {member.displayName}
+                            {isCurrent ? ' (du)' : ''}
+                          </span>
+                          {isMemberAdmin && <span className="text-xs text-stone-500">admin</span>}
                         </button>
-
-                        <div className="flex items-center gap-1 ml-2">
-                          {/* Only allow editing own name, or admin editing members */}
-                          {(isCurrent || isHouseholdAdmin) && (
-                            <button
-                              type="button"
-                              onClick={() => handleStartEditMember(member)}
-                              className="p-2 text-stone-400 hover:text-emerald-700 rounded-lg hover:bg-emerald-50 transition-colors touch-manipulation"
-                              title={`Ändra namn för ${member.displayName}`}
-                            >
-                              <Pencil className="w-3.5 h-3.5" />
-                            </button>
-                          )}
-
-                          {/* Only Admin can remove other members */}
-                          {isHouseholdAdmin && !isMemberAdmin && (
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveMember(member.id, member.displayName)}
-                              className="p-2 text-stone-400 hover:text-red-600 rounded-lg hover:bg-red-50 transition-colors touch-manipulation"
-                              title={`Ta bort ${member.displayName} från hushållet`}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          )}
-                        </div>
+                        {(isCurrent || isHouseholdAdmin) && (
+                          <button
+                            type="button"
+                            onClick={() => handleStartEditMember(member)}
+                            className="w-10 h-10 rounded-full flex items-center justify-center text-stone-400 hover:text-stone-800 hover:bg-stone-100 touch-manipulation shrink-0"
+                            aria-label={`Ändra namn för ${member.displayName}`}
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </button>
+                        )}
+                        {isHouseholdAdmin && !isMemberAdmin && (
+                          <button
+                            type="button"
+                            onClick={() => setConfirming({ kind: 'removeMember', id: member.id, name: member.displayName })}
+                            className="w-10 h-10 -mr-2 rounded-full flex items-center justify-center text-stone-400 hover:text-rose-700 hover:bg-rose-50 touch-manipulation shrink-0"
+                            aria-label={`Ta bort ${member.displayName} från hushållet`}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
                       </div>
-                    );
-                  })
-                ) : (
-                  <p className="text-center text-stone-400 py-3">Inga medlemmar hittades</p>
-                )}
-              </div>
+                      {confirming?.kind === 'removeMember' && confirming.id === member.id && (
+                        <ConfirmBox
+                          text={`${member.displayName} tas bort från hushållet.`}
+                          label="Ta bort"
+                          onConfirm={() => handleRemoveMember(member.id, member.displayName)}
+                        />
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
 
-              {/* Leave household button for non-admins */}
-              {!isHouseholdAdmin && (
-                <div className="pt-2">
-                  <button
-                    type="button"
-                    onClick={() => handleLeaveHousehold(household.id, household.name)}
-                    className="w-full py-2.5 px-3 rounded-xl border border-red-200 bg-red-50/50 hover:bg-red-50 text-red-700 font-semibold text-xs flex items-center justify-center gap-2 transition-all touch-manipulation min-h-[40px]"
-                  >
-                    <LogOut className="w-3.5 h-3.5" />
-                    <span>Lämna detta hushåll</span>
+              {/* Add a person without an account (admin) */}
+              {isHouseholdAdmin &&
+                (showAddMember ? (
+                  <form onSubmit={handleAddMember} className="pt-3 space-y-2">
+                    <label className="block text-xs text-stone-500" htmlFor="new-member-name">
+                      Namn på personen
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        id="new-member-name"
+                        type="text"
+                        value={newMemberName}
+                        onChange={(e) => setNewMemberName(e.target.value)}
+                        placeholder="T.ex. Elin"
+                        className={input}
+                      />
+                      <button type="submit" disabled={!newMemberName.trim()} className={primaryBtn}>Lägg till</button>
+                    </div>
+                    <button type="button" onClick={() => setShowAddMember(false)} className="text-sm text-stone-600 py-1">
+                      Avbryt
+                    </button>
+                  </form>
+                ) : (
+                  <button type="button" onClick={() => setShowAddMember(true)} className={`${textBtn} flex items-center gap-1`}>
+                    <Plus className="w-4 h-4" />
+                    Lägg till person utan konto
                   </button>
-                </div>
+                ))}
+            </>
+          )}
+
+          {/* Other households, new, join */}
+          <h4 className="text-xs font-semibold text-stone-500 pt-6 pb-1">
+            {otherHouseholds.length > 0 ? 'Byt hushåll' : 'Fler hushåll'}
+          </h4>
+          <div className="divide-y divide-[#EBE7DF] border-y border-[#EBE7DF]">
+            {otherHouseholds.map((hh) => (
+              <button key={hh.id} type="button" onClick={() => switchHousehold(hh.id)} className={rowBtn}>
+                <span className="flex-1 min-w-0 truncate text-stone-900">{hh.name}</span>
+                <span className="text-xs text-stone-500">
+                  {hh.members?.length || 1} {(hh.members?.length || 1) === 1 ? 'medlem' : 'medlemmar'}
+                </span>
+                <ChevronRight className="w-4 h-4 text-stone-300 shrink-0" />
+              </button>
+            ))}
+
+            <div>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowCreateForm(!showCreateForm);
+                  setShowJoinForm(false);
+                }}
+                className={rowBtn}
+                aria-expanded={showCreateForm}
+              >
+                <span className="flex-1 text-stone-900">Skapa nytt hushåll</span>
+                <ChevronRight className={`w-4 h-4 text-stone-300 shrink-0 transition-transform ${showCreateForm ? 'rotate-90' : ''}`} />
+              </button>
+              {showCreateForm && (
+                <form onSubmit={handleCreate} className="pb-3 flex items-center gap-2 animate-fade-in">
+                  <input
+                    type="text"
+                    value={newHhNameInput}
+                    onChange={(e) => setNewHhNameInput(e.target.value)}
+                    placeholder="T.ex. Sommarstugan"
+                    aria-label="Namn på nytt hushåll"
+                    className={input}
+                  />
+                  <button type="submit" disabled={!newHhNameInput.trim()} className={primaryBtn}>Skapa</button>
+                </form>
               )}
             </div>
-          )}
-        </div>
 
-        {/* Footer */}
-        <div className="p-4 bg-stone-50 border-t border-stone-200">
-          <button
-            type="button"
-            onClick={onClose}
-            className="w-full py-3.5 bg-stone-900 hover:bg-black active:scale-95 text-white font-semibold text-xs rounded-xl touch-manipulation min-h-[48px]"
-          >
-            Klar
-          </button>
+            <div>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowJoinForm(!showJoinForm);
+                  setShowCreateForm(false);
+                }}
+                className={rowBtn}
+                aria-expanded={showJoinForm}
+              >
+                <span className="flex-1 text-stone-900">Gå med i ett annat hushåll</span>
+                <ChevronRight className={`w-4 h-4 text-stone-300 shrink-0 transition-transform ${showJoinForm ? 'rotate-90' : ''}`} />
+              </button>
+              {showJoinForm && (
+                <form onSubmit={handleJoin} className="pb-3 flex items-center gap-2 animate-fade-in">
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    maxLength={6}
+                    value={joinCodeInput}
+                    onChange={(e) => setJoinCodeInput(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    placeholder="Kod, 6 siffror"
+                    aria-label="Delningskod"
+                    className={`${input} tracking-widest`}
+                  />
+                  <button type="submit" disabled={joinCodeInput.length < 6} className={primaryBtn}>Gå med</button>
+                </form>
+              )}
+            </div>
+
+            {/* Delete (admin) or leave (member): last, since it cannot be undone */}
+            {household && (
+              <div>
+                <button
+                  type="button"
+                  onClick={() => setConfirming(confirming?.kind === 'deleteOrLeave' ? null : { kind: 'deleteOrLeave' })}
+                  className={rowBtn}
+                >
+                  <span className="flex-1 text-rose-700">{isHouseholdAdmin ? 'Ta bort hushållet' : 'Lämna hushållet'}</span>
+                </button>
+                {confirming?.kind === 'deleteOrLeave' && (
+                  <ConfirmBox
+                    text={
+                      isHouseholdAdmin
+                        ? `${household.name} tas bort för alla medlemmar, med recept, veckoplan och inköpslista.`
+                        : `Du lämnar ${household.name}. Du kan gå med igen med koden.`
+                    }
+                    label={isHouseholdAdmin ? 'Ta bort' : 'Lämna'}
+                    onConfirm={() =>
+                      isHouseholdAdmin
+                        ? handleDeleteHousehold(household.id, household.name)
+                        : handleLeaveHousehold(household.id, household.name)
+                    }
+                  />
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
