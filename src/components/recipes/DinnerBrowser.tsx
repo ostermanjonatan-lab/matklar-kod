@@ -1,16 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Check, ChevronLeft, ChevronRight, Search, X } from 'lucide-react';
+import { Check, ChevronLeft, ChevronRight, Search } from 'lucide-react';
 import type { Recipe } from '../../types/recipe';
 import { getRecipeSubcategories } from '../../types/recipe';
 import { formatCookingTime, formatRecipeTitle } from '../../utils/formatters';
 
-interface DinnerPickerModalProps {
-  recipes: Recipe[];
-  /** Recipe to mark as chosen, if any */
-  currentRecipeId?: string | null;
-  onSelect: (recipe: Recipe) => void;
-  onClose: () => void;
-}
 
 // Subcategory value meaning "all recipes in the category"
 const ALL = '__all__';
@@ -102,7 +95,7 @@ interface DinnerBrowserProps {
 /**
  * Find a dinner among the dinner recipes: first a subcategory (Pasta, Fisk...) with a small
  * slideshow of its recipes, then the recipe. Typing in the search field skips the step.
- * Used on the start page (Välj middag) and when planning a dinner in the meal plan.
+ * Used when planning a dinner or lunch in the meal plan.
  * It fills the height it is given; the parent decides padding and size.
  */
 export const DinnerBrowser: React.FC<DinnerBrowserProps> = ({ recipes, mealLabel = 'middag', currentRecipeId, onSelect }) => {
@@ -218,36 +211,3 @@ export const DinnerBrowser: React.FC<DinnerBrowserProps> = ({ recipes, mealLabel
     </div>
   );
 };
-
-/** The start page's "Välj middag": the browser in a sheet of its own. */
-export const DinnerPickerModal: React.FC<DinnerPickerModalProps> = ({
-  recipes,
-  currentRecipeId,
-  onSelect,
-  onClose,
-}) => (
-  <div
-    className="fixed inset-0 z-50 bg-black/50 flex items-end sm:items-center justify-center animate-fade-in font-sans"
-    role="dialog"
-    aria-modal="true"
-    aria-label="Välj middag"
-    onClick={(e) => {
-      if (e.target === e.currentTarget) onClose();
-    }}
-  >
-    <div className="bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl shadow-2xl flex flex-col h-[85vh] px-4 pt-3 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
-      <div className="flex items-center justify-between shrink-0 mb-2">
-        <h3 className="font-serif font-bold text-lg text-stone-900">Välj middag</h3>
-        <button
-          type="button"
-          onClick={onClose}
-          className="w-10 h-10 -mr-2 rounded-full flex items-center justify-center text-stone-500 hover:bg-stone-100 touch-manipulation"
-          aria-label="Stäng"
-        >
-          <X className="w-5 h-5" />
-        </button>
-      </div>
-      <DinnerBrowser recipes={recipes} currentRecipeId={currentRecipeId} onSelect={onSelect} />
-    </div>
-  </div>
-);

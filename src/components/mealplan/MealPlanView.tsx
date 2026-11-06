@@ -21,7 +21,7 @@ import {
   Users,
 } from 'lucide-react';
 import { LunchboxIcon } from '../icons/LunchboxIcon';
-import { DinnerBrowser } from '../recipes/DinnerPickerModal';
+import { DinnerBrowser } from '../recipes/DinnerBrowser';
 import { formatCookingTime, scaleIngredientAmount, formatAmount, formatRecipeTitle } from '../../utils/formatters';
 import {
   addDaysISO,

@@ -4,9 +4,7 @@ import type { Recipe } from '../../types/recipe';
 import { getRecipeSubcategories, getRecipeTimestamp } from '../../types/recipe';
 import { RecipeCard } from './RecipeCard';
 import { PantryChoiceDialog, hasPantryStaples } from './PantryChoiceDialog';
-import { RandomPickerModal } from './RandomPickerModal';
 import { RecipeFilterModal } from './RecipeFilterModal';
-import { DinnerPickerModal } from './DinnerPickerModal';
 import { STANDARD_CATEGORIES } from '../../data/categories';
 import { useModalBackHandler } from '../../hooks/useModalBackHandler';
 import {
@@ -17,8 +15,6 @@ import {
   ArrowUpDown,
   Check,
   ShoppingCart,
-  Dices,
-  ListChecks,
 } from 'lucide-react';
 
 
@@ -79,8 +75,6 @@ export const RecipeList: React.FC = () => {
     setSearchQuery,
   } = useRecipes();
 
-  const [showDinnerPicker, setShowDinnerPicker] = useState<boolean>(false);
-  useModalBackHandler(showDinnerPicker, () => setShowDinnerPicker(false), 'dinner-picker');
 
   const deferredSearchQuery = useDeferredValue(searchQuery);
 
@@ -89,7 +83,6 @@ export const RecipeList: React.FC = () => {
   const [maxCookingTime, setMaxCookingTime] = useState<number | null>(null);
   const [onlyFavorites, setOnlyFavorites] = useState<boolean>(false);
   const [sortBy, setSortBy] = useState<SortOption>('default');
-  const [showRandomPicker, setShowRandomPicker] = useState<boolean>(false);
   const [showSortSheet, setShowSortSheet] = useState<boolean>(false);
   const [showFilterModal, setShowFilterModal] = useState<boolean>(false);
 
@@ -224,7 +217,6 @@ export const RecipeList: React.FC = () => {
   // Synchronize modal and sheet visibility with Android back button
   useModalBackHandler(showFilterModal, () => setShowFilterModal(false), 'recipe-filter');
   useModalBackHandler(showSortSheet, () => setShowSortSheet(false), 'sort-sheet');
-  useModalBackHandler(showRandomPicker, () => setShowRandomPicker(false), 'random-picker');
 
   // Extract unique categories
   const categories = useMemo(() => {
@@ -471,33 +463,6 @@ export const RecipeList: React.FC = () => {
           </div>
         </div>
       )}
-
-      {/* Vad ska vi äta? Random Picker Modal */}
-      {showRandomPicker && (
-        <RandomPickerModal
-          recipes={recipes}
-          currentCategoryFilter={selectedCategory}
-          initialMaxCookingTime={maxCookingTime}
-          onSelectRecipe={(rec) => {
-            openRecipeDetail(rec);
-            setShowRandomPicker(false);
-          }}
-          onClose={() => setShowRandomPicker(false)}
-        />
-      )}
-
-      {/* Find a dinner by category. The chosen recipe opens. */}
-      {showDinnerPicker && (
-        <DinnerPickerModal
-          recipes={recipes}
-          onSelect={(rec) => {
-            setShowDinnerPicker(false);
-            openRecipeDetail(rec);
-          }}
-          onClose={() => setShowDinnerPicker(false)}
-        />
-      )}
-
       {/* Recept Filter Modal */}
       {showFilterModal && (
         <RecipeFilterModal
@@ -722,26 +687,6 @@ export const RecipeList: React.FC = () => {
 
       {/* Main Content Area */}
       <div className="w-full max-w-md md:max-w-5xl lg:max-w-7xl mx-auto px-4 md:px-6 pt-2 md:pt-4 space-y-4 md:space-y-6">
-        {/* Find a dinner by category, or get a random one */}
-        <div className="grid grid-cols-2 gap-2 border-b border-[#EBE7DF] pb-3">
-          <button
-            type="button"
-            onClick={() => setShowDinnerPicker(true)}
-            className="min-h-[44px] px-3 rounded-xl bg-white border border-[#EBE7DF] hover:bg-stone-50 active:scale-[0.98] text-stone-800 font-semibold text-sm flex items-center justify-center gap-2 transition-all touch-manipulation"
-          >
-            <ListChecks className="w-4 h-4 text-stone-500" />
-            <span>Välj middag</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setShowRandomPicker(true)}
-            className="min-h-[44px] px-3 rounded-xl bg-white border border-[#EBE7DF] hover:bg-stone-50 active:scale-[0.98] text-stone-800 font-semibold text-sm flex items-center justify-center gap-2 transition-all touch-manipulation"
-          >
-            <Dices className="w-4 h-4 text-stone-500" />
-            <span>Slumpa</span>
-          </button>
-        </div>
-
         {/* Number of recipes. "Träffar" only after a search or filter */}
         <div className="flex items-center justify-between px-1 gap-2 min-h-[24px]">
           <span className="text-xs text-stone-500 whitespace-nowrap">
