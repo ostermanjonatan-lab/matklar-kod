@@ -8,6 +8,11 @@ interface BottomNavProps {
   onAddShoppingItemClick?: () => void;
 }
 
+/** The arc on top of the menu, as a mask: filled below the curve. */
+const NAV_ARC_MASK = `url("data:image/svg+xml,${encodeURIComponent(
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 14" preserveAspectRatio="none"><path d="M0,14 Q50,-14 100,14 Z" fill="black"/></svg>'
+)}")`;
+
 export const BottomNav: React.FC<BottomNavProps> = ({ onAddRecipeClick, onAddShoppingItemClick }) => {
   const { activeTab, setActiveTab, shoppingList, selectedRecipe, isHouseholdAdmin, joinRequests } = useRecipes();
   const [isMenuOpen, setIsMenuOpen] = useState<boolean>(false);
@@ -136,20 +141,35 @@ export const BottomNav: React.FC<BottomNavProps> = ({ onAddRecipeClick, onAddSho
         </div>
       </div>
 
-      <nav className="fixed bottom-0 left-0 right-0 z-40 bg-gradient-to-b from-[#FCFAF5] to-[#F1EBE0] pb-safe font-sans">
-        {/* Gently curved top edge: a low arc that rises about 14 px towards the middle.
+      <nav className="fixed bottom-0 left-0 right-0 z-40 pt-[14px] pb-safe font-sans">
+        {/* See-through background with blur, cut to the menu's shape: a low arc on top that
+            rises about 14 px towards the middle. It is a layer of its own so the plus button,
+            which reaches a little above the arc, is not cut off.
             The inner buttons (Veckoplan, Inköp) sit about 6 px higher than the outer ones,
             which is how much higher the arc is at their place, so the row follows the curve. */}
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 pointer-events-none bg-gradient-to-b from-[#FCFAF5]/70 to-[#F1EBE0]/80 backdrop-blur-xl backdrop-saturate-150"
+          style={{
+            WebkitMaskImage: `${NAV_ARC_MASK}, linear-gradient(#000, #000)`,
+            maskImage: `${NAV_ARC_MASK}, linear-gradient(#000, #000)`,
+            WebkitMaskSize: '100% 14px, 100% calc(100% - 13px)',
+            maskSize: '100% 14px, 100% calc(100% - 13px)',
+            WebkitMaskPosition: 'top, bottom',
+            maskPosition: 'top, bottom',
+            WebkitMaskRepeat: 'no-repeat',
+            maskRepeat: 'no-repeat',
+          }}
+        />
         <svg
-          className="absolute bottom-full left-0 w-full h-[14px] -mb-px pointer-events-none drop-shadow-[0_-3px_6px_rgba(0,0,0,0.06)]"
+          className="absolute top-0 left-0 w-full h-[14px] pointer-events-none drop-shadow-[0_-3px_6px_rgba(0,0,0,0.06)]"
           viewBox="0 0 100 14"
           preserveAspectRatio="none"
           aria-hidden="true"
         >
-          <path d="M0,14 Q50,-14 100,14 Z" fill="#FCFAF5" />
-          <path d="M0,14 Q50,-14 100,14" fill="none" stroke="#EBE7DF" strokeWidth="1" vectorEffect="non-scaling-stroke" />
+          <path d="M0,14 Q50,-14 100,14" fill="none" stroke="#E5E0D6" strokeWidth="1" vectorEffect="non-scaling-stroke" />
         </svg>
-        <div className="max-w-md mx-auto flex items-center justify-between px-3 py-1.5">
+        <div className="relative max-w-md mx-auto flex items-center justify-between px-3 py-1.5">
           {/* Recept */}
           <button
             type="button"
