@@ -1,136 +1,32 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import type { ReactNode } from 'react';
 import type { Recipe, MealPlanDay, ShoppingItem, TabType, UserProfile, Household, PantryItem, HouseholdJoinRequest, PendingJoinState } from '../types/recipe';
-import { getRecipeSubcategories, NON_FOOD_SUBCATEGORIES } from '../types/recipe';
+import { NON_FOOD_SUBCATEGORIES } from '../types/recipe';
 import { INITIAL_RECIPES, INITIAL_MEAL_PLAN } from '../data/mockRecipes';
 import { recordFrequentItem } from '../utils/frequentItems';
 import { withLeftoverPortions, syncLeftoverLunches } from '../utils/leftovers';
 import {
   WEEKDAY_NAMES,
-  dayNameForDate,
   getWeekDates,
   getWeekStart,
-  isISODate,
   todayISO,
 } from '../utils/mealPlanDates';
 import { isCommonPantryStaple, detectAisle, resolveSavedAisle } from '../utils/ingredientParser';
+import { emptyPlanDay, normalizeMealPlan, buildWeek, sanitizeRecipe } from './recipeData';
+import type { RecipeContextType } from './recipeContextType';
+import {
+  RECIPES_STORAGE_KEY,
+  STARTER_SEEDED_KEY,
+  MEAL_PLAN_STORAGE_KEY,
+  SHOPPING_STORAGE_KEY,
+  PANTRY_STORAGE_KEY,
+  HOUSEHOLDS_STORAGE_KEY,
+  ACTIVE_HOUSEHOLD_ID_KEY,
+  USER_STORAGE_KEY,
+  CUSTOM_SUBCATEGORIES_STORAGE_KEY,
+  PENDING_JOIN_STORAGE_KEY,
+} from './storageKeys';
 
-// Auto-repair known broken or duplicate images for starter demo recipes
-const STARTER_IMAGE_FIXES: Record<string, string> = {
-  'rec-9': 'https://images.unsplash.com/photo-1546549032-9571cd6b27df?auto=format&fit=crop&w=1200&q=80',
-  'rec-18': 'https://images.unsplash.com/photo-1534604973900-c43ab4c2e0ab?auto=format&fit=crop&w=1200&q=80',
-  'rec-20': 'https://images.unsplash.com/photo-1625944525533-473f1a3d54e7?auto=format&fit=crop&w=1200&q=80',
-  'rec-21': 'https://images.unsplash.com/photo-1592417817098-8f3d6910985a?auto=format&fit=crop&w=1200&q=80',
-};
-
-function hasMeal(d: MealPlanDay): boolean {
-  return Boolean(d.dinnerRecipeId || d.lunchRecipeId || d.customDinner?.trim() || d.customLunch?.trim());
-}
-
-function emptyPlanDay(dateStr: string): MealPlanDay {
-  return {
-    dayName: dayNameForDate(dateStr),
-    dateStr,
-    dinnerRecipeId: null,
-    dinnerServings: 4,
-    lunchRecipeId: null,
-    lunchServings: 2,
-    customDinner: '',
-    customLunch: '',
-  };
-}
-
-/**
- * Cleans the stored meal plan. Every day has a date. Days saved by older versions only have a
- * weekday name; they are placed in the current week, unless that date already has its own entry.
- * Days without any meal are dropped, and recipe ids that no longer exist are removed.
- */
-function normalizeMealPlan(
-  rawPlan: MealPlanDay[] | null | undefined,
-  currentRecipes?: Recipe[]
-): MealPlanDay[] {
-  const recipeIdSet = currentRecipes ? new Set(currentRecipes.map((r) => r.id)) : null;
-  const list = Array.isArray(rawPlan) ? rawPlan.filter(Boolean) : [];
-  const currentWeek = getWeekDates(getWeekStart());
-  const byDate = new Map<string, MealPlanDay>();
-
-  list.forEach((d) => {
-    if (isISODate(d.dateStr)) byDate.set(d.dateStr, d);
-  });
-  list.forEach((d) => {
-    if (isISODate(d.dateStr)) return;
-    const idx = WEEKDAY_NAMES.indexOf(d.dayName);
-    if (idx === -1) return;
-    const date = currentWeek[idx];
-    if (!byDate.has(date)) byDate.set(date, { ...d, dateStr: date });
-  });
-
-  const cleanId = (id?: string | null) => (id ? (recipeIdSet ? (recipeIdSet.has(id) ? id : null) : id) : null);
-
-  return Array.from(byDate.entries())
-    .map(([dateStr, d]) => ({
-      dayName: dayNameForDate(dateStr),
-      dateStr,
-      dinnerRecipeId: cleanId(d.dinnerRecipeId),
-      dinnerServings: d.dinnerServings && d.dinnerServings > 0 ? d.dinnerServings : 4,
-      lunchRecipeId: cleanId(d.lunchRecipeId),
-      lunchServings: d.lunchServings && d.lunchServings > 0 ? d.lunchServings : 2,
-      customDinner: d.customDinner || '',
-      customLunch: d.customLunch || '',
-    }))
-    .filter(hasMeal)
-    .sort((x, y) => x.dateStr.localeCompare(y.dateStr));
-}
-
-/** The seven days of a week, with empty days filled in. */
-function buildWeek(plan: MealPlanDay[], weekStart: string): MealPlanDay[] {
-  return getWeekDates(weekStart).map((date) => plan.find((d) => d.dateStr === date) || emptyPlanDay(date));
-}
-
-function sanitizeRecipe(recipe: Recipe): Recipe {
-  const clean = getRecipeSubcategories(recipe);
-  const cleanIngredients = (recipe.ingredients || []).map((ing) => ({
-    ...ing,
-    aisle: resolveSavedAisle(ing.name, ing.aisle),
-    isPantryStaple: isCommonPantryStaple(ing.name),
-  }));
-
-  // Ensure unified Tillagningstid: prepTimeMinutes is always 0
-  const cookingTime = typeof recipe.cookTimeMinutes === 'number' && recipe.cookTimeMinutes > 0
-    ? recipe.cookTimeMinutes
-    : (typeof recipe.prepTimeMinutes === 'number' && recipe.prepTimeMinutes > 0 ? recipe.prepTimeMinutes : 0);
-
-  // Auto-heal broken demo images or URL typos from previous versions
-  let coverImageUrl = recipe.coverImageUrl;
-  if (recipe.id && STARTER_IMAGE_FIXES[recipe.id]) {
-    if (recipe.id === 'rec-9' && (coverImageUrl?.includes('1621996346565-e3d5d6281691') || !coverImageUrl)) {
-      coverImageUrl = STARTER_IMAGE_FIXES['rec-9'];
-    } else if (recipe.id === 'rec-21' && (coverImageUrl?.includes('1592417817098-8f3d6910985c') || !coverImageUrl)) {
-      coverImageUrl = STARTER_IMAGE_FIXES['rec-21'];
-    } else if (recipe.id === 'rec-20' && coverImageUrl?.includes('1551183053-bf91a1d81141')) {
-      coverImageUrl = STARTER_IMAGE_FIXES['rec-20'];
-    } else if (recipe.id === 'rec-18' && coverImageUrl?.includes('1519708227418-c8fd9a32b7a2')) {
-      coverImageUrl = STARTER_IMAGE_FIXES['rec-18'];
-    }
-  }
-
-  // Also catch broken Unsplash hashes directly regardless of recipe ID
-  if (coverImageUrl?.includes('1621996346565-e3d5d6281691')) {
-    coverImageUrl = STARTER_IMAGE_FIXES['rec-9'];
-  } else if (coverImageUrl?.includes('1592417817098-8f3d6910985c')) {
-    coverImageUrl = STARTER_IMAGE_FIXES['rec-21'];
-  }
-
-  return {
-    ...recipe,
-    coverImageUrl: coverImageUrl || 'https://images.unsplash.com/photo-1498837167922-ddd27525d352?auto=format&fit=crop&w=1200&q=80',
-    subcategories: clean,
-    subcategory: clean.join(', '),
-    ingredients: cleanIngredients,
-    prepTimeMinutes: 0,
-    cookTimeMinutes: cookingTime,
-  };
-}
 import {
   broadcastLocalChange,
   subscribeToLocalChanges,
@@ -171,122 +67,9 @@ import {
   clearAisleOverrides,
 } from '../utils/shoppingAggregator';
 
-interface RecipeContextType {
-  recipes: Recipe[];
-  selectedRecipe: Recipe | null;
-  activeTab: TabType;
-  /** The seven days of the week shown in the meal plan (planWeekStart). */
-  mealPlan: MealPlanDay[];
-  /** Monday of the week shown in the meal plan, YYYY-MM-DD. */
-  planWeekStart: string;
-  /** Today's date (YYYY-MM-DD). Changes when the app is opened again on a new day. */
-  today: string;
-  setPlanWeekStart: (weekStart: string) => void;
-  getMealPlanForDate: (dateStr: string) => MealPlanDay | undefined;
-  shoppingList: ShoppingItem[];
-  household: Household | null;
-  households: Household[];
-  currentUser: UserProfile;
-  isHouseholdAdmin: boolean;
-  realtimeStatus: 'connected' | 'connecting' | 'local_sync';
-  isLiveSupabase: boolean;
-  setActiveTab: (tab: TabType) => void;
-  openRecipeDetail: (recipe: Recipe) => void;
-  closeRecipeDetail: () => void;
-  toggleFavorite: (id: string) => void;
-  updateNotes: (id: string, notes: string) => void;
-  addRecipe: (recipe: Recipe) => void;
-  updateRecipe: (recipe: Recipe) => void;
-  deleteRecipe: (id: string) => void;
-  clearAllRecipes: () => void;
-  setMealPlanForDay: (
-    dayName: MealPlanDay['dayName'],
-    mealType: 'lunch' | 'dinner',
-    recipeId: string | null,
-    customText?: string
-  ) => void;
-  setMealPlanServings: (
-    dayName: MealPlanDay['dayName'],
-    mealType: 'lunch' | 'dinner',
-    servings: number
-  ) => void;
-  setMealPlanForDate: (
-    dateStr: string,
-    mealType: 'lunch' | 'dinner',
-    recipeId: string | null,
-    customText?: string
-  ) => void;
-  clearMealPlan: () => void;
-  generateShoppingListFromWeek: (skipPantryStaples: boolean) => number;
-  addIngredientsToShoppingList: (
-    ingredients: Array<{ name: string; amount: number | null; unit: string; aisle: string; isPantryStaple: boolean }>,
-    recipeTitle?: string,
-    skipPantryStaples?: boolean
-  ) => number;
-  restoreShoppingList: (items: ShoppingItem[]) => void;
-  toggleShoppingItem: (id: string) => void;
-  deleteShoppingItem: (id: string) => void;
-  clearCheckedShoppingItems: () => void;
-  addCustomShoppingItem: (item: {
-    name: string;
-    amount: number | null;
-    unit: string;
-    aisle: string;
-    isPantryStaple: boolean;
-    comment?: string;
-  }) => void;
-  updateShoppingItemComment: (id: string, comment: string) => void;
-  updateShoppingItemAisle: (id: string, aisle: string) => void;
-  rememberShoppingAisle: (name: string, aisle: string) => void;
-  setHouseholdName: (name: string) => void;
-  createHousehold: (name: string, creatorName?: string, creatorRole?: string, includeStarterRecipes?: boolean) => void;
-  joinHouseholdByCode: (code: string, memberName?: string, memberRole?: string) => Promise<boolean>;
-  switchHousehold: (householdId: string) => void;
-  deleteHousehold: (householdId: string) => void;
-  leaveHousehold: (householdId?: string) => Promise<boolean>;
-  regenerateHouseholdCode: (householdId?: string) => string;
-  addMemberToHousehold: (member: { displayName: string; roleTitle?: string }) => void;
-  updateMemberInHousehold: (memberId: string, updates: { displayName: string; roleTitle?: string }) => void;
-  removeMemberFromHousehold: (memberId: string) => Promise<boolean>;
-  joinRequests: HouseholdJoinRequest[];
-  pendingJoin: PendingJoinState | null;
-  approveJoinRequest: (requestId: string) => Promise<boolean>;
-  rejectJoinRequest: (requestId: string) => Promise<boolean>;
-  cancelPendingJoin: () => void;
-  setCurrentUser: (user: UserProfile) => void;
-  resetToMockData: () => void;
-  lastSyncTimestamp: number;
-  customSubcategories: string[];
-  addCustomSubcategory: (subcat: string) => void;
-  removeCustomSubcategory: (subcat: string) => void;
-  pantryItems: PantryItem[];
-  addPantryItem: (item: {
-    name: string;
-    amount?: number | null;
-    unit?: string;
-    aisle?: string;
-    comment?: string;
-    isOutOfStock?: boolean;
-  }) => void;
-  updatePantryItem: (item: PantryItem) => void;
-  deletePantryItem: (id: string) => void;
-  togglePantryItemStock: (id: string, isOutOfStock?: boolean) => void;
-  searchQuery: string;
-  setSearchQuery: (query: string) => void;
-}
 
 const RecipeContext = createContext<RecipeContextType | undefined>(undefined);
 
-const RECIPES_STORAGE_KEY = 'receptapp_recipes_v3';
-const STARTER_SEEDED_KEY = 'receptapp_starter_seeded_v1';
-const MEAL_PLAN_STORAGE_KEY = 'receptapp_mealplan_v3';
-const SHOPPING_STORAGE_KEY = 'receptapp_shopping_v3';
-const PANTRY_STORAGE_KEY = 'receptapp_pantry_items_v1';
-const HOUSEHOLDS_STORAGE_KEY = 'receptapp_households_v4';
-const ACTIVE_HOUSEHOLD_ID_KEY = 'receptapp_active_hh_v4';
-const USER_STORAGE_KEY = 'receptapp_user_v3';
-const CUSTOM_SUBCATEGORIES_STORAGE_KEY = 'receptapp_custom_subcategories_v1';
-const PENDING_JOIN_STORAGE_KEY = 'receptapp_pending_join_v1';
 
 export const RecipeProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [households, setHouseholds] = useState<Household[]>(() => {

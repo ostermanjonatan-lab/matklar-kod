@@ -132,59 +132,6 @@ export function saveCollapsedAisles(aisles: string[]): void {
 }
 
 /**
- * Moves an aisle up or down relative to the visible list of aisles.
- * If visibleAisles is provided, swaps relative to visible neighbors.
- */
-export function moveAisle(
-  aisleOrder: string[],
-  targetAisle: string,
-  direction: 'up' | 'down',
-  visibleAisles?: string[]
-): string[] {
-  const result = [...aisleOrder];
-  const targetIdx = result.indexOf(targetAisle);
-  if (targetIdx === -1) return result;
-
-  if (visibleAisles && visibleAisles.length > 1) {
-    const visIdx = visibleAisles.indexOf(targetAisle);
-    if (visIdx === -1) return result;
-
-    if (direction === 'up') {
-      if (visIdx === 0) return result; // Already first visible
-      const prevVisible = visibleAisles[visIdx - 1];
-      const prevIdxInOrder = result.indexOf(prevVisible);
-      if (prevIdxInOrder === -1) return result;
-
-      // Remove target and insert before prevVisible
-      result.splice(targetIdx, 1);
-      const newInsertIdx = result.indexOf(prevVisible);
-      result.splice(newInsertIdx, 0, targetAisle);
-      return result;
-    } else {
-      if (visIdx === visibleAisles.length - 1) return result; // Already last visible
-      const nextVisible = visibleAisles[visIdx + 1];
-      const nextIdxInOrder = result.indexOf(nextVisible);
-      if (nextIdxInOrder === -1) return result;
-
-      // Remove target and insert after nextVisible
-      result.splice(targetIdx, 1);
-      const newInsertIdx = result.indexOf(nextVisible) + 1;
-      result.splice(newInsertIdx, 0, targetAisle);
-      return result;
-    }
-  }
-
-  // Fallback to simple adjacent swap
-  const swapWithIdx = direction === 'up' ? targetIdx - 1 : targetIdx + 1;
-  if (swapWithIdx < 0 || swapWithIdx >= result.length) return result;
-
-  const temp = result[targetIdx];
-  result[targetIdx] = result[swapWithIdx];
-  result[swapWithIdx] = temp;
-  return result;
-}
-
-/**
  * Reorders an aisle by dragging from one index to another in a full list.
  */
 export function reorderAisleByIndex(aisleOrder: string[], fromIndex: number, toIndex: number): string[] {

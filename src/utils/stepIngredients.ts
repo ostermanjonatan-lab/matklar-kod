@@ -177,9 +177,3 @@ export function findIngredientMentions(text: string, ingredients: Ingredient[]):
   return result;
 }
 
-/** The indexes of the ingredients mentioned in a step, in the order of the ingredient list. */
-export function findIngredientsInStep(text: string, ingredients: Ingredient[]): number[] {
-  const found = new Set<number>();
-  for (const m of findIngredientMentions(text, ingredients)) m.ingredients.forEach((i) => found.add(i));
-  return [...found].sort((a, b) => a - b);
-}

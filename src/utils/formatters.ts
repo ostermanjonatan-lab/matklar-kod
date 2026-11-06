@@ -350,46 +350,6 @@ export function formatIngredientName(rawName?: string | null, amount?: number | 
 }
 
 /**
- * Combine amount and unit into a single human string (e.g. 5, "dl" -> "5 dl", 2, "burk" -> "2 burkar")
- */
-export function formatIngredientAmount(amount: number | null | undefined, unit: string | undefined): string {
-  if (amount === null || amount === undefined || isNaN(amount)) {
-    return unit || '';
-  }
-  const formattedUnit = formatUnit(unit, amount);
-  return `${amount} ${formattedUnit}`.trim();
-}
-
-/**
- * Parse a combined amount & unit string (e.g. "5 dl", "400 g", "1/2 tsk", "2,5 msk") into { amount, unit }
- */
-export function parseIngredientAmount(raw: string): { amount: number | null; unit: string } {
-  const trimmed = (raw || '').trim();
-  if (!trimmed) return { amount: null, unit: '' };
-
-  // Fraction like "1/2 tsk"
-  const fractionMatch = trimmed.match(/^(\d+)\/(\d+)\s*(.*)$/);
-  if (fractionMatch) {
-    const val = parseFloat(fractionMatch[1]) / parseFloat(fractionMatch[2]);
-    return { amount: Math.round(val * 100) / 100, unit: fractionMatch[3].trim() };
-  }
-
-  // Number with optional unit: "5 dl", "500g", "2.5 msk", "2,5 msk"
-  const numMatch = trimmed.match(/^([\d\.,]+)\s*(.*)$/);
-  if (numMatch) {
-    const numStr = numMatch[1].replace(',', '.');
-    const num = parseFloat(numStr);
-    return {
-      amount: isNaN(num) ? null : num,
-      unit: numMatch[2].trim(),
-    };
-  }
-
-  // Non-numeric e.g. "lite", "efter smak", "en nypa"
-  return { amount: null, unit: trimmed };
-}
-
-/**
  * Cleans instruction step text by stripping leading numbers, bullets, dashes, checkboxes, and markdown artifacts.
  * E.g. "7. - [x] Toppa med persilja" -> "Toppa med persilja"
  *      "- Stek kycklingen" -> "Stek kycklingen"

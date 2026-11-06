@@ -84,7 +84,3 @@ export function formatDayMonth(iso: string): string {
   return `${d.getDate()} ${MONTHS_SHORT[d.getMonth()]}`;
 }
 
-/** Day of month, e.g. 9 */
-export function dayOfMonth(iso: string): number {
-  return parseISODate(iso).getDate();
-}

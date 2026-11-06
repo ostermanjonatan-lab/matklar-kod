@@ -135,51 +135,6 @@ export async function pushRecipeToSupabase(recipe: Recipe, householdId: string) 
 }
 
 /**
- * Batch pushes multiple recipes to Supabase
- */
-export async function pushRecipesToSupabase(recipes: Recipe[], householdId: string) {
-  const supabase = getSupabase();
-  if (!supabase || !recipes.length) return;
-
-  const rows = recipes.map((recipe) => {
-    const subcategoryStr =
-      Array.isArray(recipe.subcategories) && recipe.subcategories.length > 0
-        ? recipe.subcategories.join(', ')
-        : recipe.subcategory || '';
-
-    return {
-      id: recipe.id,
-      household_id: householdId,
-      title: recipe.title,
-      description: recipe.description || '',
-      cover_image_url: recipe.coverImageUrl || '',
-      recipe_document_url: recipe.recipeDocumentUrl || null,
-      source_url: recipe.sourceUrl || null,
-      source_type: recipe.sourceType || 'manual',
-      servings: recipe.servings || 4,
-      category: recipe.category || 'Middag',
-      subcategory: subcategoryStr,
-      rating: recipe.rating ?? 5,
-      is_favorite: Boolean(recipe.isFavorite),
-      notes: recipe.notes || '',
-      ingredients: recipe.ingredients || [],
-      instructions: recipe.instructions || [],
-      prep_time_minutes: 0,
-      cook_time_minutes: Number(recipe.cookTimeMinutes) > 0 ? Number(recipe.cookTimeMinutes) : (Number(recipe.prepTimeMinutes) || 30),
-      tags: withDifficultyTag(recipe.tags, recipe.difficulty),
-      created_at: recipe.createdAt || new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
-  });
-
-  try {
-    await supabase.from('recipes').upsert(rows);
-  } catch (err) {
-    console.warn('Failed to batch push recipes to Supabase:', err);
-  }
-}
-
-/**
  * Deletes a recipe from Supabase
  */
 export async function deleteRecipeFromSupabase(recipeId: string): Promise<boolean> {
