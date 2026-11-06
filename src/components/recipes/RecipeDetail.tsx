@@ -274,7 +274,7 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
     setCheckedIngredients((prev) => ({ ...prev, [index]: !prev[index] }));
   };
 
-  // Words in each step that name an ingredient with an amount. Tapping one shows the amount.
+  // Words in each step that name an ingredient with an amount. The amount is shown after the word.
   const stepMentions = useMemo(() => {
     const hasAmount = (idx: number) =>
       typeof recipe.ingredients[idx].amount === 'number' && recipe.ingredients[idx].amount! > 0;
@@ -286,15 +286,6 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
     }
     return result;
   }, [recipe.instructions, recipe.ingredients]);
-  const [openMentions, setOpenMentions] = useState<Set<string>>(() => new Set());
-  const toggleMention = (key: string) =>
-    setOpenMentions((prev) => {
-      const next = new Set(prev);
-      if (next.has(key)) next.delete(key);
-      else next.add(key);
-      return next;
-    });
-
   // "400 g", or "80 g pecorino romano · 50 g parmesan" when the word fits several ingredients
   const mentionAmount = (indexes: number[]) =>
     indexes
@@ -676,7 +667,13 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
                       }`}
                     >
                       {(() => {
-                        const mentions = isStepDone ? [] : stepMentions[inst.stepNumber] || [];
+                        // Each ingredient's amount is shown the first time it is named in the step
+                        const seen = new Set<number>();
+                        const mentions = (stepMentions[inst.stepNumber] || []).filter((m) => {
+                          const fresh = m.ingredients.filter((i) => !seen.has(i));
+                          fresh.forEach((i) => seen.add(i));
+                          return fresh.length > 0;
+                        });
                         let offset = 0;
                         return segments.map((seg, sIdx) => {
                           const segStart = offset;
@@ -688,33 +685,17 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
                               </span>
                             );
                           }
-                          // Plain text, with the ingredient words as buttons
+                          // Plain text, with the ingredients and their amounts marked out
                           const parts: React.ReactNode[] = [];
                           let pos = segStart;
                           for (const m of mentions) {
                             if (m.start < pos || m.end > offset) continue;
                             if (m.start > pos) parts.push(inst.text.slice(pos, m.start));
-                            const key = `${inst.stepNumber}-${m.start}`;
-                            const open = openMentions.has(key);
                             parts.push(
-                              <React.Fragment key={key}>
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    toggleMention(key);
-                                  }}
-                                  aria-expanded={open}
-                                  className={`inline p-0 m-0 bg-transparent touch-manipulation ${
-                                    open
-                                      ? 'font-bold text-[#284235]'
-                                      : 'text-inherit underline decoration-dotted decoration-stone-400 underline-offset-4'
-                                  }`}
-                                >
-                                  {inst.text.slice(m.start, m.end)}
-                                  {open && <span className="whitespace-nowrap"> ({mentionAmount(m.ingredients)})</span>}
-                                </button>
-                              </React.Fragment>
+                              <span key={`${inst.stepNumber}-${m.start}`} className={isStepDone ? '' : 'font-bold text-[#284235]'}>
+                                {inst.text.slice(m.start, m.end)}
+                                <span className="whitespace-nowrap"> ({mentionAmount(m.ingredients)})</span>
+                              </span>
                             );
                             pos = m.end;
                           }
