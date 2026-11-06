@@ -1,6 +1,6 @@
 ﻿import React, { useState, useMemo } from 'react';
 import { useRecipes } from '../../context/RecipeContext';
-import { Plus, Check, X, Tag, Trash2, Leaf } from 'lucide-react';
+import { Plus, X, Trash2, ChevronDown } from 'lucide-react';
 import type { RecipeCategory } from '../../types/recipe';
 import { getRecipeSubcategories, NON_FOOD_SUBCATEGORIES } from '../../types/recipe';
 import { DEFAULT_SUBCATEGORIES, DIETARY_SUBCATEGORIES } from '../../data/categories';
@@ -21,6 +21,11 @@ export const SubcategorySelector: React.FC<SubcategorySelectorProps> = ({
   const { recipes, customSubcategories, addCustomSubcategory, removeCustomSubcategory } = useRecipes();
   const [isAddingNew, setIsAddingNew] = useState<boolean>(false);
   const [customInput, setCustomInput] = useState<string>('');
+  // Suggestions are folded away once something is chosen, so the form stays short
+  const [showSuggestions, setShowSuggestions] = useState<boolean>(() => {
+    const initial = Array.isArray(values) ? values : typeof value === 'string' ? value.split(',') : [];
+    return initial.filter((v) => v.trim()).length === 0;
+  });
 
   // Normalize selected values
   const selectedValues: string[] = useMemo(() => {
@@ -144,19 +149,18 @@ export const SubcategorySelector: React.FC<SubcategorySelectorProps> = ({
     }
   };
 
-  return (
-    <div className="space-y-3 font-sans col-span-full">
-      {/* Header and Toggle Button */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-1.5">
-          <label className="font-bold text-stone-800 block text-xs">
-            Underkategorier
-          </label>
-          <span className="text-[11px] text-stone-500">
-            (t.ex. Pasta, Glutenfri)
-          </span>
-        </div>
+  const chip =
+    'px-3 min-h-[36px] rounded-xl text-xs font-semibold whitespace-nowrap flex items-center gap-1 touch-manipulation active:scale-95 transition-colors bg-white border border-[#EBE7DF] text-stone-700 hover:bg-[#FCFAF5]';
+  const groupHeading = 'text-xs text-stone-500';
+  const notSelected = (list: string[]) => list.filter((s) => !selectedValues.includes(s));
+  const dietary = notSelected(DIETARY_SUBCATEGORIES);
+  const suggested = notSelected(categoryDefaults);
+  const custom = notSelected(allCustomSubcategories);
 
+  return (
+    <div className="space-y-2 font-sans col-span-full">
+      <div className="flex items-center justify-between">
+        <span className="font-bold text-stone-800 text-xs">Underkategorier</span>
         {!isAddingNew && (
           <button
             type="button"
@@ -164,207 +168,147 @@ export const SubcategorySelector: React.FC<SubcategorySelectorProps> = ({
               setIsAddingNew(true);
               setCustomInput('');
             }}
-            className="inline-flex items-center gap-1 text-xs font-bold text-[#284235] bg-[#284235]/10 hover:bg-[#284235]/20 active:scale-95 px-2.5 py-1 rounded-xl transition-all touch-manipulation"
+            className="inline-flex items-center gap-1 text-xs font-semibold text-[#284235] min-h-[36px] px-1 touch-manipulation"
           >
-            <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
-            <span>Skapa egen</span>
+            <Plus className="w-3.5 h-3.5" />
+            Skapa egen
           </button>
         )}
       </div>
 
-      {/* Selected tags display (if any) */}
-      {selectedValues.length > 0 && (
-        <div className="flex flex-wrap items-center gap-1.5 bg-[#FCFAF5] border border-[#EBE7DF] rounded-2xl p-2.5 shadow-2xs">
-          <div className="text-[11px] font-semibold text-stone-500 mr-1 flex items-center gap-1">
-            <Tag className="w-3 h-3 text-[#284235]" />
-            <span>Valda:</span>
-          </div>
+      {/* Chosen ones, shown once */}
+      {selectedValues.length > 0 ? (
+        <div className="flex flex-wrap gap-1.5">
           {selectedValues.map((subcat) => (
             <span
               key={subcat}
-              className="inline-flex items-center gap-1 bg-[#284235] text-white text-xs font-semibold px-2.5 py-1 rounded-full shadow-xs animate-fade-in"
+              className="inline-flex items-center gap-1 bg-[#284235] text-white text-xs font-semibold pl-3 pr-1 min-h-[36px] rounded-xl"
             >
-              <span>{subcat}</span>
+              {subcat}
               <button
                 type="button"
                 onClick={(e) => handleRemoveSelected(subcat, e)}
-                className="w-3.5 h-3.5 rounded-full hover:bg-white/20 flex items-center justify-center transition-colors touch-manipulation"
+                className="w-7 h-7 rounded-lg hover:bg-white/15 flex items-center justify-center touch-manipulation"
                 aria-label={`Ta bort ${subcat}`}
               >
-                <X className="w-2.5 h-2.5 stroke-[2.5]" />
+                <X className="w-3.5 h-3.5" />
               </button>
             </span>
           ))}
         </div>
+      ) : (
+        <p className="text-xs text-stone-500">Inga valda</p>
       )}
 
-      {/* Custom subcategory creation input */}
+      {/* New custom subcategory */}
       {isAddingNew && (
-        <div className="bg-white border-2 border-[#284235] rounded-2xl p-2.5 shadow-sm space-y-2 animate-slide-down">
-          <div className="flex items-center justify-between text-xs font-bold text-stone-800 px-1">
-            <span>
-              Skapa ny underkategori
-            </span>
-            <span className="text-[10px] text-stone-400 font-normal">
-              Sparas och kan återanvändas
-            </span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <input
-              type="text"
-              value={customInput}
-              onChange={(e) => setCustomInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  handleSaveCustom();
-                } else if (e.key === 'Escape') {
-                  setIsAddingNew(false);
-                  setCustomInput('');
-                }
-              }}
-              placeholder="T.ex. Airfryer, Lättlagat, Surdeg..."
-              className="flex-1 h-9 bg-[#FCFAF5] border border-[#EBE7DF] rounded-xl px-3 text-xs text-stone-900 focus:outline-none focus:ring-1 focus:ring-[#284235]"
-            />
-
-            <button
-              type="button"
-              onClick={() => handleSaveCustom()}
-              disabled={!customInput.trim()}
-              className="h-9 px-3.5 bg-[#284235] hover:bg-stone-900 text-white font-bold text-xs rounded-xl active:scale-95 disabled:opacity-40 flex items-center justify-center gap-1 touch-manipulation shadow-xs shrink-0 transition-colors"
-            >
-              <Check className="w-3.5 h-3.5 stroke-[2.5]" />
-              <span>Lägg till</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
+        <div className="flex items-center gap-1.5 animate-fade-in">
+          <input
+            type="text"
+            value={customInput}
+            onChange={(e) => setCustomInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                handleSaveCustom();
+              } else if (e.key === 'Escape') {
                 setIsAddingNew(false);
                 setCustomInput('');
-              }}
-              className="w-9 h-9 flex items-center justify-center rounded-xl bg-stone-100 text-stone-500 hover:text-stone-800 touch-manipulation shrink-0"
-              aria-label="Avbryt"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
+              }
+            }}
+            placeholder="T.ex. Airfryer eller Surdeg"
+            aria-label="Ny underkategori"
+            className="flex-1 h-10 bg-[#FCFAF5] border border-[#EBE7DF] rounded-xl px-3 text-base sm:text-xs text-stone-900 focus:outline-none focus:ring-2 focus:ring-[#284235]"
+          />
+          <button
+            type="button"
+            onClick={() => handleSaveCustom()}
+            disabled={!customInput.trim()}
+            className="h-10 px-3.5 bg-[#284235] text-white font-semibold text-xs rounded-xl disabled:opacity-40 touch-manipulation shrink-0"
+          >
+            Lägg till
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setIsAddingNew(false);
+              setCustomInput('');
+            }}
+            className="w-10 h-10 flex items-center justify-center rounded-xl text-stone-500 hover:bg-stone-100 touch-manipulation shrink-0"
+            aria-label="Avbryt"
+          >
+            <X className="w-4 h-4" />
+          </button>
         </div>
       )}
 
-      {/* SECTION 1: Specialkost & Kosthållning (Glutenfri, Laktosfri etc.) */}
-      <div className="space-y-1.5 pt-1">
-        <div className="flex items-center justify-between text-[11px] font-bold text-emerald-800 uppercase tracking-wider">
-          <span className="inline-flex items-center gap-1.5">
-            <Leaf className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
-            Specialkost & Kosthållning
-          </span>
-        </div>
-        <div className="flex flex-wrap gap-1.5">
-          {DIETARY_SUBCATEGORIES.map((subcat) => {
-            const isSelected = selectedValues.includes(subcat);
-            return (
-              <button
-                key={subcat}
-                type="button"
-                onClick={() => toggleSubcategory(subcat)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all duration-150 touch-manipulation flex items-center gap-1 active:scale-95 ${
-                  isSelected
-                    ? 'bg-[#284235] text-white shadow-xs'
-                    : 'bg-emerald-50/70 border border-emerald-200 text-emerald-900 hover:bg-emerald-100/80 hover:border-emerald-300'
-                }`}
-              >
-                {isSelected ? (
-                  <Check className="w-3 h-3 stroke-[2.5]" />
-                ) : (
-                  <Plus className="w-3 h-3 text-emerald-600" />
-                )}
-                <span>{subcat}</span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
+      <button
+        type="button"
+        onClick={() => setShowSuggestions((v) => !v)}
+        aria-expanded={showSuggestions}
+        className="flex items-center gap-1 text-xs font-semibold text-[#284235] min-h-[36px] touch-manipulation"
+      >
+        {showSuggestions ? 'Dölj förslag' : 'Visa förslag'}
+        <ChevronDown className={`w-4 h-4 transition-transform ${showSuggestions ? 'rotate-180' : ''}`} />
+      </button>
 
-      {/* SECTION 2: Category Suggestions (e.g. Middag, Efterrätt etc.) */}
-      <div className="space-y-1.5 pt-1">
-        <div className="text-[11px] font-bold text-stone-600 uppercase tracking-wider">
-          <span>Förslag för {category}</span>
-        </div>
-        <div className="flex flex-wrap gap-1.5">
-          {categoryDefaults.map((subcat) => {
-            const isSelected = selectedValues.includes(subcat);
-            return (
-              <button
-                key={subcat}
-                type="button"
-                onClick={() => toggleSubcategory(subcat)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all duration-150 touch-manipulation flex items-center gap-1 active:scale-95 ${
-                  isSelected
-                    ? 'bg-[#284235] text-white shadow-xs'
-                    : 'bg-white border border-[#EBE7DF] text-stone-700 hover:bg-[#FCFAF5] hover:border-stone-400'
-                }`}
-              >
-                {isSelected ? (
-                  <Check className="w-3 h-3 stroke-[2.5]" />
-                ) : (
-                  <Plus className="w-3 h-3 text-stone-400" />
-                )}
-                <span>{subcat}</span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* SECTION 3: Egna underkategorier (Custom Subcategories) */}
-      {allCustomSubcategories.length > 0 && (
-        <div className="space-y-1.5 pt-1">
-          <div className="flex items-center justify-between text-[11px] font-bold text-stone-600 uppercase tracking-wider">
-            <span>
-              Egna underkategorier
-            </span>
-          </div>
-          <div className="flex flex-wrap gap-1.5">
-            {allCustomSubcategories.map((subcat) => {
-              const isSelected = selectedValues.includes(subcat);
-              return (
-                <div
-                  key={subcat}
-                  className={`inline-flex items-center rounded-xl text-xs font-semibold whitespace-nowrap transition-all duration-150 shadow-2xs ${
-                    isSelected
-                      ? 'bg-[#284235] text-white shadow-xs'
-                      : 'bg-amber-50/70 border border-amber-200 text-stone-800 hover:bg-amber-100/70'
-                  }`}
-                >
-                  <button
-                    type="button"
-                    onClick={() => toggleSubcategory(subcat)}
-                    className="px-2.5 py-1.5 flex items-center gap-1 touch-manipulation active:scale-95"
-                  >
-                    {isSelected ? (
-                      <Check className="w-3 h-3 stroke-[2.5]" />
-                    ) : (
-                      <Plus className="w-3 h-3 text-amber-600" />
-                    )}
-                    <span>{subcat}</span>
+      {showSuggestions && (
+        <div className="space-y-3 animate-fade-in">
+          {suggested.length > 0 && (
+            <div className="space-y-1.5">
+              <div className={groupHeading}>Förslag för {category.toLowerCase()}</div>
+              <div className="flex flex-wrap gap-1.5">
+                {suggested.map((subcat) => (
+                  <button key={subcat} type="button" onClick={() => toggleSubcategory(subcat)} className={chip}>
+                    <Plus className="w-3 h-3 text-stone-400" />
+                    {subcat}
                   </button>
+                ))}
+              </div>
+            </div>
+          )}
 
-                  <button
-                    type="button"
-                    onClick={(e) => handleDeleteCustomSubcategory(subcat, e)}
-                    title={`Radera egen underkategori "${subcat}"`}
-                    aria-label={`Radera ${subcat}`}
-                    className={`pr-2 py-1.5 opacity-60 hover:opacity-100 transition-opacity touch-manipulation ${
-                      isSelected ? 'text-white hover:text-red-200' : 'text-stone-400 hover:text-red-600'
-                    }`}
-                  >
-                    <Trash2 className="w-3 h-3" />
+          {dietary.length > 0 && (
+            <div className="space-y-1.5">
+              <div className={groupHeading}>Specialkost</div>
+              <div className="flex flex-wrap gap-1.5">
+                {dietary.map((subcat) => (
+                  <button key={subcat} type="button" onClick={() => toggleSubcategory(subcat)} className={chip}>
+                    <Plus className="w-3 h-3 text-stone-400" />
+                    {subcat}
                   </button>
-                </div>
-              );
-            })}
-          </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {custom.length > 0 && (
+            <div className="space-y-1.5">
+              <div className={groupHeading}>Egna</div>
+              <div className="flex flex-wrap gap-1.5">
+                {custom.map((subcat) => (
+                  <span key={subcat} className="inline-flex items-center rounded-xl bg-white border border-[#EBE7DF] text-xs font-semibold text-stone-700">
+                    <button
+                      type="button"
+                      onClick={() => toggleSubcategory(subcat)}
+                      className="pl-3 pr-1 min-h-[36px] flex items-center gap-1 touch-manipulation"
+                    >
+                      <Plus className="w-3 h-3 text-stone-400" />
+                      {subcat}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => handleDeleteCustomSubcategory(subcat, e)}
+                      aria-label={`Radera ${subcat}`}
+                      className="w-8 min-h-[36px] flex items-center justify-center text-stone-400 hover:text-rose-700 touch-manipulation"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

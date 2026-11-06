@@ -434,11 +434,13 @@ export function formatIngredientToLine(ing: { name: string; amount?: number | nu
   const name = formatIngredientName(rawName, amount, unit) || rawName;
 
   if (amount !== null && amount !== undefined && !isNaN(amount)) {
+    // Decimal comma, as everywhere else in the app (1,5 msk)
+    const amountText = String(amount).replace('.', ',');
     if (unit) {
       const formattedUnit = formatUnit(unit, amount);
-      return `${amount} ${formattedUnit} ${name}`.trim();
+      return `${amountText} ${formattedUnit} ${name}`.trim();
     }
-    return `${amount} ${name}`.trim();
+    return `${amountText} ${name}`.trim();
   }
 
   if (unit && unit.toLowerCase() === 'efter smak') {

@@ -171,7 +171,19 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
   };
 
   // Synchronize modals and sheets with Android back button
-  useModalBackHandler(isEditingRecipe, () => setIsEditingRecipe(false), 'edit-recipe');
+  // The edit view asks before unsaved changes are lost. When it stays open on the phone's back
+  // button, the back step is set up again (new id) so the next back press is caught too.
+  const editCloseGuardRef = useRef<(() => boolean) | null>(null);
+  const [editBackRound, setEditBackRound] = useState<number>(0);
+  useModalBackHandler(
+    isEditingRecipe,
+    () => {
+      const staysOpen = editCloseGuardRef.current?.() ?? false;
+      if (staysOpen) setEditBackRound((n) => n + 1);
+      else setIsEditingRecipe(false);
+    },
+    `edit-recipe-${editBackRound}`
+  );
   useModalBackHandler(showMealPlanPicker, () => setShowMealPlanPicker(false), 'meal-plan-picker');
   useModalBackHandler(showDeleteConfirm, () => setShowDeleteConfirm(false), 'delete-confirm');
   useModalBackHandler(showPantryChoice, () => setShowPantryChoice(false), 'pantry-choice');
@@ -394,6 +406,7 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
         {/* Full Recipe Editing Modal */}
         {isEditingRecipe && (
           <EditRecipeModal
+            closeGuardRef={editCloseGuardRef}
             recipe={recipe}
             onClose={() => setIsEditingRecipe(false)}
             onDeleted={onBack}
