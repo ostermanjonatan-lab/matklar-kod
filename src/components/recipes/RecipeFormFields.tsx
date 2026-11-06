@@ -1,4 +1,5 @@
 import React, { useLayoutEffect, useRef, useState } from 'react';
+import { categoryLabel } from '../../data/categories';
 import type { RecipeCategory, RecipeDifficulty } from '../../types/recipe';
 import { Camera, ImagePlus, Loader2, Trash2 } from 'lucide-react';
 import { DifficultyPicker } from './DifficultyPicker';
@@ -184,7 +185,7 @@ export const RecipeFormFields: React.FC<RecipeFormFieldsProps> = ({
                     category === cat ? 'bg-[#284235] text-white' : 'bg-white border border-[#EBE7DF] text-stone-700 hover:bg-[#FCFAF5]'
                   }`}
                 >
-                  {cat}
+                  {categoryLabel(cat)}
                 </button>
               ))}
             </div>

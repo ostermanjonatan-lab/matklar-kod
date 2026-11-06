@@ -105,3 +105,12 @@ export function getAllStandardSubcategories(): string[] {
   return Array.from(set).sort((a, b) => a.localeCompare(b, 'sv', { sensitivity: 'base' }));
 }
 
+
+/**
+ * The name shown for a category. "Middag" is kept as the stored value (in saved recipes and
+ * Supabase), but is shown as "Varmrätt", since those dishes are eaten for lunch too.
+ */
+export function categoryLabel(category: string | null | undefined): string {
+  if (!category) return '';
+  return category === 'Middag' ? 'Varmrätt' : category;
+}

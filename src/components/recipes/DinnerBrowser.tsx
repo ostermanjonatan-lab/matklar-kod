@@ -181,7 +181,7 @@ export const DinnerBrowser: React.FC<DinnerBrowserProps> = ({ recipes, mealLabel
                 ? `Inga recept i Middag matchar "${query}".`
                 : difficultyFilter.length > 0
                 ? 'Inga middagar med den svårighetsgraden.'
-                : 'Det finns inga recept i kategorin Middag.'}
+                : 'Det finns inga recept i kategorin Varmrätt.'}
             </p>
           ) : (
             recipeList.map((recipe) => (

@@ -1,4 +1,5 @@
 ﻿import React, { useState, useMemo } from 'react';
+import { categoryLabel } from '../../data/categories';
 import type { Recipe, RecipeDifficulty } from '../../types/recipe';
 import { DifficultyFilter } from './DifficultyPicker';
 import { MaxTimeInput } from './MaxTimeInput';
@@ -240,7 +241,7 @@ export const RecipeFilterModal: React.FC<RecipeFilterModalProps> = ({
                         : 'bg-[#FCFAF5] border border-stone-200 text-stone-700 hover:bg-stone-100'
                     }`}
                   >
-                    {cat}
+                    {categoryLabel(cat)}
                   </button>
                 );
               })}

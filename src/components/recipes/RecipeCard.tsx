@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { categoryLabel } from '../../data/categories';
 import { DifficultyDots } from './DifficultyPicker';
 import { DIFFICULTY_LABELS } from '../../utils/recipeDifficulty';
 import type { Recipe } from '../../types/recipe';
@@ -137,7 +138,7 @@ export const RecipeCard = React.memo<RecipeCardProps>(
         >
           {/* Main Category */}
           <span className="bg-white/95 text-stone-900 text-[11px] font-bold px-2.5 py-1 rounded-full shadow-xs shrink-0 pointer-events-auto">
-            {recipe.category}
+            {categoryLabel(recipe.category)}
           </span>
 
           {/* Optional Source Badge (Foto/PDF) */}

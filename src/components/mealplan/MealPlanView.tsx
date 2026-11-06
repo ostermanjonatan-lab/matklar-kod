@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
+import { categoryLabel } from '../../data/categories';
 import { Toast } from '../layout/Toast';
 import { ConfirmSheet } from '../layout/ConfirmSheet';
 import { flushSync } from 'react-dom';
@@ -663,7 +664,7 @@ export const MealPlanView: React.FC = () => {
                         </span>
                         {dinnerRecipe.category && dinnerRecipe.category !== 'Middag' && (
                           <span className="bg-black/60 backdrop-blur-md text-white text-[11px] font-semibold px-2.5 py-1 rounded-full border border-white/20 shadow-xs">
-                            {dinnerRecipe.category}
+                            {categoryLabel(dinnerRecipe.category)}
                           </span>
                         )}
                       </div>
@@ -968,7 +969,7 @@ export const MealPlanView: React.FC = () => {
                         {formatRecipeTitle(lunchRecipe.title)}
                       </h4>
                       <p className="text-[11px] text-stone-500">
-                        {lunchRecipe.category}
+                        {categoryLabel(lunchRecipe.category)}
                       </p>
                     </div>
                   </div>

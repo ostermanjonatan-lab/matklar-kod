@@ -1,4 +1,5 @@
 import { formatRecipeTitle } from '../../utils/formatters';
+import { categoryLabel } from '../../data/categories';
 import React, { useState, useMemo, useDeferredValue, useCallback, useRef, useEffect } from 'react';
 import { Toast } from '../layout/Toast';
 import { useRecipes } from '../../context/RecipeContext';
@@ -255,8 +256,9 @@ export const RecipeList: React.FC = () => {
         );
         const matchesTag = recipe.tags?.some((t) => t.toLowerCase().includes(q));
         const matchesSubcat = recipeSubcats.some((s) => s.toLowerCase().includes(q));
+        const matchesCategory = categoryLabel(recipe.category).toLowerCase().includes(q);
 
-        if (!matchesTitle && !matchesDesc && !matchesIngredient && !matchesTag && !matchesSubcat) {
+        if (!matchesTitle && !matchesDesc && !matchesIngredient && !matchesTag && !matchesSubcat && !matchesCategory) {
           return false;
         }
       }
@@ -598,7 +600,7 @@ export const RecipeList: React.FC = () => {
                         : 'bg-white border border-[#EBE7DF] text-stone-700 hover:bg-stone-50'
                     }`}
                   >
-                    {cat}
+                    {categoryLabel(cat)}
                   </button>
                   {catIdx === 0 && (
                     <button

@@ -1,4 +1,5 @@
 ﻿import React, { useState, useEffect, useMemo } from 'react';
+import { categoryLabel } from '../../data/categories';
 import type { Recipe } from '../../types/recipe';
 import { getRecipeSubcategories } from '../../types/recipe';
 import { STANDARD_CATEGORIES } from '../../data/categories';
@@ -262,7 +263,7 @@ export const ChooseMealModal: React.FC<ChooseMealModalProps> = ({
                 {step === 1 ? 'Steg 1 av 2' : 'Steg 2 av 2'}
               </span>
               <h2 className="font-serif text-lg font-bold text-stone-900 leading-tight">
-                {step === 1 ? 'Välj måltid' : selectedMainCategory}
+                {step === 1 ? 'Välj måltid' : categoryLabel(selectedMainCategory)}
               </h2>
             </div>
           </div>
@@ -291,7 +292,7 @@ export const ChooseMealModal: React.FC<ChooseMealModalProps> = ({
                   {mainCategoriesData.map((cat) => (
                     <SlideshowButton
                       key={cat.name}
-                      title={cat.name}
+                      title={categoryLabel(cat.name)}
                       subtitle={cat.subtitle}
                       badgeText={`${cat.count} recept`}
                       images={cat.images}

@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { categoryLabel } from '../../data/categories';
 import { DifficultyDots } from './DifficultyPicker';
 import { DIFFICULTY_LABELS } from '../../utils/recipeDifficulty';
 import type { Recipe, RecipeDifficulty } from '../../types/recipe';
@@ -64,7 +65,7 @@ function matchesCookingTime(recipe: Recipe, maxTime: number | null): boolean {
 const CATEGORY_OPTIONS: CategoryOption[] = [
   {
     id: 'Middag',
-    title: 'Middag',
+    title: 'Varmrätt',
     subtitle: 'Pasta, ris, kött, fisk & vegetariskt',
     icon: <UtensilsCrossed className="w-5 h-5 text-[#284235]" />,
   },
@@ -453,7 +454,7 @@ export const RandomPickerModal: React.FC<RandomPickerModalProps> = ({
             {pool.length === 0 ? (
               <div className="text-center py-8 space-y-3">
                 <p className="text-sm font-semibold text-stone-800">
-                  Inga recept i {selectedCategory === 'Alla' ? 'urvalet' : `kategorin ${selectedCategory.toLowerCase()}`}
+                  Inga recept i {selectedCategory === 'Alla' ? 'urvalet' : `kategorin ${categoryLabel(selectedCategory).toLowerCase()}`}
                   {maxCookingTime ? ` på högst ${maxCookingTime} minuter` : ''}
                   {difficultyFilter.length > 0 ? ' med den svårighetsgraden' : ''}.
                 </p>
@@ -517,7 +518,7 @@ export const RandomPickerModal: React.FC<RandomPickerModalProps> = ({
                       <div className="absolute inset-0 bg-gradient-to-t from-stone-950/80 via-transparent to-transparent" />
                       <div className="absolute bottom-3 left-3 right-3 text-white">
                         <span className="bg-white/95 text-stone-900 text-[10px] font-bold px-2.5 py-0.5 rounded-full mb-1 inline-block">
-                          {displayedRecipe.category}
+                          {categoryLabel(displayedRecipe.category)}
                         </span>
                         <h4 className="font-serif font-bold text-lg sm:text-xl leading-snug drop-shadow-md">
                           {formatRecipeTitle(displayedRecipe.title)}
