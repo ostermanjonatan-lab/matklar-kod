@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Toast } from '../layout/Toast';
 import {
   X,
   Database,
@@ -153,12 +154,7 @@ alter publication supabase_realtime add table shopping_items;
         </div>
 
         {/* Status Toast */}
-        {savedToast && (
-          <div className="bg-stone-900 text-white px-4 py-3 text-xs font-semibold flex items-center gap-2 animate-fade-in border-b border-stone-800">
-            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-            <span>Inställningar sparade. Laddar om...</span>
-          </div>
-        )}
+        {savedToast && <Toast message="Inställningarna är sparade. Appen laddas om." />}
 
         {/* Body */}
         <div className="p-5 space-y-4 overflow-y-auto flex-1 text-xs">

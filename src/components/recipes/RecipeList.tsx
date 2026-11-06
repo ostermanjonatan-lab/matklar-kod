@@ -1,4 +1,6 @@
+import { formatRecipeTitle } from '../../utils/formatters';
 import React, { useState, useMemo, useDeferredValue, useCallback, useRef, useEffect } from 'react';
+import { Toast } from '../layout/Toast';
 import { useRecipes } from '../../context/RecipeContext';
 import type { Recipe, RecipeDifficulty } from '../../types/recipe';
 import { matchesDifficulty } from './DifficultyPicker';
@@ -15,7 +17,6 @@ import {
   Heart,
   ArrowUpDown,
   Check,
-  ShoppingCart,
 } from 'lucide-react';
 
 
@@ -110,7 +111,7 @@ export const RecipeList: React.FC = () => {
   const [shareToastRecipe, setShareToastRecipe] = useState<string | null>(null);
 
   const handleShareRecipe = useCallback((recipe: Recipe) => {
-    setShareToastRecipe(recipe.title);
+    setShareToastRecipe(formatRecipeTitle(recipe.title));
     setTimeout(() => setShareToastRecipe(null), 3000);
   }, []);
 
@@ -147,7 +148,7 @@ export const RecipeList: React.FC = () => {
       }
 
       setShoppingToast({
-        title: recipe.title,
+        title: formatRecipeTitle(recipe.title),
         count,
         undoSnapshot: snapshot,
       });
@@ -412,14 +413,7 @@ export const RecipeList: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#FCFAF5] pb-28 w-full max-w-full overflow-x-hidden">
       {/* Toast Notification when sharing a recipe from card */}
-      {shareToastRecipe && (
-        <div className="fixed top-16 left-4 right-4 z-50 max-w-md mx-auto bg-stone-900 text-white px-4 py-3 rounded-2xl shadow-xl flex items-center justify-between animate-slide-down text-xs font-semibold">
-          <div className="flex items-center gap-2 min-w-0">
-            <Check className="w-4 h-4 text-emerald-400 shrink-0" />
-            <span className="truncate">{shareToastRecipe} är kopierat som text</span>
-          </div>
-        </div>
-      )}
+      {shareToastRecipe && <Toast message={`${shareToastRecipe} är kopierat som text`} />}
 
       {/* Ask whether pantry staples should be included */}
       {recipeForPantryChoice && (
@@ -435,45 +429,23 @@ export const RecipeList: React.FC = () => {
 
       {/* Toast Notification when adding recipe to shopping list with Undo button */}
       {shoppingToast && (
-        <div className="fixed top-16 left-4 right-4 z-50 max-w-md mx-auto bg-stone-900 text-white px-4 py-3 rounded-2xl shadow-2xl flex items-center justify-between animate-slide-down text-xs font-semibold gap-2 border border-white/10">
-          <div className="flex items-center gap-2 min-w-0 flex-1">
-            <ShoppingCart className="w-4 h-4 text-emerald-400 shrink-0" />
-            <span className="truncate">
-              "{shoppingToast.title}" lades till ({shoppingToast.count} {shoppingToast.count === 1 ? 'vara' : 'varor'})
-            </span>
-          </div>
-          <div className="flex items-center gap-1.5 shrink-0">
-            <button
-              type="button"
-              onClick={handleUndoAddToShoppingList}
-              className="px-2.5 py-1.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 active:scale-95 text-xs font-bold rounded-xl touch-manipulation transition-all cursor-pointer"
-              title="Ångra och ta bort från inköpslistan"
-            >
-              Ångra
-            </button>
-            <button
-              type="button"
-              onClick={() => {
+        <Toast
+          message={`${shoppingToast.title}: ${shoppingToast.count} ${shoppingToast.count === 1 ? 'vara' : 'varor'} i inköpslistan`}
+          actions={[
+            { label: 'Ångra', onClick: handleUndoAddToShoppingList },
+            {
+              label: 'Visa',
+              onClick: () => {
                 setShoppingToast(null);
                 setActiveTab('shopping');
-              }}
-              className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white text-xs font-bold rounded-xl shrink-0 touch-manipulation transition-all shadow-xs cursor-pointer"
-            >
-              Visa lista
-            </button>
-          </div>
-        </div>
+              },
+            },
+          ]}
+        />
       )}
 
       {/* Undo confirmation toast */}
-      {undoToastMessage && (
-        <div className="fixed top-16 left-4 right-4 z-50 max-w-md mx-auto bg-stone-900 text-white px-4 py-3 rounded-2xl shadow-2xl flex items-center justify-between animate-slide-down text-xs font-semibold border border-white/10">
-          <div className="flex items-center gap-2 min-w-0">
-            <Check className="w-4 h-4 text-amber-400 shrink-0" />
-            <span className="truncate">{undoToastMessage}</span>
-          </div>
-        </div>
-      )}
+      {undoToastMessage && <Toast message={undoToastMessage} />}
       {/* Recept Filter Modal */}
       {showFilterModal && (
         <RecipeFilterModal

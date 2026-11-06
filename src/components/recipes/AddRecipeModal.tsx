@@ -1,4 +1,5 @@
 ﻿import React, { useState, useMemo } from 'react';
+import { Toast } from '../layout/Toast';
 import { isRecipeLink, readRecipeLink } from '../../utils/recipeLink';
 import type { Recipe, Instruction, Ingredient, RecipeCategory, RecipeSourceType, RecipeDifficulty } from '../../types/recipe';
 import { useRecipes } from '../../context/RecipeContext';
@@ -9,7 +10,6 @@ import {
   Globe,
   Upload,
   ScanText,
-  CheckCircle2,
   Loader2,
   FileText,
   PenLine,
@@ -490,12 +490,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = ({ onClose, closeGu
         </div>
 
         {/* Toast / Notification */}
-        {toastMessage && (
-          <div className="bg-emerald-900 text-white px-4 py-3 text-xs font-semibold flex items-center gap-2 animate-fade-in border-b border-emerald-800 shrink-0">
-            <CheckCircle2 className="w-4 h-4 text-emerald-300 shrink-0" />
-            <span>{toastMessage}</span>
-          </div>
-        )}
+        {toastMessage && <Toast message={toastMessage} />}
 
         {/* Link, paste and photo: each fills the space; the form is shown once something is filled in */}
         {activeImportMode !== 'manual' && (

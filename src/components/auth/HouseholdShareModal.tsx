@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Toast } from '../layout/Toast';
 import { useRecipes } from '../../context/RecipeContext';
 import { X, Copy, Check, Plus, Pencil, Trash2, ChevronRight } from 'lucide-react';
 
@@ -225,12 +226,7 @@ export const HouseholdShareModal: React.FC<HouseholdShareModalProps> = ({ onClos
         </div>
 
         {/* Toast */}
-        {toastMessage && (
-          <div className="bg-stone-900 text-white px-5 py-2.5 text-sm flex items-center gap-2 animate-fade-in">
-            <Check className="w-4 h-4 text-emerald-400 shrink-0" />
-            <span>{toastMessage}</span>
-          </div>
-        )}
+        {toastMessage && <Toast message={toastMessage} />}
 
         <div className="px-5 pb-6 overflow-y-auto flex-1 text-sm">
           {/* Join requests (admin) */}

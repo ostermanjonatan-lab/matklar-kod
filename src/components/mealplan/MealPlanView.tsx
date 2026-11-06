@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
+import { Toast } from '../layout/Toast';
 import { ConfirmSheet } from '../layout/ConfirmSheet';
 import { flushSync } from 'react-dom';
 import type { MealPlanDay } from '../../types/recipe';
@@ -10,7 +11,6 @@ import {
   ShoppingCart,
   Dices,
   Minus,
-  CheckCircle2,
   ArrowRight,
   Clock,
   ChevronLeft,
@@ -353,12 +353,7 @@ export const MealPlanView: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#FCFAF5] pb-28 w-full max-w-full overflow-x-hidden font-sans">
       {/* Toast Notification */}
-      {generatedToast && (
-        <div className="fixed top-16 left-4 right-4 z-50 max-w-md mx-auto bg-stone-900 text-white px-4 py-3 rounded-2xl shadow-2xl flex items-center gap-2.5 animate-slide-down text-xs font-semibold border border-white/10">
-          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-          <span className="truncate">{generatedToast}</span>
-        </div>
-      )}
+      {generatedToast && <Toast message={generatedToast} />}
 
       {/* HEADER & THUMBNAIL STRIP (Sticky top-0 on mobile, static on desktop) */}
       <div className="sticky top-0 md:static z-20 md:z-auto bg-[#FCFAF5]/95 backdrop-blur-md border-b border-[#EBE7DF] px-3.5 md:px-6 pt-3 pb-3 shadow-xs">

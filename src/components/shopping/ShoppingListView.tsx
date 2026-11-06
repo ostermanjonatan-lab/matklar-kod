@@ -1,4 +1,5 @@
 ﻿import React, { useState, useMemo, useRef } from 'react';
+import { Toast } from '../layout/Toast';
 import { ParsedItemPreview } from './ParsedItemPreview';
 import { ConfirmSheet } from '../layout/ConfirmSheet';
 import type { ShoppingItem } from '../../types/recipe';
@@ -438,14 +439,7 @@ export const ShoppingListView: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#FCFAF5] pb-32 md:pb-16 w-full max-w-full overflow-x-hidden font-sans">
       {/* Toast Notification */}
-      {copyToast && (
-        <div className="fixed top-16 left-4 right-4 z-40 max-w-md mx-auto bg-stone-900 text-white px-4 py-3.5 rounded-2xl shadow-xl flex items-center justify-between animate-slide-down text-xs font-semibold">
-          <div className="flex items-center gap-2">
-            <Check className="w-4 h-4 text-emerald-400 shrink-0" />
-            <span>Inköpslistan har kopierats till urklipp</span>
-          </div>
-        </div>
-      )}
+      {copyToast && <Toast message="Inköpslistan är kopierad" />}
 
       {/* Header (Sticky top-0 on mobile, static below DesktopNav on desktop) */}
       <div className="relative sticky top-0 md:static z-20 md:z-auto bg-[#FCFAF5]/95 backdrop-blur-md border-b border-[#EBE7DF] px-4 md:px-6 py-2.5 md:py-0 shadow-xs w-full">

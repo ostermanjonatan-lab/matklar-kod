@@ -1,4 +1,5 @@
 ﻿import React, { useState, useMemo, useRef } from 'react';
+import { Toast } from '../layout/Toast';
 import { ParsedItemPreview } from './ParsedItemPreview';
 import { ConfirmSheet } from '../layout/ConfirmSheet';
 import { useRecipes } from '../../context/RecipeContext';
@@ -262,21 +263,14 @@ export const AlltidHemmaView: React.FC<AlltidHemmaViewProps> = ({ onNavigateToSh
     <div className="w-full space-y-4">
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed top-16 left-4 right-4 z-50 max-w-md mx-auto bg-stone-900 text-white px-4 py-3.5 rounded-2xl shadow-xl flex items-center justify-between animate-slide-down text-xs font-semibold">
-          <div className="flex items-center gap-2">
-            <Check className="w-4 h-4 text-emerald-400 shrink-0" />
-            <span>{toastMessage}</span>
-          </div>
-          {onNavigateToShoppingList && toastMessage.includes('inköpslistan') && (
-            <button
-              type="button"
-              onClick={onNavigateToShoppingList}
-              className="underline text-emerald-300 hover:text-white shrink-0 ml-2 text-xs"
-            >
-              Visa inköpslista
-            </button>
-          )}
-        </div>
+        <Toast
+          message={toastMessage}
+          actions={
+            onNavigateToShoppingList && toastMessage.includes('inköpslistan')
+              ? [{ label: 'Visa listan', onClick: onNavigateToShoppingList }]
+              : undefined
+          }
+        />
       )}
 
       {/* Add Item Button or Form */}

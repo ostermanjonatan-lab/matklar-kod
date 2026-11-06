@@ -1,4 +1,5 @@
 ﻿import React, { useEffect, useRef, useState } from 'react';
+import { Toast } from '../layout/Toast';
 import { useRecipes } from '../../context/RecipeContext';
 import { Check, X, Bell } from 'lucide-react';
 
@@ -80,12 +81,7 @@ export const JoinRequestNotification: React.FC = () => {
 
   return (
     <div className="w-full px-4 pt-3 pb-1 transition-all z-30 animate-slide-down">
-      {toastMessage && (
-        <div className="fixed top-4 left-4 right-4 z-50 max-w-md mx-auto bg-stone-900 text-white px-4 py-3 rounded-2xl shadow-xl flex items-center gap-2 text-xs font-semibold animate-fade-in">
-          <Check className="w-4 h-4 text-emerald-400 shrink-0" />
-          <span>{toastMessage}</span>
-        </div>
-      )}
+      {toastMessage && <Toast message={toastMessage} />}
 
       <div className="w-full max-w-md md:max-w-3xl lg:max-w-4xl mx-auto space-y-2.5">
         {joinRequests.map((req) => (

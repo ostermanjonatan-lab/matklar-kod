@@ -1,4 +1,5 @@
 ﻿import React, { useState } from 'react';
+import { Toast } from '../layout/Toast';
 import { useRecipes } from '../../context/RecipeContext';
 import { HouseholdShareModal } from '../auth/HouseholdShareModal';
 import { HouseholdOnboarding } from '../auth/HouseholdOnboarding';
@@ -169,12 +170,7 @@ export const SettingsView: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#FCFAF5] pb-32 md:pb-16 w-full max-w-full overflow-x-hidden font-sans">
       {/* Toast Notification */}
-      {toastMessage && (
-        <div className="fixed top-16 left-4 right-4 z-40 max-w-md mx-auto bg-stone-900 text-white px-4 py-3 rounded-2xl shadow-xl flex items-center gap-2 animate-slide-down text-xs font-semibold">
-          <Check className="w-4 h-4 text-emerald-400 shrink-0" />
-          <span>{toastMessage}</span>
-        </div>
-      )}
+      {toastMessage && <Toast message={toastMessage} />}
 
       {showShareModal && <HouseholdShareModal onClose={() => setShowShareModal(false)} />}
       {showHouseholdModal && (

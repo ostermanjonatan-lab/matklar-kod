@@ -1,4 +1,5 @@
 ﻿import React, { useState, useMemo, useRef, useEffect } from 'react';
+import { Toast } from '../layout/Toast';
 import type { Recipe, Instruction, Ingredient, RecipeCategory, RecipeDifficulty } from '../../types/recipe';
 import { getRecipeSubcategories } from '../../types/recipe';
 import { useRecipes } from '../../context/RecipeContext';
@@ -181,12 +182,7 @@ export const EditRecipeModal: React.FC<EditRecipeModalProps> = ({
           </button>
         </div>
 
-        {toastMessage && (
-          <div className="bg-stone-900 text-white px-5 py-2.5 text-sm flex items-center gap-2 animate-fade-in shrink-0">
-            <Check className="w-4 h-4 text-emerald-400 shrink-0" />
-            <span>{toastMessage}</span>
-          </div>
-        )}
+        {toastMessage && <Toast message={toastMessage} />}
 
         {/* Form */}
         <form id="edit-recipe-form" onSubmit={handleSubmit} className="px-5 pt-4 pb-6 space-y-5 overflow-y-auto overflow-x-hidden flex-1 text-xs min-w-0">

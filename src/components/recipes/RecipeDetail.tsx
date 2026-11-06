@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { Toast } from '../layout/Toast';
 import { ConfirmSheet } from '../layout/ConfirmSheet';
 import { DifficultyDots } from './DifficultyPicker';
 import { DIFFICULTY_LABELS } from '../../utils/recipeDifficulty';
@@ -436,42 +437,26 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
         </div>
 
         {/* WakeLock Toast Notification */}
-        {wakeLockToast && (
-          <div className="bg-stone-900 text-white px-4 py-2.5 text-xs font-semibold flex items-center justify-between animate-fade-in shrink-0 border-b border-stone-800">
-            <div className="flex items-center gap-2">
-              <Sun className="w-4 h-4 text-amber-400 shrink-0" />
-              <span>{wakeLockToast}</span>
-            </div>
-          </div>
-        )}
+        {wakeLockToast && <Toast message={wakeLockToast} />}
 
         {/* Share Toast Notification */}
-        {shareToast && (
-          <div className="bg-stone-900 text-white px-4 py-2.5 text-xs font-semibold flex items-center gap-2 animate-fade-in shrink-0 border-b border-stone-800">
-            <Check className="w-4 h-4 text-emerald-400 shrink-0" />
-            <span>{shareToast}</span>
-          </div>
-        )}
+        {shareToast && <Toast message={shareToast} />}
 
         {/* Shopping Toast Notification */}
         {shoppingToast && (
-          <div className="bg-emerald-950 text-white px-4 py-2.5 text-xs font-semibold flex items-center justify-between animate-fade-in shrink-0 border-b border-emerald-900 gap-2">
-            <div className="flex items-center gap-2 min-w-0">
-              <Check className="w-4 h-4 text-emerald-400 shrink-0" />
-              <span className="truncate">{shoppingToast}</span>
-            </div>
-            <button
-              type="button"
-              onClick={() => {
-                setShoppingToast(null);
-                onBack();
-                setActiveTab('shopping');
-              }}
-              className="text-xs font-bold underline bg-white/20 hover:bg-white/30 px-2.5 py-1 rounded-lg touch-manipulation shrink-0"
-            >
-              Visa inköp
-            </button>
-          </div>
+          <Toast
+            message={shoppingToast}
+            actions={[
+              {
+                label: 'Visa listan',
+                onClick: () => {
+                  setShoppingToast(null);
+                  onBack();
+                  setActiveTab('shopping');
+                },
+              },
+            ]}
+          />
         )}
 
         {/* Scrollable Single-Column Body */}
@@ -781,12 +766,7 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
             </div>
           )}
 
-          {showNotesSavedToast && (
-            <div className="text-[11px] font-semibold text-emerald-800 flex items-center gap-1 animate-fade-in">
-              <Check className="w-3.5 h-3.5" />
-              Sparad för hela hushållet
-            </div>
-          )}
+          {showNotesSavedToast && <Toast message="Anteckningen är sparad för hela hushållet" />}
         </div>
 
         {/* Quick Add to Meal Plan & Edit Recipe Footer Actions */}
