@@ -99,7 +99,7 @@ const SlideshowButton: React.FC<SlideshowButtonProps> = ({
         </div>
 
         <div>
-          <h4 className="font-serif text-lg font-bold text-white leading-tight">
+          <h4 className="font-serif text-base min-[360px]:text-lg font-bold text-white leading-tight hyphens-auto break-words">
             {title}
           </h4>
           {subtitle && (

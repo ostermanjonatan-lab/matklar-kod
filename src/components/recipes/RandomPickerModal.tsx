@@ -345,7 +345,7 @@ export const RandomPickerModal: React.FC<RandomPickerModalProps> = ({
                   </button>
                 )}
               </div>
-              <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-0.5">
+              <div className="flex flex-wrap items-center gap-1.5 pb-0.5">
                 {COOKING_TIME_OPTIONS.map((opt) => {
                   const isSelected = maxCookingTime === opt.value;
                   return (
@@ -388,7 +388,7 @@ export const RandomPickerModal: React.FC<RandomPickerModalProps> = ({
                           <span className="font-serif font-bold text-base text-stone-900 leading-tight">
                             {opt.title}
                           </span>
-                          <span className="text-[10px] bg-[#FCFAF5] text-stone-600 font-semibold px-2 py-0.5 rounded-full border border-[#EBE7DF]">
+                          <span className="text-[10px] bg-[#FCFAF5] text-stone-600 font-semibold px-2 py-0.5 rounded-full border border-[#EBE7DF] whitespace-nowrap shrink-0">
                             {count} st
                           </span>
                         </div>
@@ -410,7 +410,7 @@ export const RandomPickerModal: React.FC<RandomPickerModalProps> = ({
         {step === 'result' && (
           <div className="p-5 space-y-3.5 overflow-y-auto flex-1 text-xs animate-fade-in">
             {/* Quick time filter bar */}
-            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-0.5">
+            <div className="flex flex-wrap items-center gap-1.5 pb-0.5">
               <div className="flex items-center gap-1 text-stone-500 text-[11px] font-semibold shrink-0 mr-0.5">
                 <Clock className="w-3.5 h-3.5 text-stone-400" />
                 <span>Tid:</span>
