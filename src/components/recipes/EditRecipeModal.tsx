@@ -3,7 +3,7 @@ import type { Recipe, Instruction, Ingredient, RecipeCategory, RecipeDifficulty 
 import { DifficultyPicker } from './DifficultyPicker';
 import { getRecipeSubcategories } from '../../types/recipe';
 import { useRecipes } from '../../context/RecipeContext';
-import { X, Trash2, Camera, ImagePlus, Loader2, Check, Plus } from 'lucide-react';
+import { X, Trash2, Camera, ImagePlus, Loader2, Check } from 'lucide-react';
 import { parseIngredientsText } from '../../utils/ingredientParser';
 import { uploadRecipePhoto } from '../../utils/imageService';
 import { cleanLeadingStepNumber, formatIngredientsToText } from '../../utils/formatters';
@@ -77,32 +77,10 @@ export const EditRecipeModal: React.FC<EditRecipeModalProps> = ({
       : ''
   );
 
-  // One text per step, shown as numbered fields
-  const [steps, setSteps] = useState<string[]>(() =>
-    recipe.instructions && recipe.instructions.length > 0 ? recipe.instructions.map((inst) => inst.text) : ['']
+  // One step per line in a single text box
+  const [instructionsText, setInstructionsText] = useState<string>(() =>
+    recipe.instructions && recipe.instructions.length > 0 ? recipe.instructions.map((inst) => inst.text).join('\n') : ''
   );
-  const stepRefs = useRef<Array<HTMLTextAreaElement | null>>([]);
-  const [focusStep, setFocusStep] = useState<number | null>(null);
-  useEffect(() => {
-    if (focusStep === null) return;
-    const el = stepRefs.current[focusStep];
-    if (el) {
-      el.focus();
-      el.setSelectionRange(el.value.length, el.value.length);
-    }
-    setFocusStep(null);
-  }, [focusStep]);
-
-  // Enter or pasted lines in a step split it into several steps
-  const handleStepChange = (index: number, text: string) => {
-    if (!text.includes('\n')) {
-      setSteps((prev) => prev.map((s, i) => (i === index ? text : s)));
-      return;
-    }
-    const parts = text.split('\n');
-    setSteps((prev) => [...prev.slice(0, index), ...parts, ...prev.slice(index + 1)]);
-    setFocusStep(index + parts.length - 1);
-  };
 
   const [showImageUrl, setShowImageUrl] = useState<boolean>(false);
   const [showDiscardPrompt, setShowDiscardPrompt] = useState<boolean>(false);
@@ -141,18 +119,19 @@ export const EditRecipeModal: React.FC<EditRecipeModalProps> = ({
 
   // Parse newline-separated instructions into Instruction objects
   const parsedInstructions: Instruction[] = useMemo(() => {
-    return steps
+    return instructionsText
+      .split('\n')
       .map((line) => cleanLeadingStepNumber(line))
       .filter((line) => line.length > 0)
       .map((text, idx) => ({
         stepNumber: idx + 1,
         text,
       }));
-  }, [steps]);
+  }, [instructionsText]);
 
   // Unsaved changes: compare with how the form looked when it opened
   const snapshot = () =>
-    JSON.stringify([title, category, subcategories, servings, difficulty, cookingTimeMinutes, coverImageUrl, notes, ingredientsText, steps.map((s) => s.trim()).filter(Boolean)]);
+    JSON.stringify([title, category, subcategories, servings, difficulty, cookingTimeMinutes, coverImageUrl, notes, ingredientsText, instructionsText]);
   const initialSnapshotRef = useRef<string | null>(null);
   if (initialSnapshotRef.current === null) initialSnapshotRef.current = snapshot();
   const isDirty = snapshot() !== initialSnapshotRef.current;
@@ -389,50 +368,22 @@ export const EditRecipeModal: React.FC<EditRecipeModalProps> = ({
             />
           </div>
 
-          {/* Steps, numbered */}
+          {/* Steps: one per line */}
           <div>
-            <span className="font-serif font-bold text-stone-900 text-sm block mb-1">
-              Steg {parsedInstructions.length > 0 ? `(${parsedInstructions.length})` : ''}
-            </span>
-            <ol className="space-y-2">
-              {steps.map((step, i) => (
-                <li key={i} className="flex items-start gap-2">
-                  <span className="w-6 pt-3 text-sm font-semibold text-stone-500 tabular-nums text-right shrink-0">{i + 1}</span>
-                  <AutoGrowTextarea
-                    ref={(el) => {
-                      stepRefs.current[i] = el;
-                    }}
-                    minRows={1}
-                    value={step}
-                    onChange={(e) => handleStepChange(i, e.target.value)}
-                    placeholder={i === 0 ? 'Koka pastan i saltat vatten' : ''}
-                    aria-label={`Steg ${i + 1}`}
-                    className={`${field} py-2.5 leading-relaxed flex-1 min-w-0`}
-                  />
-                  {steps.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => setSteps((prev) => prev.filter((_, j) => j !== i))}
-                      className="w-9 h-11 flex items-center justify-center text-stone-400 hover:text-rose-700 touch-manipulation shrink-0"
-                      aria-label={`Ta bort steg ${i + 1}`}
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  )}
-                </li>
-              ))}
-            </ol>
-            <button
-              type="button"
-              onClick={() => {
-                setSteps((prev) => [...prev, '']);
-                setFocusStep(steps.length);
-              }}
-              className="mt-1 ml-8 text-xs font-semibold text-[#284235] min-h-[36px] flex items-center gap-1 touch-manipulation"
-            >
-              <Plus className="w-4 h-4" />
-              Lägg till steg
-            </button>
+            <div className="flex items-baseline justify-between mb-1">
+              <label className="font-serif font-bold text-stone-900 text-sm" htmlFor="edit-steps">
+                Steg {parsedInstructions.length > 0 ? `(${parsedInstructions.length})` : ''}
+              </label>
+              <span className="text-xs text-stone-500">Ett per rad</span>
+            </div>
+            <AutoGrowTextarea
+              id="edit-steps"
+              minRows={4}
+              value={instructionsText}
+              onChange={(e) => setInstructionsText(e.target.value)}
+              placeholder={'Koka pastan i saltat vatten\nStek fläsket knaprigt\nVispa äggulor och ost'}
+              className={`${field} py-3 leading-relaxed`}
+            />
           </div>
 
           {/* Notes */}
