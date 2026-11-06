@@ -28,10 +28,6 @@ export const PortionScaler: React.FC<PortionScalerProps> = ({
     }
   };
 
-  const handleReset = () => {
-    onServingsChange(baseServings);
-  };
-
   const isScaled = currentServings !== baseServings;
 
   return (
@@ -39,13 +35,7 @@ export const PortionScaler: React.FC<PortionScalerProps> = ({
       <div className="min-w-0">
         <div className="text-sm font-semibold text-stone-900">Portioner</div>
         {isScaled && (
-          <button
-            type="button"
-            onClick={handleReset}
-            className="text-xs text-stone-500 mt-0.5 text-left touch-manipulation"
-          >
-            Receptet är för {baseServings}. <span className="font-semibold text-[#284235] underline underline-offset-2">Återställ</span>
-          </button>
+          <div className="text-xs text-stone-500 mt-0.5">Receptet är för {baseServings}</div>
         )}
       </div>
 
