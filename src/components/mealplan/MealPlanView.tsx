@@ -8,7 +8,6 @@ import { useModalBackHandler } from '../../hooks/useModalBackHandler';
 import {
   Plus,
   Trash2,
-  ShoppingCart,
   Dices,
   Minus,
   ArrowRight,
@@ -404,7 +403,6 @@ export const MealPlanView: React.FC = () => {
                 onClick={openGenerate}
                 className="hidden md:flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#284235] hover:bg-black text-white text-xs font-bold transition-all shadow-xs active:scale-95 cursor-pointer min-h-[38px]"
               >
-                <ShoppingCart className="w-3.5 h-3.5 text-emerald-300" />
                 <span>Skapa inköpslista</span>
               </button>
 
@@ -1079,7 +1077,6 @@ export const MealPlanView: React.FC = () => {
                   onClick={() => openPickerModal(activeDayName, 'lunch')}
                   className="text-sm font-semibold text-[#284235] flex items-center gap-1.5 py-2 touch-manipulation min-h-[40px]"
                 >
-                  <Plus className="w-4 h-4" />
                   Lägg till lunch
                 </button>
               )}
@@ -1174,7 +1171,6 @@ export const MealPlanView: React.FC = () => {
             onClick={openGenerate}
             className="w-full min-h-[52px] py-3 px-5 rounded-2xl bg-[#284235] hover:bg-stone-900 active:scale-[0.98] text-white flex items-center justify-center gap-2.5 transition-all touch-manipulation"
           >
-            <ShoppingCart className="w-5 h-5 text-emerald-300 shrink-0" />
             <span className="font-semibold text-sm">Skapa inköpslista</span>
             {plannedSummary && <span className="text-xs text-emerald-200/90">{plannedSummary}</span>}
           </button>
@@ -1187,7 +1183,6 @@ export const MealPlanView: React.FC = () => {
               onClick={() => setShowClearWeekModal(true)}
               className="text-xs font-semibold text-stone-500 hover:text-rose-700 flex items-center gap-1.5 py-2 px-3 touch-manipulation min-h-[40px]"
             >
-              <Trash2 className="w-3.5 h-3.5" />
               Töm vecka {weekNumber}
             </button>
           </div>
