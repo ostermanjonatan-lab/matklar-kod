@@ -136,7 +136,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ onAddRecipeClick, onAddSho
         </div>
       </div>
 
-      <nav className="fixed bottom-0 left-0 right-0 z-40 bg-[#FCFAF5] pb-safe font-sans">
+      <nav className="fixed bottom-0 left-0 right-0 z-40 bg-gradient-to-b from-[#FCFAF5] to-[#F1EBE0] pb-safe font-sans">
         {/* Gently curved top edge: a low arc that rises about 14 px towards the middle.
             The inner buttons (Veckoplan, Inköp) sit about 6 px higher than the outer ones,
             which is how much higher the arc is at their place, so the row follows the curve. */}
