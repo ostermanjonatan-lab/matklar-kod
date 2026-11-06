@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import type { Recipe } from '../../types/recipe';
 import { createRecipeLink } from '../../utils/recipeLink';
 import { copyTextToClipboard, shareRecipeAsText } from '../../utils/recipeShare';
+import { createRecipeImage, recipeImageFileName } from '../../utils/recipeImage';
 
 interface ShareRecipeSheetProps {
   recipe: Recipe;
@@ -22,6 +23,43 @@ export const ShareRecipeSheet: React.FC<ShareRecipeSheetProps> = ({ recipe, serv
       alive = false;
     };
   }, [recipe]);
+
+  // The picture is made in the background too, so it is ready when the button is tapped
+  const [image, setImage] = useState<File | null>(null);
+  const [imageFailed, setImageFailed] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    createRecipeImage(recipe, servings)
+      .then((blob) => alive && setImage(new File([blob], recipeImageFileName(recipe), { type: 'image/png' })))
+      .catch(() => alive && setImageFailed(true));
+    return () => {
+      alive = false;
+    };
+  }, [recipe, servings]);
+
+  const shareImage = async () => {
+    if (!image) return;
+    if (navigator.canShare?.({ files: [image] })) {
+      try {
+        await navigator.share({ files: [image], title: recipe.title });
+        onClose();
+        return;
+      } catch (err) {
+        if (err instanceof DOMException && err.name === 'AbortError') return;
+      }
+    }
+    // No share menu with files (a computer): save the picture instead
+    const url = URL.createObjectURL(image);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = image.name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    onClose();
+    onDone('Bilden är sparad');
+  };
 
   const sendLink = async () => {
     if (!link) return;
@@ -70,6 +108,14 @@ export const ShareRecipeSheet: React.FC<ShareRecipeSheetProps> = ({ recipe, serv
             className="w-full min-h-[48px] rounded-xl bg-[#284235] hover:bg-black disabled:opacity-50 text-white text-sm font-semibold touch-manipulation"
           >
             Skicka länk
+          </button>
+          <button
+            type="button"
+            onClick={shareImage}
+            disabled={!image}
+            className="w-full min-h-[48px] rounded-xl bg-stone-100 text-stone-800 disabled:text-stone-400 text-sm font-semibold touch-manipulation"
+          >
+            {image ? 'Dela som bild' : imageFailed ? 'Bilden gick inte att göra' : 'Gör bilden'}
           </button>
           <button
             type="button"
