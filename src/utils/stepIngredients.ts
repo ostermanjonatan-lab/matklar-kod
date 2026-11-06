@@ -115,14 +115,22 @@ export function ingredientKeys(name: string): string[] {
   return [...keys].filter((k) => k.length >= 3);
 }
 
+/** A word in a step that names one or more ingredients. start and end cover the whole word. */
+export interface IngredientMention {
+  start: number;
+  end: number;
+  ingredients: number[];
+}
+
 /**
- * Returns the indexes of the ingredients mentioned in a step, in the order of the
- * ingredient list. When two keys match the same word, the longer key wins, so
- * "äggulorna" counts as "äggulor" and not as "ägg".
+ * Finds the words in a step that name ingredients, e.g. "äggulorna" and "pastan".
+ * When two keys match the same word, the longer key wins, so "äggulorna" counts as
+ * "äggulor" and not as "ägg". Keys of the same length share the word
+ * (e.g. "löken" with both "gul lök" and "rödlök").
  */
-export function findIngredientsInStep(text: string, ingredients: Ingredient[]): number[] {
+export function findIngredientMentions(text: string, ingredients: Ingredient[]): IngredientMention[] {
   const lower = text.toLowerCase();
-  const matches: { idx: number; start: number; end: number }[] = [];
+  const matches: { idx: number; start: number; end: number; wordEnd: number }[] = [];
 
   ingredients.forEach((ing, idx) => {
     for (const key of ingredientKeys(ing.name)) {
@@ -133,23 +141,45 @@ export function findIngredientsInStep(text: string, ingredients: Ingredient[]): 
         const rest = lower.slice(m.index + key.length).match(new RegExp(`^[${LETTER}]*`))![0];
         if (/^(at|ad|ade|ades)$/.test(rest)) continue;
         // Skip compounds that name something else, e.g. "pastavattnet", "vattenbad"
-        if (/^(vatten|vattn|bad)/.test(rest)) continue;
-        matches.push({ idx, start: m.index, end: m.index + key.length });
+        if (/^(vatten|vattn|bad|röra)/.test(rest)) continue;
+        // "Salta" is the verb, not the salt
+        if (key === 'salt' && rest === 'a') continue;
+        matches.push({ idx, start: m.index, end: m.index + key.length, wordEnd: m.index + key.length + rest.length });
       }
     }
   });
 
-  // Longest key first. A word already claimed by a longer key is skipped, while
-  // keys of the same length share it (e.g. "löken" with both "gul lök" and "rödlök").
   matches.sort((a, b) => b.end - b.start - (a.end - a.start));
   const claimed: { start: number; end: number }[] = [];
-  const found = new Set<number>();
+  const byWord = new Map<number, IngredientMention>();
   for (const m of matches) {
     const len = m.end - m.start;
     if (claimed.some((c) => m.start < c.end && c.start < m.end && c.end - c.start > len)) continue;
     claimed.push(m);
-    found.add(m.idx);
+    const existing = byWord.get(m.start);
+    if (existing) {
+      if (!existing.ingredients.includes(m.idx)) existing.ingredients.push(m.idx);
+    } else {
+      byWord.set(m.start, { start: m.start, end: m.wordEnd, ingredients: [m.idx] });
+    }
   }
 
+  // A shorter key inside a word already taken by a longer one starts at another place
+  // in the same word: drop those so words never overlap.
+  const sorted = [...byWord.values()].sort((a, b) => a.start - b.start);
+  const result: IngredientMention[] = [];
+  for (const m of sorted) {
+    const prev = result[result.length - 1];
+    if (prev && m.start < prev.end) continue;
+    m.ingredients.sort((a, b) => a - b);
+    result.push(m);
+  }
+  return result;
+}
+
+/** The indexes of the ingredients mentioned in a step, in the order of the ingredient list. */
+export function findIngredientsInStep(text: string, ingredients: Ingredient[]): number[] {
+  const found = new Set<number>();
+  for (const m of findIngredientMentions(text, ingredients)) m.ingredients.forEach((i) => found.add(i));
   return [...found].sort((a, b) => a - b);
 }

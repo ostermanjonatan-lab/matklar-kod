@@ -34,7 +34,7 @@ import {
   ShoppingCart
 } from 'lucide-react';
 import { PortionScaler } from './PortionScaler';
-import { findIngredientsInStep } from '../../utils/stepIngredients';
+import { findIngredientMentions, type IngredientMention } from '../../utils/stepIngredients';
 import { EditRecipeModal } from './EditRecipeModal';
 import { useModalBackHandler } from '../../hooks/useModalBackHandler';
 import { PantryChoiceDialog, hasPantryStaples } from './PantryChoiceDialog';
@@ -370,16 +370,39 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
     setCheckedIngredients((prev) => ({ ...prev, [index]: !prev[index] }));
   };
 
-  // Ingredients (with an amount) mentioned in each step, shown under the step
-  const stepIngredients = useMemo(() => {
-    const result: Record<number, number[]> = {};
+  // Words in each step that name an ingredient with an amount. Tapping one shows the amount.
+  const stepMentions = useMemo(() => {
+    const hasAmount = (idx: number) =>
+      typeof recipe.ingredients[idx].amount === 'number' && recipe.ingredients[idx].amount! > 0;
+    const result: Record<number, IngredientMention[]> = {};
     for (const inst of recipe.instructions) {
-      result[inst.stepNumber] = findIngredientsInStep(inst.text, recipe.ingredients).filter(
-        (idx) => typeof recipe.ingredients[idx].amount === 'number' && recipe.ingredients[idx].amount! > 0
-      );
+      result[inst.stepNumber] = findIngredientMentions(inst.text, recipe.ingredients)
+        .map((m) => ({ ...m, ingredients: m.ingredients.filter(hasAmount) }))
+        .filter((m) => m.ingredients.length > 0);
     }
     return result;
   }, [recipe.instructions, recipe.ingredients]);
+  const [openMentions, setOpenMentions] = useState<Set<string>>(() => new Set());
+  const toggleMention = (key: string) =>
+    setOpenMentions((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+
+  // "400 g", or "80 g pecorino romano · 50 g parmesan" when the word fits several ingredients
+  const mentionAmount = (indexes: number[]) =>
+    indexes
+      .map((idx) => {
+        const ing = recipe.ingredients[idx];
+        const scaled = scaleIngredientAmount(ing.amount, recipe.servings, servings);
+        const amount = `${formatAmount(scaled)} ${formatUnit(ing.unit, scaled)}`.trim();
+        if (indexes.length === 1) return amount;
+        const name = formatIngredientName(ing.name, scaled, ing.unit).replace(/\s*\([^)]*\)/g, '').trim().toLowerCase();
+        return `${amount} ${name}`;
+      })
+      .join(' · ');
 
   // Toggle single step completion
   const toggleStepComplete = (stepNumber: number) => {
@@ -735,36 +758,51 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
                         isStepDone ? 'line-through text-stone-400' : 'text-stone-800'
                       }`}
                     >
-                      {segments.map((seg, sIdx) => {
-                        if (seg.timer) {
-                          return (
-                            <span key={sIdx} className={isStepDone ? '' : 'font-semibold text-stone-900'}>
-                              {seg.text}
-                            </span>
-                          );
-                        }
-                        return <span key={sIdx}>{seg.text}</span>;
-                      })}
-
-                      {stepIngredients[inst.stepNumber]?.length > 0 && (
-                        <p className={`mt-1.5 text-xs leading-relaxed ${isStepDone ? 'text-stone-400' : 'text-stone-500'}`}>
-                          {stepIngredients[inst.stepNumber].map((idx, i) => {
-                            const ing = recipe.ingredients[idx];
-                            const scaled = scaleIngredientAmount(ing.amount, recipe.servings, servings);
-                            const amountText = `${formatAmount(scaled)} ${formatUnit(ing.unit, scaled)}`.trim();
-                            const name = formatIngredientName(ing.name, scaled, ing.unit)
-                              .replace(/\s*\([^)]*\)/g, '')
-                              .trim()
-                              .toLowerCase();
+                      {(() => {
+                        const mentions = isStepDone ? [] : stepMentions[inst.stepNumber] || [];
+                        let offset = 0;
+                        return segments.map((seg, sIdx) => {
+                          const segStart = offset;
+                          offset += seg.text.length;
+                          if (seg.timer) {
                             return (
-                              <React.Fragment key={idx}>
-                                {i > 0 && <span className="text-stone-400">{'\u00a0· '}</span>}
-                                <span className={`whitespace-nowrap ${isStepDone ? '' : 'font-medium text-stone-700'}`}>{amountText}</span> {name}
+                              <span key={sIdx} className={isStepDone ? '' : 'font-semibold text-stone-900'}>
+                                {seg.text}
+                              </span>
+                            );
+                          }
+                          // Plain text, with the ingredient words as buttons
+                          const parts: React.ReactNode[] = [];
+                          let pos = segStart;
+                          for (const m of mentions) {
+                            if (m.start < pos || m.end > offset) continue;
+                            if (m.start > pos) parts.push(inst.text.slice(pos, m.start));
+                            const key = `${inst.stepNumber}-${m.start}`;
+                            const open = openMentions.has(key);
+                            parts.push(
+                              <React.Fragment key={key}>
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    toggleMention(key);
+                                  }}
+                                  aria-expanded={open}
+                                  className="inline p-0 m-0 bg-transparent text-inherit underline decoration-dotted decoration-stone-400 underline-offset-4 touch-manipulation"
+                                >
+                                  {inst.text.slice(m.start, m.end)}
+                                </button>
+                                {open && (
+                                  <span className="font-semibold text-[#284235] whitespace-nowrap"> ({mentionAmount(m.ingredients)})</span>
+                                )}
                               </React.Fragment>
                             );
-                          })}
-                        </p>
-                      )}
+                            pos = m.end;
+                          }
+                          if (pos < offset) parts.push(inst.text.slice(pos, offset));
+                          return <React.Fragment key={sIdx}>{parts}</React.Fragment>;
+                        });
+                      })()}
 
                       {!isStepDone && stepTimers(segments).length > 0 && (
                         <div className="mt-1.5 flex flex-wrap gap-x-4">
