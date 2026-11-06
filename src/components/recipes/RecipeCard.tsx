@@ -1,8 +1,8 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useRef } from 'react';
 import { DifficultyDots } from './DifficultyPicker';
 import { DIFFICULTY_LABELS } from '../../utils/recipeDifficulty';
 import type { Recipe } from '../../types/recipe';
-import { isRecipeNew, getRecipeSubcategories } from '../../types/recipe';
+import { isRecipeNew } from '../../types/recipe';
 import { useRecipes } from '../../context/RecipeContext';
 import { Heart, Clock, Check, ShoppingCart } from 'lucide-react';
 import { formatCookingTime, formatRecipeTitle } from '../../utils/formatters';
@@ -15,101 +15,6 @@ interface RecipeCardProps {
   /** Returns false if the recipe wasn't added right away, e.g. while a question is shown. */
   onAddToShoppingList?: (recipe: Recipe) => boolean;
   isInShoppingList?: boolean;
-}
-
-let cachedCanvas: HTMLCanvasElement | null = null;
-
-function measureTextWidth(text: string, font = '500 11px system-ui, -apple-system, sans-serif'): number {
-  if (typeof document !== 'undefined') {
-    try {
-      if (!cachedCanvas) {
-        cachedCanvas = document.createElement('canvas');
-      }
-      const ctx = cachedCanvas.getContext('2d');
-      if (ctx) {
-        ctx.font = font;
-        return ctx.measureText(text).width;
-      }
-    } catch {
-      // fallback
-    }
-  }
-  // Fast character-weighted fallback for SSR / non-DOM
-  let w = 0;
-  for (const ch of text) {
-    if (/[iljtI1\.,\s]/.test(ch)) w += 4;
-    else if (/[wmMWÖÄÅ&@]/.test(ch)) w += 8.5;
-    else if (/[A-Z]/.test(ch)) w += 7.5;
-    else w += 6.5;
-  }
-  return w;
-}
-
-function getPillWidth(text: string, isPlus = false): number {
-  const font = isPlus
-    ? '700 10px system-ui, -apple-system, sans-serif'
-    : '500 11px system-ui, -apple-system, sans-serif';
-  const pad = isPlus ? 18 : 22; // padding + borders
-  return Math.ceil(measureTextWidth(text, font) + pad);
-}
-
-function calculateVisibleSubcategories(
-  containerWidth: number,
-  category: string,
-  hasSourceBadge: boolean,
-  subcategories: string[]
-): { visible: string[]; hiddenCount: number; hidden: string[] } {
-  if (!containerWidth || containerWidth <= 0 || subcategories.length === 0) {
-    return { visible: [], hiddenCount: 0, hidden: [] };
-  }
-
-  const GAP = 6;
-  const categoryWidth = getPillWidth(category);
-  const sourceWidth = hasSourceBadge ? 42 + GAP : 0;
-
-  // Available width for subcategories after category badge and source badge
-  const availableWidth = containerWidth - categoryWidth - sourceWidth - GAP;
-  if (availableWidth <= 28) {
-    return { visible: [], hiddenCount: subcategories.length, hidden: subcategories };
-  }
-
-  // Pre-calculate all subcategory pill widths
-  const widths = subcategories.map((s) => getPillWidth(s));
-
-  // Check if ALL subcategories fit
-  let totalAllWidth = 0;
-  for (let i = 0; i < widths.length; i++) {
-    totalAllWidth += widths[i] + (i > 0 ? GAP : 0);
-  }
-
-  if (totalAllWidth <= availableWidth) {
-    return { visible: subcategories, hiddenCount: 0, hidden: [] };
-  }
-
-  // If not all fit, find how many fit together with the +N badge
-  const visible: string[] = [];
-  let accumulated = 0;
-
-  for (let i = 0; i < subcategories.length; i++) {
-    const itemWidth = widths[i];
-    const currentGap = visible.length > 0 ? GAP : 0;
-    const remainingCount = subcategories.length - (visible.length + 1);
-    const plusBadgeWidth = remainingCount > 0 ? GAP + getPillWidth(`+${remainingCount}`, true) : 0;
-
-    if (accumulated + currentGap + itemWidth + plusBadgeWidth <= availableWidth) {
-      accumulated += currentGap + itemWidth;
-      visible.push(subcategories[i]);
-    } else {
-      break;
-    }
-  }
-
-  const hidden = subcategories.slice(visible.length);
-  return {
-    visible,
-    hiddenCount: hidden.length,
-    hidden,
-  };
 }
 
 export const RecipeCard = React.memo<RecipeCardProps>(
@@ -204,46 +109,6 @@ export const RecipeCard = React.memo<RecipeCardProps>(
       return null;
     };
 
-    // Subcategories & single-line adaptive overflow calculation
-    const subcategories = useMemo(() => getRecipeSubcategories(recipe), [recipe]);
-    const badgeContainerRef = useRef<HTMLDivElement | null>(null);
-    const [containerWidth, setContainerWidth] = useState<number>(0);
-
-    useEffect(() => {
-      const el = badgeContainerRef.current;
-      if (!el) return;
-
-      setContainerWidth(el.clientWidth);
-
-      if (typeof ResizeObserver !== 'undefined') {
-        const observer = new ResizeObserver((entries) => {
-          for (const entry of entries) {
-            const width = entry.contentRect?.width ?? entry.contentBoxSize?.[0]?.inlineSize;
-            if (width && width > 0) {
-              setContainerWidth(width);
-            }
-          }
-        });
-        observer.observe(el);
-        return () => observer.disconnect();
-      }
-    }, []);
-
-    const hasSource = Boolean(
-      recipe.sourceType === 'recipe_image' ||
-      recipe.recipeDocumentUrl ||
-      recipe.sourceType === 'pdf'
-    );
-
-    const { visible: visibleSubcategories, hiddenCount, hidden: hiddenSubcategories } = useMemo(() => {
-      return calculateVisibleSubcategories(
-        containerWidth || 240,
-        recipe.category || '',
-        hasSource,
-        subcategories
-      );
-    }, [containerWidth, recipe.category, hasSource, subcategories]);
-
     return (
       <div
         onClick={handleCardClick}
@@ -266,9 +131,8 @@ export const RecipeCard = React.memo<RecipeCardProps>(
         {/* Mjuk botten-gradient så att bilden förblir ljus och aptitretande */}
         <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/85 via-black/40 via-40% to-transparent pointer-events-none" />
 
-        {/* Top Badges (Category pill + optional Document badge + Subcategories strictly on 1 row) */}
+        {/* Top badges: category and, when there is one, the source document */}
         <div
-          ref={badgeContainerRef}
           className="absolute top-3.5 left-3.5 right-15 flex items-center gap-1.5 z-10 overflow-hidden flex-nowrap pointer-events-none"
         >
           {/* Main Category */}
@@ -279,26 +143,6 @@ export const RecipeCard = React.memo<RecipeCardProps>(
           {/* Optional Source Badge (Foto/PDF) */}
           {getSourceBadge()}
 
-          {/* Subcategories (displayed as many as fit on this single row) */}
-          {visibleSubcategories.map((subcat) => (
-            <span
-              key={subcat}
-              className="bg-black/55 backdrop-blur-md text-white text-[11px] font-medium px-2.5 py-1 rounded-full border border-white/15 shadow-xs shrink-0 whitespace-nowrap pointer-events-auto"
-            >
-              {subcat}
-            </span>
-          ))}
-
-          {/* +N Badge for Overflow Subcategories */}
-          {hiddenCount > 0 && (
-            <span
-              title={`Fler kategorier: ${hiddenSubcategories.join(', ')}`}
-              aria-label={`Fler kategorier: ${hiddenSubcategories.join(', ')}`}
-              className="bg-black/70 backdrop-blur-md text-white text-[10px] font-bold px-2 py-1 rounded-full border border-white/25 shadow-xs shrink-0 whitespace-nowrap pointer-events-auto cursor-default"
-            >
-              +{hiddenCount}
-            </span>
-          )}
         </div>
 
         {/* Favorite Heart Button */}
