@@ -1,5 +1,7 @@
 import React, { useState, useLayoutEffect, useRef } from 'react';
 import { RecipeProvider, useRecipes } from './context/RecipeContext';
+import { TimerProvider } from './context/TimerContext';
+import { TimerBar } from './components/timer/TimerBar';
 import { BottomNav } from './components/layout/BottomNav';
 import { DesktopNav } from './components/layout/DesktopNav';
 import { PwaInstallPrompt } from './components/layout/PwaInstallPrompt';
@@ -82,6 +84,9 @@ const AppContent: React.FC = () => {
         {activeTab === 'settings' && <SettingsView />}
 
         {/* Recipe Detail Popup Modal with blurred background */}
+        {/* The kitchen timer while no recipe is open. Inside a recipe it is shown there. */}
+        {!selectedRecipe && <TimerBar placement="app" />}
+
         {selectedRecipe && (
           <RecipeDetail
             key={selectedRecipe.id}
@@ -111,7 +116,9 @@ const AppContent: React.FC = () => {
 export function App() {
   return (
     <RecipeProvider>
-      <AppContent />
+      <TimerProvider>
+        <AppContent />
+      </TimerProvider>
     </RecipeProvider>
   );
 }

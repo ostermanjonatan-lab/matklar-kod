@@ -23,12 +23,8 @@ import {
   CalendarPlus,
   Edit3,
   Trash2,
-  Timer,
   Play,
-  Pause,
-  RotateCcw,
   X,
-  Bell,
   Share2,
   Sun,
   ShoppingCart
@@ -41,7 +37,8 @@ import { PantryChoiceDialog, hasPantryStaples } from './PantryChoiceDialog';
 import { scaleIngredientAmount, formatAmount, formatCookingTime, capitalizeFirst, formatUnit, formatIngredientName, formatRecipeTitle } from '../../utils/formatters';
 import { splitTextIntoTimerSegments } from '../../utils/timerParser';
 import { ShareRecipeSheet } from '../share/ShareRecipeSheet';
-import { playTimerAlarm } from '../../utils/audioAlert';
+import { useTimer } from '../../context/TimerContext';
+import { TimerBar } from '../timer/TimerBar';
 import { useWakeLock } from '../../utils/wakeLock';
 
 interface RecipeDetailProps {
@@ -261,109 +258,10 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
     };
   }, [recipe.id]);
 
-  // Floating Inline Kitchen Timer State (with absolute target timestamp for background reliability)
-  const [activeTimer, setActiveTimer] = useState<{
-    label: string;
-    totalSeconds: number;
-    secondsLeft: number;
-    isRunning: boolean;
-    targetEndTime: number | null;
-  } | null>(null);
-  const timerIntervalRef = useRef<any>(null);
-
-  useEffect(() => {
-    if (!activeTimer?.isRunning || !activeTimer.targetEndTime) {
-      if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
-      return;
-    }
-
-    const checkTimerTick = () => {
-      setActiveTimer((prev) => {
-        if (!prev || !prev.isRunning || !prev.targetEndTime) return prev;
-        const diffMs = prev.targetEndTime - Date.now();
-        const remaining = Math.max(0, Math.ceil(diffMs / 1000));
-
-        if (remaining <= 0) {
-          if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
-          playTimerAlarm();
-          return { ...prev, secondsLeft: 0, isRunning: false, targetEndTime: null };
-        }
-        return { ...prev, secondsLeft: remaining };
-      });
-    };
-
-    // Check timer frequently (every 250ms) to ensure smooth second countdown
-    timerIntervalRef.current = setInterval(checkTimerTick, 250);
-
-    // Immediately recalibrate whenever phone unlocks or app gains visibility
-    const handleVisibilityOrFocus = () => {
-      if (document.visibilityState === 'visible') {
-        checkTimerTick();
-      }
-    };
-
-    window.addEventListener('visibilitychange', handleVisibilityOrFocus);
-    window.addEventListener('focus', handleVisibilityOrFocus);
-
-    return () => {
-      if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
-      window.removeEventListener('visibilitychange', handleVisibilityOrFocus);
-      window.removeEventListener('focus', handleVisibilityOrFocus);
-    };
-  }, [activeTimer?.isRunning, activeTimer?.targetEndTime]);
-
-  const handleStartInlineTimer = (minutes: number, label: string) => {
-    const totalSeconds = Math.round(minutes * 60);
-    const now = Date.now();
-    setActiveTimer({
-      label,
-      totalSeconds,
-      secondsLeft: totalSeconds,
-      isRunning: true,
-      targetEndTime: now + totalSeconds * 1000,
-    });
-  };
-
-  const handleToggleTimerRunning = () => {
-    setActiveTimer((prev) => {
-      if (!prev) return null;
-      if (prev.isRunning) {
-        // Pausing: freeze secondsLeft and clear targetEndTime
-        return {
-          ...prev,
-          isRunning: false,
-          targetEndTime: null,
-        };
-      } else {
-        // Resuming: recompute targetEndTime from remaining seconds
-        const now = Date.now();
-        return {
-          ...prev,
-          isRunning: true,
-          targetEndTime: now + prev.secondsLeft * 1000,
-        };
-      }
-    });
-  };
-
-  const handleRestartTimer = () => {
-    setActiveTimer((prev) => {
-      if (!prev) return null;
-      const now = Date.now();
-      return {
-        ...prev,
-        secondsLeft: prev.totalSeconds,
-        isRunning: true,
-        targetEndTime: now + prev.totalSeconds * 1000,
-      };
-    });
-  };
-
-  const formatTimerDisplay = (totalSecs: number) => {
-    const m = Math.floor(totalSecs / 60);
-    const s = totalSecs % 60;
-    return `${m}:${s < 10 ? '0' : ''}${s}`;
-  };
+  // The kitchen timer lives above this view, so it keeps going when the recipe is closed
+  const { startTimer } = useTimer();
+  const handleStartInlineTimer = (minutes: number, label: string) =>
+    startTimer(minutes, label, { id: recipe.id, title: recipe.title });
 
   // Toggle single ingredient check
   const toggleIngredientCheck = (index: number) => {
@@ -1047,75 +945,8 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
         </div>
       )}
 
-      {/* Floating Active Kitchen Timer Bar */}
-      {activeTimer && (
-        <div className="fixed bottom-6 left-4 right-4 z-50 max-w-md mx-auto bg-stone-900 text-white rounded-3xl p-3.5 shadow-2xl border border-stone-700 flex items-center justify-between gap-3 animate-slide-up">
-          <div className="flex items-center gap-3 min-w-0">
-            <div
-              className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 ${
-                activeTimer.secondsLeft === 0
-                  ? 'bg-rose-500 text-white animate-bounce'
-                  : activeTimer.isRunning
-                  ? 'bg-amber-400 text-stone-950 font-bold'
-                  : 'bg-stone-800 text-stone-400'
-              }`}
-            >
-              <Timer className="w-5 h-5" />
-            </div>
-
-            <div className="min-w-0">
-              <div className="text-[11px] text-stone-400 truncate">
-                Timer: {activeTimer.label}
-              </div>
-              <div className="text-lg font-bold font-mono tracking-wider text-amber-300 flex items-center gap-1.5">
-                {activeTimer.secondsLeft === 0 ? (
-                  <>
-                    <span>Klart</span>
-                    <Bell className="w-4 h-4 text-amber-300 animate-bounce shrink-0" />
-                  </>
-                ) : (
-                  formatTimerDisplay(activeTimer.secondsLeft)
-                )}
-              </div>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-1.5 shrink-0">
-            {activeTimer.secondsLeft > 0 ? (
-              <button
-                type="button"
-                onClick={handleToggleTimerRunning}
-                className="w-10 h-10 rounded-2xl bg-white/15 hover:bg-white/25 active:scale-95 text-white flex items-center justify-center transition-all touch-manipulation"
-                aria-label={activeTimer.isRunning ? 'Pausa timer' : 'Starta timer'}
-              >
-                {activeTimer.isRunning ? (
-                  <Pause className="w-4 h-4" />
-                ) : (
-                  <Play className="w-4 h-4 fill-white" />
-                )}
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={handleRestartTimer}
-                className="px-3 h-10 rounded-2xl bg-amber-400 text-stone-950 font-bold text-xs flex items-center gap-1 active:scale-95 touch-manipulation"
-              >
-                <RotateCcw className="w-3.5 h-3.5" />
-                <span>Igen</span>
-              </button>
-            )}
-
-            <button
-              type="button"
-              onClick={() => setActiveTimer(null)}
-              className="w-9 h-9 rounded-2xl bg-stone-800 text-stone-400 hover:text-white flex items-center justify-center touch-manipulation"
-              aria-label="Stäng timer"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-      )}
+      {/* The running kitchen timer */}
+      <TimerBar placement="recipe" />
 
       {showShareSheet && (
         <ShareRecipeSheet
