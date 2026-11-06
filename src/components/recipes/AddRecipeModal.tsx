@@ -12,6 +12,7 @@ import {
   Loader2,
   RefreshCw,
   FileText,
+  PenLine,
 } from 'lucide-react';
 import {
   performClientOCR,
@@ -404,58 +405,33 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = ({ onClose, closeGu
           </button>
         </div>
 
-        {/* Import Mode Tabs */}
-        <div className="bg-[#FCFAF5] p-2 grid grid-cols-4 gap-1 border-b border-[#EBE7DF] shrink-0">
-          <button
-            type="button"
-            onClick={() => setActiveImportMode('manual')}
-            className={`py-2 px-1 rounded-2xl text-[11px] font-semibold transition-all touch-manipulation min-h-[40px] text-center ${
-              activeImportMode === 'manual'
-                ? 'bg-white text-stone-900 shadow-xs border border-[#EBE7DF] font-bold'
-                : 'text-stone-500 hover:text-stone-800'
-            }`}
-          >
-            Formulär
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveImportMode('url')}
-            className={`py-2 px-1 rounded-2xl text-[11px] font-semibold transition-all flex items-center justify-center gap-1 touch-manipulation min-h-[40px] text-center ${
-              activeImportMode === 'url'
-                ? 'bg-[#284235] text-white shadow-xs font-bold'
-                : 'text-stone-600 hover:bg-stone-200/50'
-            }`}
-          >
-            <Globe className="w-3.5 h-3.5 shrink-0" />
-            <span>Webblänk</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveImportMode('paste')}
-            className={`py-2 px-1 rounded-2xl text-[11px] font-semibold transition-all flex items-center justify-center gap-1 touch-manipulation min-h-[40px] text-center ${
-              activeImportMode === 'paste'
-                ? 'bg-[#284235] text-white shadow-xs font-bold'
-                : 'text-stone-600 hover:bg-stone-200/50'
-            }`}
-          >
-            <FileText className="w-3.5 h-3.5 shrink-0" />
-            <span>Klistra in</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveImportMode('ocr')}
-            className={`py-2 px-1 rounded-2xl text-[11px] font-semibold transition-all flex items-center justify-center gap-1 touch-manipulation min-h-[40px] text-center ${
-              activeImportMode === 'ocr'
-                ? 'bg-[#284235] text-white shadow-xs font-bold'
-                : 'text-stone-600 hover:bg-stone-200/50'
-            }`}
-          >
-            <ScanText className="w-3.5 h-3.5 shrink-0" />
-            <span>Fota / OCR</span>
-          </button>
+        {/* How to add the recipe: four equal choices, icon above a short word */}
+        <div className="px-4 py-2.5 border-b border-[#EBE7DF] shrink-0">
+          <div className="grid grid-cols-4 gap-1 p-1 rounded-2xl bg-[#F3EFE6]" role="tablist" aria-label="Sätt att lägga till">
+            {([
+              { mode: 'manual', label: 'Skriv', Icon: PenLine },
+              { mode: 'url', label: 'Länk', Icon: Globe },
+              { mode: 'paste', label: 'Klistra in', Icon: FileText },
+              { mode: 'ocr', label: 'Foto', Icon: ScanText },
+            ] as const).map(({ mode, label, Icon }) => {
+              const selected = activeImportMode === mode;
+              return (
+                <button
+                  key={mode}
+                  type="button"
+                  role="tab"
+                  aria-selected={selected}
+                  onClick={() => setActiveImportMode(mode)}
+                  className={`min-h-[52px] rounded-xl flex flex-col items-center justify-center gap-1 text-xs font-semibold whitespace-nowrap transition-colors touch-manipulation ${
+                    selected ? 'bg-white text-[#284235] shadow-xs' : 'text-stone-500 hover:text-stone-800'
+                  }`}
+                >
+                  <Icon className="w-[18px] h-[18px]" />
+                  {label}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         {/* Toast / Notification */}
