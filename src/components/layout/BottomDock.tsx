@@ -37,7 +37,7 @@ export const BottomDock: React.FC<BottomDockProps> = ({ minimized, onCloseMinimi
       <div
         ref={shape.ref}
         className={`relative rounded-2xl overflow-hidden pb-3 backdrop-blur-xl backdrop-saturate-150 animate-slide-up ${
-          timer && timer.secondsLeft === 0 ? 'bg-[#284235]/90' : 'bg-white/70'
+          timer && timer.secondsLeft === 0 ? 'bg-[#284235]/95' : 'bg-white/90'
         }`}
         style={shape.path ? { clipPath: `path('${shape.path}')` } : undefined}
       >
