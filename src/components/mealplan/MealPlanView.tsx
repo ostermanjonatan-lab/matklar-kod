@@ -17,7 +17,8 @@ import {
   Utensils,
   X,
   AlertCircle,
-  ChefHat
+  ChefHat,
+  Users,
 } from 'lucide-react';
 import { LunchboxIcon } from '../icons/LunchboxIcon';
 import { formatCookingTime, scaleIngredientAmount, formatAmount, formatRecipeTitle } from '../../utils/formatters';
@@ -687,10 +688,11 @@ export const MealPlanView: React.FC = () => {
                   {/* Interactive Controls below Dinner Banner */}
                   <div className="p-3.5 space-y-2.5 bg-white">
                     {/* Servings Stepper & Change Recipe Button */}
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <div className="flex items-center gap-2 bg-[#FCFAF5] border border-[#EBE7DF] rounded-2xl px-3 py-1.5">
-                        <span className="text-xs font-semibold text-stone-700">Portioner</span>
-                        <div className="flex items-center gap-1.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-1.5 min-[380px]:gap-2 min-w-0 bg-[#FCFAF5] border border-[#EBE7DF] rounded-2xl pl-2.5 pr-1.5 min-[380px]:px-3 py-1.5">
+                        <Users className="w-4 h-4 text-stone-500 shrink-0 sm:hidden" aria-hidden="true" />
+                        <span className="sr-only sm:not-sr-only text-xs font-semibold text-stone-700">Portioner</span>
+                        <div className="flex items-center gap-1.5 shrink-0">
                           <button
                             type="button"
                             onClick={() =>
@@ -728,7 +730,7 @@ export const MealPlanView: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => openPickerModal(activeDayName, 'dinner')}
-                        className="py-2 px-3 rounded-2xl bg-[#FCFAF5] hover:bg-stone-100 border border-[#EBE7DF] text-xs font-bold text-[#284235] flex items-center gap-1.5 transition-all active:scale-95 touch-manipulation"
+                        className="shrink-0 whitespace-nowrap py-2 px-3 rounded-2xl bg-[#FCFAF5] hover:bg-stone-100 border border-[#EBE7DF] text-xs font-bold text-[#284235] flex items-center gap-1.5 transition-all active:scale-95 touch-manipulation"
                       >
                         <Utensils className="w-3.5 h-3.5" />
                         <span>Byt rätt</span>
@@ -764,10 +766,11 @@ export const MealPlanView: React.FC = () => {
                     </p>
                   </div>
 
-                  <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-[#EBE7DF]">
-                    <div className="flex items-center gap-2 bg-[#FCFAF5] border border-[#EBE7DF] rounded-2xl px-3 py-1.5">
-                      <span className="text-xs font-semibold text-stone-700">Portioner</span>
-                      <div className="flex items-center gap-1.5">
+                  <div className="flex items-center justify-between gap-2 pt-2 border-t border-[#EBE7DF]">
+                    <div className="flex items-center gap-1.5 min-[380px]:gap-2 min-w-0 bg-[#FCFAF5] border border-[#EBE7DF] rounded-2xl pl-2.5 pr-1.5 min-[380px]:px-3 py-1.5">
+                      <Users className="w-4 h-4 text-stone-500 shrink-0 sm:hidden" aria-hidden="true" />
+                        <span className="sr-only sm:not-sr-only text-xs font-semibold text-stone-700">Portioner</span>
+                      <div className="flex items-center gap-1.5 shrink-0">
                         <button
                           type="button"
                           onClick={() =>
@@ -805,7 +808,7 @@ export const MealPlanView: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => openPickerModal(activeDayName, 'dinner')}
-                      className="py-2 px-3.5 rounded-2xl bg-[#FCFAF5] hover:bg-stone-100 border border-[#EBE7DF] text-xs font-bold text-[#284235] flex items-center gap-1.5 transition-all active:scale-95 touch-manipulation"
+                      className="shrink-0 whitespace-nowrap py-2 px-3.5 rounded-2xl bg-[#FCFAF5] hover:bg-stone-100 border border-[#EBE7DF] text-xs font-bold text-[#284235] flex items-center gap-1.5 transition-all active:scale-95 touch-manipulation"
                     >
                       <Utensils className="w-3.5 h-3.5" />
                       <span>Ändra</span>
