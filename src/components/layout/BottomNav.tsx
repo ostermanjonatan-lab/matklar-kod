@@ -137,7 +137,9 @@ export const BottomNav: React.FC<BottomNavProps> = ({ onAddRecipeClick, onAddSho
       </div>
 
       <nav className="fixed bottom-0 left-0 right-0 z-40 bg-[#FCFAF5] pb-safe font-sans">
-        {/* Gently curved top edge: a low arc that rises about 14 px towards the middle */}
+        {/* Gently curved top edge: a low arc that rises about 14 px towards the middle.
+            The inner buttons (Veckoplan, Inköp) sit about 6 px higher than the outer ones,
+            which is how much higher the arc is at their place, so the row follows the curve. */}
         <svg
           className="absolute bottom-full left-0 w-full h-[14px] -mb-px pointer-events-none drop-shadow-[0_-3px_6px_rgba(0,0,0,0.06)]"
           viewBox="0 0 100 14"
@@ -171,7 +173,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ onAddRecipeClick, onAddSho
           <button
             type="button"
             onClick={() => handleTabClick('mealplan')}
-            className={`flex flex-col items-center justify-center flex-1 py-1 px-1 rounded-2xl transition-all active:scale-95 touch-manipulation min-h-[52px] ${
+            className={`-translate-y-1.5 flex flex-col items-center justify-center flex-1 py-1 px-1 rounded-2xl transition-all active:scale-95 touch-manipulation min-h-[52px] ${
               activeTab === 'mealplan' && !selectedRecipe
                 ? 'text-[#284235] font-bold'
                 : 'text-stone-400 hover:text-stone-800'
@@ -212,7 +214,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ onAddRecipeClick, onAddSho
           <button
             type="button"
             onClick={() => handleTabClick('shopping')}
-            className={`relative flex flex-col items-center justify-center flex-1 py-1 px-1 rounded-2xl transition-all active:scale-95 touch-manipulation min-h-[52px] ${
+            className={`-translate-y-1.5 relative flex flex-col items-center justify-center flex-1 py-1 px-1 rounded-2xl transition-all active:scale-95 touch-manipulation min-h-[52px] ${
               activeTab === 'shopping' && !selectedRecipe
                 ? 'text-[#284235] font-bold'
                 : 'text-stone-400 hover:text-stone-800'
