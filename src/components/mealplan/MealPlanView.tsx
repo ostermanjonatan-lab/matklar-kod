@@ -268,15 +268,26 @@ export const MealPlanView: React.FC = () => {
 
   const totalPlannedMeals = plannedDinnerCount + plannedLunchCount;
 
-  // "7 middagar, 1 lunch"
+  // The shopping list is only made for today and later: earlier days are already eaten
+  const upcomingDays = mealPlan.filter((d) => !d.dateStr || d.dateStr >= today);
+  const upcomingDinnerCount = upcomingDays.filter(
+    (d) => (d.dinnerRecipeId && recipes.some((r) => r.id === d.dinnerRecipeId)) || Boolean(d.customDinner?.trim())
+  ).length;
+  const upcomingLunchCount = upcomingDays.filter(
+    (d) => (d.lunchRecipeId && recipes.some((r) => r.id === d.lunchRecipeId)) || Boolean(d.customLunch?.trim())
+  ).length;
+
+  // "5 middagar, 1 lunch"
   const plannedSummary = [
-    plannedDinnerCount > 0 ? `${plannedDinnerCount} ${plannedDinnerCount === 1 ? 'middag' : 'middagar'}` : '',
-    plannedLunchCount > 0 ? `${plannedLunchCount} ${plannedLunchCount === 1 ? 'lunch' : 'luncher'}` : '',
+    upcomingDinnerCount > 0 ? `${upcomingDinnerCount} ${upcomingDinnerCount === 1 ? 'middag' : 'middagar'}` : '',
+    upcomingLunchCount > 0 ? `${upcomingLunchCount} ${upcomingLunchCount === 1 ? 'lunch' : 'luncher'}` : '',
   ].filter(Boolean).join(', ');
 
   const openGenerate = () => {
-    if (totalPlannedMeals === 0) {
-      setGeneratedToast('Planera in minst en måltid i veckan först');
+    if (upcomingDinnerCount + upcomingLunchCount === 0) {
+      setGeneratedToast(
+        totalPlannedMeals > 0 ? 'Alla planerade måltider i veckan är före i dag' : 'Planera in minst en måltid i veckan först'
+      );
       setTimeout(() => setGeneratedToast(null), 2500);
       return;
     }
@@ -1399,7 +1410,7 @@ export const MealPlanView: React.FC = () => {
             </div>
 
             <p className="text-xs text-stone-600 leading-relaxed">
-              Appen räknar ihop alla ingredienser från veckans planerade rätter och sorterar dem efter butiksavdelning i din inköpslista.
+              Ingredienserna till {plannedSummary} från i dag och framåt läggs till, sorterade efter avdelning.
             </p>
 
             <label className="flex items-center gap-2.5 p-3 rounded-2xl bg-[#FCFAF5] border border-[#EBE7DF] text-xs font-semibold text-stone-800 cursor-pointer touch-manipulation">
@@ -1425,7 +1436,7 @@ export const MealPlanView: React.FC = () => {
                 onClick={handleConfirmGenerateShoppingList}
                 className="flex-1 py-3 px-3 rounded-2xl bg-[#284235] hover:bg-black text-white font-bold text-xs touch-manipulation min-h-[46px] shadow-sm"
               >
-                Skapa lista ({totalPlannedMeals} måltider)
+                Lägg till i inköpslistan
               </button>
             </div>
           </div>

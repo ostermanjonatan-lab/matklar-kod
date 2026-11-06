@@ -1523,8 +1523,10 @@ export const RecipeProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   }, [planWeekStart, commitMealPlan, withSyncedLeftovers]);
 
   const generateShoppingListFromWeek = useCallback((skipPantryStaples: boolean): number => {
-    // Dinners that also become leftover lunches are bought for the extra portions
-    const { items } = generateShoppingListFromMealPlan(withLeftoverPortions(weekMealPlan), recipes, {
+    // Dinners that also become leftover lunches are bought for the extra portions.
+    // Days before today are already eaten, so only today and later are bought for.
+    const upcoming = withLeftoverPortions(weekMealPlan).filter((d) => !d.dateStr || d.dateStr >= today);
+    const { items } = generateShoppingListFromMealPlan(upcoming, recipes, {
       skipPantryStaples,
     });
 
@@ -1540,7 +1542,7 @@ export const RecipeProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       return mergedList;
     });
     return items.length;
-  }, [weekMealPlan, recipes, isLiveSupabase, household?.id]);
+  }, [weekMealPlan, recipes, isLiveSupabase, household?.id, today]);
 
   const addIngredientsToShoppingList = useCallback((
     ingredients: Array<{ name: string; amount: number | null; unit: string; aisle: string; isPantryStaple: boolean }>,
