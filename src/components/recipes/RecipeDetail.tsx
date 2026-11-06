@@ -23,7 +23,6 @@ import {
 } from 'lucide-react';
 import { PortionScaler } from './PortionScaler';
 import { findIngredientsInStep } from '../../utils/stepIngredients';
-import { StarRating } from './StarRating';
 import { EditRecipeModal } from './EditRecipeModal';
 import { useModalBackHandler } from '../../hooks/useModalBackHandler';
 import { PantryChoiceDialog, hasPantryStaples } from './PantryChoiceDialog';
@@ -43,7 +42,6 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
     recipes,
     shoppingList,
     toggleFavorite,
-    updateRating,
     updateNotes,
     addIngredientsToShoppingList,
     setMealPlanForDay,
@@ -337,11 +335,6 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
     setCompletedSteps((prev) => ({ ...prev, [stepNumber]: !prev[stepNumber] }));
   };
 
-  // Rating change
-  const handleRatingChange = (newRating: number) => {
-    updateRating(recipe.id, newRating);
-  };
-
   // Save Notes
   const handleSaveNotes = () => {
     updateNotes(recipe.id, notesDraft);
@@ -568,33 +561,10 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
           </div>
 
           <div className="p-4 sm:p-5 space-y-4 sm:space-y-5">
-            {/* Quick Meta Row */}
-            <div className="grid grid-cols-1 min-[360px]:grid-cols-2 gap-2.5 w-full max-w-full">
-              <div className="bg-white p-3.5 rounded-3xl border border-[#EBE7DF] shadow-xs flex items-center gap-2.5 min-w-0">
-                <div className="w-9 h-9 rounded-2xl bg-[#FCFAF5] text-stone-700 flex items-center justify-center shrink-0">
-                  <Clock className="w-4 h-4 text-stone-600" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="text-[11px] text-stone-400 font-medium leading-tight">Tillagningstid</div>
-                  <div className="text-xs font-bold text-stone-900 truncate mt-0.5">
-                    {formatCookingTime(recipe.prepTimeMinutes, recipe.cookTimeMinutes)}
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white p-3.5 rounded-3xl border border-[#EBE7DF] shadow-xs flex flex-col justify-center min-w-0">
-                <div className="text-[11px] text-stone-400 font-medium mb-1">
-                  {recipe.rating > 0 ? `Ditt betyg (${recipe.rating}/5)` : 'Betygsätt recept'}
-                </div>
-                <div className="flex items-center">
-                  <StarRating
-                    rating={recipe.rating}
-                    interactive={true}
-                    size="sm"
-                    onRatingChange={handleRatingChange}
-                  />
-                </div>
-              </div>
+            {/* Cooking time */}
+            <div className="flex items-center gap-2 text-sm text-stone-600">
+              <Clock className="w-4 h-4 text-stone-500" />
+              <span>Tillagningstid {formatCookingTime(recipe.prepTimeMinutes, recipe.cookTimeMinutes)}</span>
             </div>
 
             {/* Ingredients and instructions, side by side on wide screens */}

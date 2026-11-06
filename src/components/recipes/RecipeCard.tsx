@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import type { Recipe } from '../../types/recipe';
 import { isRecipeNew, getRecipeSubcategories } from '../../types/recipe';
 import { useRecipes } from '../../context/RecipeContext';
-import { Heart, Clock, Star, Check, ShoppingCart } from 'lucide-react';
+import { Heart, Clock, Check, ShoppingCart } from 'lucide-react';
 import { formatCookingTime } from '../../utils/formatters';
 
 interface RecipeCardProps {
@@ -328,13 +328,8 @@ export const RecipeCard = React.memo<RecipeCardProps>(
               <span>{formatCookingTime(recipe.prepTimeMinutes, recipe.cookTimeMinutes)}</span>
             </div>
 
-            {/* Rating or New badge */}
-            {recipe.rating > 0 ? (
-              <div className="flex items-center gap-1.5 bg-black/60 px-2.5 py-1 rounded-full border border-white/20 shadow-2xs">
-                <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                <span className="text-amber-300 font-bold">{recipe.rating}.0</span>
-              </div>
-            ) : isRecipeNew(recipe) ? (
+            {/* New badge */}
+            {isRecipeNew(recipe) ? (
               <div className="bg-black/60 px-2.5 py-1 rounded-full border border-white/20 shadow-2xs">
                 <span className="text-emerald-300 font-semibold text-xs">Ny</span>
               </div>
@@ -389,7 +384,6 @@ export const RecipeCard = React.memo<RecipeCardProps>(
     return (
       prevProps.recipe.id === nextProps.recipe.id &&
       prevProps.recipe.isFavorite === nextProps.recipe.isFavorite &&
-      prevProps.recipe.rating === nextProps.recipe.rating &&
       prevProps.recipe.title === nextProps.recipe.title &&
       prevProps.recipe.coverImageUrl === nextProps.recipe.coverImageUrl &&
       prevProps.recipe.notes === nextProps.recipe.notes &&

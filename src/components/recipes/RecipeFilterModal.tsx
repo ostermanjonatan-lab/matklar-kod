@@ -9,7 +9,6 @@ import {
   Search,
   SlidersHorizontal,
   Clock,
-  Star,
   Heart,
   RotateCcw
 } from 'lucide-react';
@@ -30,9 +29,6 @@ export interface RecipeFilterModalProps {
   // Cooking time
   maxCookingTime: number | null;
   onChangeMaxCookingTime: (time: number | null) => void;
-  // Rating
-  minRating: number | null;
-  onChangeMinRating: (rating: number | null) => void;
   // Favorites
   onlyFavorites: boolean;
   onToggleFavorites: () => void;
@@ -51,13 +47,6 @@ const COOKING_TIME_OPTIONS = [
   { label: '≤ 60 min', value: 60 },
 ];
 
-const RATING_OPTIONS = [
-  { label: 'Alla betyg', value: null, hasStar: false },
-  { label: 'Minst 3', value: 3, hasStar: true },
-  { label: 'Minst 4', value: 4, hasStar: true },
-  { label: 'Endast 5', value: 5, hasStar: true },
-];
-
 export const RecipeFilterModal: React.FC<RecipeFilterModalProps> = ({
   isOpen,
   onClose,
@@ -71,8 +60,6 @@ export const RecipeFilterModal: React.FC<RecipeFilterModalProps> = ({
   onClearSubcategories,
   maxCookingTime,
   onChangeMaxCookingTime,
-  minRating,
-  onChangeMinRating,
   onlyFavorites,
   onToggleFavorites,
   onResetFilters,
@@ -458,44 +445,6 @@ export const RecipeFilterModal: React.FC<RecipeFilterModalProps> = ({
               </div>
             </div>
 
-            {/* Minsta betyg */}
-            <div className="space-y-2">
-              <div className="flex items-center gap-1.5">
-                <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
-                <label className="text-xs font-bold text-stone-800 uppercase tracking-wider">
-                  Minsta betyg
-                </label>
-              </div>
-
-              <div className="flex flex-wrap gap-1.5">
-                {RATING_OPTIONS.map((opt) => {
-                  const isSelected = minRating === opt.value;
-                  return (
-                    <button
-                      key={opt.label}
-                      type="button"
-                      onClick={() => onChangeMinRating(opt.value)}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all touch-manipulation min-h-[36px] inline-flex items-center gap-1 ${
-                        isSelected
-                          ? 'bg-[#284235] text-white shadow-xs'
-                          : 'bg-[#FCFAF5] border border-stone-200 text-stone-700 hover:bg-stone-100'
-                      }`}
-                    >
-                      <span>{opt.label}</span>
-                      {opt.hasStar && (
-                        <Star
-                          className={`w-3.5 h-3.5 shrink-0 ${
-                            isSelected
-                              ? 'fill-white text-white'
-                              : 'fill-amber-400 text-amber-400'
-                          }`}
-                        />
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
           </div>
         </div>
 

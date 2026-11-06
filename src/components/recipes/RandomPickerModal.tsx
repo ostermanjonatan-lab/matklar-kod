@@ -3,7 +3,6 @@ import type { Recipe } from '../../types/recipe';
 import { isRecipeNew } from '../../types/recipe';
 import {
   X,
-  Star,
   Clock,
   ArrowRight,
   UtensilsCrossed,
@@ -503,20 +502,8 @@ export const RandomPickerModal: React.FC<RandomPickerModalProps> = ({
                         <span>{formatCookingTime(displayedRecipe.prepTimeMinutes, displayedRecipe.cookTimeMinutes)}</span>
                       </div>
 
-                      {displayedRecipe.rating > 0 ? (
-                        <div className="flex items-center gap-1 font-bold text-amber-500">
-                          <Star className="w-3.5 h-3.5 fill-amber-400" />
-                          <span>{displayedRecipe.rating}.0</span>
-                        </div>
-                      ) : isRecipeNew(displayedRecipe) ? (
-                        <div className="flex items-center gap-1 font-bold text-amber-500">
-                          <Star className="w-3.5 h-3.5 text-stone-400" />
-                          <span>Ny</span>
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-1 text-stone-400 font-medium text-xs">
-                          <span>Ej betygsatt</span>
-                        </div>
+                      {isRecipeNew(displayedRecipe) && (
+                        <span className="font-semibold text-emerald-700">Ny</span>
                       )}
                     </div>
                   </div>

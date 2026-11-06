@@ -14,7 +14,6 @@ import {
   Clock,
   ChevronLeft,
   ChevronRight,
-  Star,
   Layers,
   View,
   Utensils,
@@ -792,15 +791,6 @@ export const MealPlanView: React.FC = () => {
                             )}
                           </span>
                         </span>
-                        {dinnerRecipe.rating > 0 && (
-                          <>
-                            <span>•</span>
-                            <span className="flex items-center gap-0.5 text-amber-300">
-                              <Star className="w-3.5 h-3.5 fill-amber-300" />
-                              <span>{dinnerRecipe.rating}</span>
-                            </span>
-                          </>
-                        )}
                       </div>
                       <h3 className="font-serif font-bold text-xl leading-snug drop-shadow-md text-white">
                         {dinnerRecipe.title}
@@ -1460,15 +1450,6 @@ export const MealPlanView: React.FC = () => {
                               <span>{r.category}</span>
                               <span>•</span>
                               <span>{formatCookingTime(r.prepTimeMinutes, r.cookTimeMinutes)}</span>
-                              {r.rating > 0 && (
-                                <>
-                                  <span>•</span>
-                                  <span className="flex items-center gap-0.5 text-amber-500">
-                                    <Star className="w-3 h-3 fill-amber-500" />
-                                    <span>{r.rating}</span>
-                                  </span>
-                                </>
-                              )}
                             </div>
                           </div>
                         </div>

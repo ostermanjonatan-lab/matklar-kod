@@ -408,7 +408,7 @@ export const SettingsView: React.FC = () => {
           </div>
           <ul className="text-xs text-stone-600 space-y-1.5 list-disc list-inside leading-relaxed">
             <li>Recept och ändringar synkas direkt mellan hushållets enheter</li>
-            <li>Gemensamma anteckningar och betyg uppdateras omedelbart</li>
+            <li>Gemensamma anteckningar uppdateras direkt</li>
             <li>Inköpslistan bockas av i realtid när någon är i butiken</li>
             <li>Veckoplanen hålls automatiskt synkroniserad</li>
           </ul>

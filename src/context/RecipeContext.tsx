@@ -147,7 +147,6 @@ interface RecipeContextType {
   openRecipeDetail: (recipe: Recipe) => void;
   closeRecipeDetail: () => void;
   toggleFavorite: (id: string) => void;
-  updateRating: (id: string, rating: number) => void;
   updateNotes: (id: string, notes: string) => void;
   addRecipe: (recipe: Recipe) => void;
   updateRecipe: (recipe: Recipe) => void;
@@ -1209,22 +1208,6 @@ export const RecipeProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       if (rec) pushRecipeToSupabase({ ...rec, isFavorite: !rec.isFavorite }, household.id);
     }
   }, [recipes, isLiveSupabase, household?.id]);
-
-  const updateRating = useCallback((id: string, rating: number) => {
-    setRecipes((prev) => {
-      const updated = prev.map((rec) => {
-        if (rec.id === id) {
-          const mod = { ...rec, rating };
-          broadcastLocalChange({ type: 'RECIPE_UPDATE', payload: mod });
-          if (isLiveSupabase && household?.id) pushRecipeToSupabase(mod, household.id);
-          return mod;
-        }
-        return rec;
-      });
-      return updated;
-    });
-    setSelectedRecipe((prev) => (prev && prev.id === id ? { ...prev, rating } : prev));
-  }, [isLiveSupabase, household?.id]);
 
   const updateNotes = useCallback((id: string, notes: string) => {
     setRecipes((prev) => {
@@ -2591,7 +2574,6 @@ export const RecipeProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         openRecipeDetail,
         closeRecipeDetail,
         toggleFavorite,
-        updateRating,
         updateNotes,
         addRecipe,
         updateRecipe,

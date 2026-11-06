@@ -22,7 +22,7 @@ import {
 } from 'lucide-react';
 
 
-type SortOption = 'default' | 'oldest' | 'time_asc' | 'time_desc' | 'rating_desc' | 'name_asc' | 'name_desc';
+type SortOption = 'default' | 'oldest' | 'time_asc' | 'time_desc' | 'name_asc' | 'name_desc';
 
 interface SortItem {
   id: SortOption;
@@ -50,11 +50,6 @@ const SORT_OPTIONS: SortItem[] = [
     id: 'time_desc',
     label: 'Längre tillagningstid (Långkok)',
     shortLabel: 'Längre tid',
-  },
-  {
-    id: 'rating_desc',
-    label: 'Högst betyg (Bästa recepten)',
-    shortLabel: 'Högst betyg',
   },
   {
     id: 'name_asc',
@@ -89,7 +84,6 @@ export const RecipeList: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('Alla');
   const [selectedSubcategories, setSelectedSubcategories] = useState<string[]>([]);
   const [maxCookingTime, setMaxCookingTime] = useState<number | null>(null);
-  const [minRating, setMinRating] = useState<number | null>(null);
   const [onlyFavorites, setOnlyFavorites] = useState<boolean>(false);
   const [sortBy, setSortBy] = useState<SortOption>('default');
   const [showRandomPicker, setShowRandomPicker] = useState<boolean>(false);
@@ -291,12 +285,6 @@ export const RecipeList: React.FC = () => {
         }
       }
 
-      // Min rating filter
-      if (minRating !== null) {
-        if ((recipe.rating || 0) < minRating) {
-          return false;
-        }
-      }
 
       // Favorites filter
       if (onlyFavorites && !recipe.isFavorite) {
@@ -316,8 +304,6 @@ export const RecipeList: React.FC = () => {
           return totalTimeA - totalTimeB;
         case 'time_desc':
           return totalTimeB - totalTimeA;
-        case 'rating_desc':
-          return (b.rating || 0) - (a.rating || 0);
         case 'name_asc':
           return a.title.localeCompare(b.title, 'sv', { sensitivity: 'base' });
         case 'oldest': {
@@ -343,7 +329,6 @@ export const RecipeList: React.FC = () => {
     selectedCategory,
     selectedSubcategories,
     maxCookingTime,
-    minRating,
     onlyFavorites,
     sortBy,
   ]);
@@ -356,7 +341,6 @@ export const RecipeList: React.FC = () => {
     selectedCategory,
     selectedSubcategories,
     maxCookingTime,
-    minRating,
     onlyFavorites,
     sortBy,
   ]);
@@ -395,7 +379,6 @@ export const RecipeList: React.FC = () => {
     setSelectedCategory('Alla');
     setSelectedSubcategories([]);
     setMaxCookingTime(null);
-    setMinRating(null);
     setOnlyFavorites(false);
     setSortBy('default');
   };
@@ -405,10 +388,9 @@ export const RecipeList: React.FC = () => {
     if (selectedCategory !== 'Alla') count++;
     count += selectedSubcategories.length;
     if (maxCookingTime !== null) count++;
-    if (minRating !== null) count++;
     if (onlyFavorites) count++;
     return count;
-  }, [selectedCategory, selectedSubcategories, maxCookingTime, minRating, onlyFavorites]);
+  }, [selectedCategory, selectedSubcategories, maxCookingTime, onlyFavorites]);
 
 
   const hasActiveFilters =
@@ -529,8 +511,6 @@ export const RecipeList: React.FC = () => {
           onClearSubcategories={() => setSelectedSubcategories([])}
           maxCookingTime={maxCookingTime}
           onChangeMaxCookingTime={setMaxCookingTime}
-          minRating={minRating}
-          onChangeMinRating={setMinRating}
           onlyFavorites={onlyFavorites}
           onToggleFavorites={() => setOnlyFavorites((prev) => !prev)}
           onResetFilters={clearFilters}
