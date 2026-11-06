@@ -86,7 +86,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ onAddRecipeClick, onAddSho
       {/* Quick Add Menu (z-[38]: slides up from behind the z-40 bottom navigation bar) */}
       <div className="fixed bottom-[calc(3.75rem+max(1.25rem,env(safe-area-inset-bottom,0px)))] left-1/2 -translate-x-1/2 w-full max-w-md pointer-events-none z-[38] flex justify-center px-4">
         <div
-          className={`w-[320px] max-w-[calc(100%-1rem)] bg-white rounded-t-3xl rounded-b-none pt-3.5 px-3 pb-6 shadow-[0_-8px_30px_rgba(0,0,0,0.12)] border-t border-x border-[#EBE7DF] flex flex-col gap-2 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+          className={`w-[300px] max-w-[calc(100%-1rem)] bg-white rounded-t-2xl rounded-b-none pt-2 px-2 pb-7 shadow-[0_-8px_30px_rgba(0,0,0,0.12)] border-t border-x border-[#EBE7DF] flex flex-col transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
             isMenuOpen
               ? 'opacity-100 pointer-events-auto'
               : 'opacity-0 pointer-events-none'
@@ -101,7 +101,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ onAddRecipeClick, onAddSho
           aria-label="Lägg till meny"
           onClick={(e) => e.stopPropagation()}
         >
-          {/* Option 1: Recept */}
+          {/* Two plain rows: what each one does, and for recipes the ways to add one */}
           <button
             type="button"
             onClick={(e) => {
@@ -109,18 +109,15 @@ export const BottomNav: React.FC<BottomNavProps> = ({ onAddRecipeClick, onAddSho
               setIsMenuOpen(false);
               onAddRecipeClick?.();
             }}
-            className="flex items-center gap-3.5 p-3 rounded-2xl bg-[#FCFAF5] hover:bg-stone-100 active:scale-[0.98] border border-[#EBE7DF]/80 transition-all text-left group touch-manipulation cursor-pointer"
+            className="flex items-center gap-3 px-2 py-2.5 rounded-xl hover:bg-stone-50 active:bg-stone-100 text-left touch-manipulation cursor-pointer"
           >
-            <div className="w-11 h-11 rounded-2xl bg-[#284235] text-white flex items-center justify-center shrink-0 shadow-sm group-hover:scale-105 transition-transform">
-              <Utensils className="w-5 h-5 stroke-[2.2]" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="text-sm font-bold text-stone-900 leading-tight">Recept</div>
-              <div className="text-xs text-stone-500 leading-tight mt-0.5 truncate">Skapa, importera el. fota</div>
-            </div>
+            <Utensils className="w-5 h-5 text-stone-400 shrink-0" />
+            <span className="min-w-0 flex-1">
+              <span className="block text-[15px] font-semibold text-stone-900 leading-tight">Lägg till recept</span>
+              <span className="block text-sm text-stone-500 leading-tight mt-0.5">Skriv, från länk eller foto</span>
+            </span>
           </button>
-
-          {/* Option 2: Vara för inköpslistan */}
+          <div className="h-px bg-[#EBE7DF] mx-2" />
           <button
             type="button"
             onClick={(e) => {
@@ -128,15 +125,10 @@ export const BottomNav: React.FC<BottomNavProps> = ({ onAddRecipeClick, onAddSho
               setIsMenuOpen(false);
               onAddShoppingItemClick?.();
             }}
-            className="flex items-center gap-3.5 p-3 rounded-2xl bg-[#FCFAF5] hover:bg-stone-100 active:scale-[0.98] border border-[#EBE7DF]/80 transition-all text-left group touch-manipulation cursor-pointer"
+            className="flex items-center gap-3 px-2 py-3 rounded-xl hover:bg-stone-50 active:bg-stone-100 text-left touch-manipulation cursor-pointer"
           >
-            <div className="w-11 h-11 rounded-2xl bg-amber-700 text-white flex items-center justify-center shrink-0 shadow-sm group-hover:scale-105 transition-transform">
-              <ShoppingCart className="w-5 h-5 stroke-[2.2]" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="text-sm font-bold text-stone-900 leading-tight">Vara för inköpslistan</div>
-              <div className="text-xs text-stone-500 leading-tight mt-0.5 truncate">Lägg till vara i listan</div>
-            </div>
+            <ShoppingCart className="w-5 h-5 text-stone-400 shrink-0" />
+            <span className="text-[15px] font-semibold text-stone-900">Lägg till vara</span>
           </button>
         </div>
       </div>
