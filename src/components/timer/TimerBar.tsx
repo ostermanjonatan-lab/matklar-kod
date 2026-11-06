@@ -41,19 +41,17 @@ export function useCurvedShape(active: boolean) {
 }
 
 /**
- * The running kitchen timer as one row. Above the menu it names the recipe, and a tap on the
- * name opens it. The thin line shows how far the timer has gone.
+ * The running kitchen timer as one row. Above the menu a tap on the time opens its recipe.
+ * The thin line shows how far the timer has gone.
  */
-export const TimerRow: React.FC<{ inDock: boolean; nameShownAbove?: boolean }> = ({ inDock, nameShownAbove = false }) => {
+export const TimerRow: React.FC<{ inDock: boolean }> = ({ inDock }) => {
   const { timer, toggleTimer, restartTimer, clearTimer } = useTimer();
   const { recipes, openRecipeDetail } = useRecipes();
   if (!timer) return null;
 
   const done = timer.secondsLeft === 0;
   const recipe = inDock && timer.recipeId ? recipes.find((r) => r.id === timer.recipeId) : undefined;
-  // Above the menu the timer names its recipe, unless that recipe is minimized just above it
-  const caption =
-    inDock && timer.recipeTitle && !nameShownAbove ? formatRecipeTitle(timer.recipeTitle) : `Timer på ${timer.label}`;
+  const caption = `Timer på ${timer.label}`;
   const elapsed = timer.totalSeconds > 0 ? 1 - timer.secondsLeft / timer.totalSeconds : 1;
   const textButton = 'min-h-[44px] px-3 text-sm font-semibold touch-manipulation';
 

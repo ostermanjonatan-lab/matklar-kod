@@ -66,7 +66,7 @@ export const BottomDock: React.FC<BottomDockProps> = ({ minimized, onCloseMinimi
             </button>
           </div>
         )}
-        <TimerRow inDock nameShownAbove={Boolean(minimized && timer?.recipeId === minimized.id)} />
+        <TimerRow inDock />
       </div>
     </div>
   );
