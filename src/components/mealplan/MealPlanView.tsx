@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { LunchboxIcon } from '../icons/LunchboxIcon';
 import { DinnerBrowser } from '../recipes/DinnerBrowser';
+import { RandomPickerModal } from '../recipes/RandomPickerModal';
 import { formatCookingTime, scaleIngredientAmount, formatAmount, formatRecipeTitle } from '../../utils/formatters';
 import {
   addDaysISO,
@@ -201,6 +202,10 @@ export const MealPlanView: React.FC = () => {
   useModalBackHandler(showGenerateModal, () => setShowGenerateModal(false), 'generate-shopping');
   useModalBackHandler(showClearWeekModal, () => setShowClearWeekModal(false), 'clear-week');
 
+  // Slumpa: the rolling animation, with Slumpa igen and no repeats until all have been shown
+  const [randomFor, setRandomFor] = useState<{ dayName: MealPlanDay['dayName']; mealType: 'lunch' | 'dinner' } | null>(null);
+  useModalBackHandler(Boolean(randomFor), () => setRandomFor(null), 'meal-random');
+
   const activeDayName = DAYS_OF_WEEK[selectedDayIndex];
   const activeDayData = mealPlan.find((d) => d.dayName === activeDayName) || {
     dayName: activeDayName,
@@ -265,65 +270,6 @@ export const MealPlanView: React.FC = () => {
     mealType: 'lunch' | 'dinner'
   ) => {
     setMealPlanForDay(dayName, mealType, null, '');
-  };
-
-  const handleRandomPickForDay = (
-    dayName: MealPlanDay['dayName'],
-    mealType: 'lunch' | 'dinner'
-  ) => {
-    if (recipes.length === 0) return;
-    const foodRecipes = recipes.filter(
-      (r) => !['Efterrätt', 'Dryck', 'Såser'].includes(r.category)
-    );
-    const basePool = foodRecipes.length > 0 ? foodRecipes : recipes;
-    if (basePool.length === 0) return;
-
-    // Get recipe currently set for this slot (if any)
-    const currentDayData = mealPlan.find((d) => d.dayName === dayName);
-    const currentRecipeId = mealType === 'dinner' ? currentDayData?.dinnerRecipeId : currentDayData?.lunchRecipeId;
-
-    // Track usage count of each recipe across other planned meals in the week
-    const usageCount = new Map<string, number>();
-    basePool.forEach((r) => usageCount.set(r.id, 0));
-
-    mealPlan.forEach((d) => {
-      if (d.dayName === dayName) {
-        // Count the OTHER meal on the same day (e.g. lunch if we are picking dinner)
-        const otherMealId = mealType === 'dinner' ? d.lunchRecipeId : d.dinnerRecipeId;
-        if (otherMealId && usageCount.has(otherMealId)) {
-          usageCount.set(otherMealId, (usageCount.get(otherMealId) || 0) + 1);
-        }
-      } else {
-        if (d.dinnerRecipeId && usageCount.has(d.dinnerRecipeId)) {
-          usageCount.set(d.dinnerRecipeId, (usageCount.get(d.dinnerRecipeId) || 0) + 1);
-        }
-        if (d.lunchRecipeId && usageCount.has(d.lunchRecipeId)) {
-          usageCount.set(d.lunchRecipeId, (usageCount.get(d.lunchRecipeId) || 0) + 1);
-        }
-      }
-    });
-
-    // 1. Primary candidate pool: recipes NOT yet planned in the week and not the current recipe
-    let eligible = basePool.filter(
-      (r) => (usageCount.get(r.id) || 0) === 0 && (basePool.length <= 1 || r.id !== currentRecipeId)
-    );
-
-    // 2. If all recipes have already been used in the week, fall back to recipes used the fewest times
-    if (eligible.length === 0) {
-      const candidates = basePool.filter((r) => basePool.length <= 1 || r.id !== currentRecipeId);
-      if (candidates.length > 0) {
-        const minUsage = Math.min(...candidates.map((r) => usageCount.get(r.id) || 0));
-        eligible = candidates.filter((r) => (usageCount.get(r.id) || 0) === minUsage);
-      } else {
-        eligible = basePool;
-      }
-    }
-
-    const randomIdx = Math.floor(Math.random() * eligible.length);
-    const randomRecipe = eligible[randomIdx];
-    if (randomRecipe) {
-      setMealPlanForDay(dayName, mealType, randomRecipe.id);
-    }
   };
 
   const handleConfirmClearWeek = () => {
@@ -687,7 +633,7 @@ export const MealPlanView: React.FC = () => {
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleRandomPickForDay(activeDayName, 'dinner');
+                            setRandomFor({ dayName: activeDayName, mealType: 'dinner' });
                           }}
                           className="w-8 h-8 rounded-full bg-black/50 backdrop-blur-md text-white hover:bg-black/70 flex items-center justify-center active:scale-90 transition-all touch-manipulation"
                           title="Slumpa annan middag för denna dag"
@@ -883,7 +829,7 @@ export const MealPlanView: React.FC = () => {
 
                     <button
                       type="button"
-                      onClick={() => handleRandomPickForDay(activeDayName, 'dinner')}
+                      onClick={() => setRandomFor({ dayName: activeDayName, mealType: 'dinner' })}
                       className="py-3 px-3.5 rounded-2xl bg-[#FCFAF5] hover:bg-stone-100 border border-[#EBE7DF] active:scale-95 text-stone-700 font-semibold text-xs flex items-center justify-center transition-all touch-manipulation min-h-[46px]"
                       title="Slumpa middag för denna dag"
                     >
@@ -1244,8 +1190,10 @@ export const MealPlanView: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => {
-                    handleRandomPickForDay(pickerState.dayName, pickerState.mealType);
+                    const target = { dayName: pickerState.dayName, mealType: pickerState.mealType };
                     setPickerState(null);
+                    // Open after the picker has closed, so the back button history stays in order
+                    setTimeout(() => setRandomFor(target), 120);
                   }}
                   className="px-3 h-9 rounded-xl bg-[#FCFAF5] border border-[#EBE7DF] flex items-center gap-1.5 text-xs font-semibold text-stone-700 hover:bg-stone-100 touch-manipulation"
                 >
@@ -1361,6 +1309,20 @@ export const MealPlanView: React.FC = () => {
             )}
           </div>
         </div>
+      )}
+
+      {/* Slumpa with animation, among the dinner recipes */}
+      {randomFor && (
+        <RandomPickerModal
+          recipes={recipes}
+          startCategory="Middag"
+          hideCategorySwitch
+          title={`Slumpa ${randomFor.mealType === 'dinner' ? 'middag' : 'lunch'}, ${randomFor.dayName.toLowerCase()}`}
+          confirmLabel={`Välj till ${randomFor.dayName.toLowerCase()}`}
+          avoidIds={mealPlan.flatMap((d) => [d.dinnerRecipeId, d.lunchRecipeId]).filter((id): id is string => Boolean(id))}
+          onSelectRecipe={(r) => setMealPlanForDay(randomFor.dayName, randomFor.mealType, r.id)}
+          onClose={() => setRandomFor(null)}
+        />
       )}
 
       {/* =================================================================== */}

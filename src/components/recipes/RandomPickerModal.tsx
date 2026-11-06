@@ -22,6 +22,16 @@ interface RandomPickerModalProps {
   initialMaxCookingTime?: number | null;
   onSelectRecipe: (recipe: Recipe) => void;
   onClose: () => void;
+  /** Start rolling in this category straight away, without the question step */
+  startCategory?: string;
+  /** Text on the main button, default "Öppna receptet" */
+  confirmLabel?: string;
+  /** Heading while rolling, default "Slumpar <kategori>" */
+  title?: string;
+  /** Recipes to avoid as long as there are others, e.g. those already planned this week */
+  avoidIds?: string[];
+  /** Hide "Byt kategori", for when only one category makes sense */
+  hideCategorySwitch?: boolean;
 }
 
 interface CategoryOption {
@@ -104,10 +114,15 @@ export const RandomPickerModal: React.FC<RandomPickerModalProps> = ({
   initialMaxCookingTime,
   onSelectRecipe,
   onClose,
+  startCategory,
+  confirmLabel = 'Öppna receptet',
+  title,
+  avoidIds = [],
+  hideCategorySwitch = false,
 }) => {
-  const [step, setStep] = useState<'question' | 'result'>('question');
+  const [step, setStep] = useState<'question' | 'result'>(startCategory ? 'result' : 'question');
   const [selectedCategory, setSelectedCategory] = useState<string>(
-    () => (currentCategoryFilter && currentCategoryFilter !== 'Alla' ? currentCategoryFilter : 'Middag')
+    () => startCategory || (currentCategoryFilter && currentCategoryFilter !== 'Alla' ? currentCategoryFilter : 'Middag')
   );
   const [maxCookingTime, setMaxCookingTime] = useState<number | null>(initialMaxCookingTime ?? null);
   const [isRolling, setIsRolling] = useState<boolean>(false);
@@ -147,6 +162,14 @@ export const RandomPickerModal: React.FC<RandomPickerModalProps> = ({
   };
 
   const pool = getPool(selectedCategory, maxCookingTime);
+
+  // Not yet shown and not to be avoided; then not yet shown; otherwise nothing (time to start over)
+  const pickFresh = (activePool: Recipe[], seen: string[]) => {
+    const fresh = activePool.filter((r) => !seen.includes(r.id) && !avoidIds.includes(r.id));
+    if (fresh.length > 0) return getRandomItem(fresh);
+    const unseen = activePool.filter((r) => !seen.includes(r.id));
+    return unseen.length > 0 ? getRandomItem(unseen) : null;
+  };
   const seenCountInPool = pool.filter((r) => seenRecipeIds.includes(r.id)).length;
 
   const handleResetCategorySeen = () => {
@@ -186,7 +209,7 @@ export const RandomPickerModal: React.FC<RandomPickerModalProps> = ({
     }
 
     // Always start fresh for this roll session
-    const target = getRandomItem(activePool);
+    const target = pickFresh(activePool, []) || getRandomItem(activePool);
     const nextSeen = [target.id];
 
     if (activePool.length === 1) {
@@ -228,14 +251,14 @@ export const RandomPickerModal: React.FC<RandomPickerModalProps> = ({
     if (rollTimerRef.current) clearInterval(rollTimerRef.current);
     setShowResetNotice(false);
 
-    // 1. Determine target from unseen recipes in active pool
-    const unseen = pool.filter((r) => !seenRecipeIds.includes(r.id));
+    // 1. Determine target from recipes in the pool that have not been shown yet
+    const fresh = pickFresh(pool, seenRecipeIds);
     let target: Recipe;
     let nextSeen: string[];
     let cycledAll = false;
 
-    if (unseen.length > 0) {
-      target = getRandomItem(unseen);
+    if (fresh) {
+      target = fresh;
       nextSeen = [...seenRecipeIds, target.id];
     } else {
       // All recipes in pool have been seen!
@@ -277,6 +300,17 @@ export const RandomPickerModal: React.FC<RandomPickerModalProps> = ({
     }, 80);
   };
 
+  // Opened with a category: roll at once. The cleanup stops the roll if the view is taken down,
+  // and a remount (React in development) starts it again.
+  useEffect(() => {
+    if (!startCategory) return;
+    startRoll(startCategory, maxCookingTime);
+    return () => {
+      if (rollTimerRef.current) clearInterval(rollTimerRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 animate-fade-in font-sans">
       <div className="bg-white w-full max-w-md sm:max-w-lg rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
@@ -284,7 +318,7 @@ export const RandomPickerModal: React.FC<RandomPickerModalProps> = ({
         <div className="bg-[#FCFAF5] border-b border-[#EBE7DF] px-5 py-4 flex items-center justify-between">
           <div>
             <h3 className="font-serif font-bold text-lg text-stone-900 leading-tight">
-              {step === 'question' ? 'Vad vill du slumpa?' : `Slumpar ${selectedCategory}`}
+              {step === 'question' ? 'Vad vill du slumpa?' : title || `Slumpar ${selectedCategory}`}
             </h3>
             {step === 'question' ? (
               <p className="text-xs text-stone-500">
@@ -449,13 +483,15 @@ export const RandomPickerModal: React.FC<RandomPickerModalProps> = ({
                       Visa alla tider
                     </button>
                   )}
-                  <button
-                    type="button"
-                    onClick={() => setStep('question')}
-                    className="px-4 py-2.5 bg-stone-100 text-stone-800 rounded-xl font-bold text-xs"
-                  >
-                    Välj en annan kategori
-                  </button>
+                  {!hideCategorySwitch && (
+                    <button
+                      type="button"
+                      onClick={() => setStep('question')}
+                      className="px-4 py-2.5 bg-stone-100 text-stone-800 rounded-xl font-bold text-xs"
+                    >
+                      Välj en annan kategori
+                    </button>
+                  )}
                 </div>
               </div>
             ) : (
@@ -463,7 +499,7 @@ export const RandomPickerModal: React.FC<RandomPickerModalProps> = ({
                 <div className="space-y-4">
                   {showResetNotice && (
                     <div className="bg-[#284235] text-white text-xs px-3.5 py-2.5 rounded-2xl text-center font-medium shadow-md animate-fade-in flex items-center justify-center gap-2">
-                      <span>Alla {pool.length} recept har visats – börjar om från början!</span>
+                      <span>Alla {pool.length} recept har visats, nu börjar det om</span>
                     </div>
                   )}
 
@@ -520,11 +556,11 @@ export const RandomPickerModal: React.FC<RandomPickerModalProps> = ({
                       className="w-full py-4 bg-[#284235] hover:bg-black active:scale-95 text-white font-bold text-sm rounded-2xl shadow-md transition-all touch-manipulation flex items-center justify-center gap-2 disabled:opacity-50"
                       style={{ minHeight: '52px' }}
                     >
-                      <span>Öppna receptet</span>
+                      <span>{confirmLabel}</span>
                       <ArrowRight className="w-4 h-4" />
                     </button>
 
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className={`grid gap-2 ${hideCategorySwitch ? 'grid-cols-1' : 'grid-cols-2'}`}>
                       <button
                         type="button"
                         disabled={isRolling || pool.length <= 1}
@@ -536,6 +572,7 @@ export const RandomPickerModal: React.FC<RandomPickerModalProps> = ({
                         <span>Slumpa igen</span>
                       </button>
 
+                      {!hideCategorySwitch && (
                       <button
                         type="button"
                         onClick={() => {
@@ -550,6 +587,7 @@ export const RandomPickerModal: React.FC<RandomPickerModalProps> = ({
                       >
                         <span>Byt kategori</span>
                       </button>
+                      )}
                     </div>
                   </div>
                 </div>
