@@ -193,7 +193,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ onAddRecipeClick, onAddSho
             <button
               type="button"
               onClick={handleAddButtonClick}
-              className={`w-12 h-12 -mt-4 rounded-full transition-all touch-manipulation ring-4 flex items-center justify-center shadow-lg relative z-10 cursor-pointer ${
+              className={`w-12 h-12 -mt-4 -translate-y-3 rounded-full transition-all touch-manipulation ring-4 flex items-center justify-center shadow-lg relative z-10 cursor-pointer ${
                 isMenuOpen
                   ? 'bg-stone-900 text-white ring-[#FCFAF5] active:scale-90 shadow-stone-900/30'
                   : 'bg-[#284235] hover:bg-[#1C3026] active:scale-90 text-white ring-[#FCFAF5] shadow-emerald-950/25'
