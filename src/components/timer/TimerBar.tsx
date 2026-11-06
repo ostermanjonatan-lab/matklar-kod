@@ -125,7 +125,7 @@ export const TimerBar: React.FC = () => {
     >
       <div
         className={`rounded-2xl overflow-hidden border animate-slide-up backdrop-blur-xl backdrop-saturate-150 shadow-[0_6px_16px_rgba(28,25,23,0.13)] ${
-          done ? 'border-[#284235] bg-[#284235]/95' : 'border-[#EBE7DF] bg-white/90'
+          done ? 'border-[#284235] bg-[#284235]/90' : 'border-[#EBE7DF] bg-white/80'
         }`}
       >
         <TimerRow inDock={false} />
