@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { ConfirmSheet } from '../layout/ConfirmSheet';
 import { DifficultyDots } from './DifficultyPicker';
 import { DIFFICULTY_LABELS } from '../../utils/recipeDifficulty';
 import type { Recipe } from '../../types/recipe';
@@ -1060,49 +1061,14 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
         </div>
       )}
 
-      {/* Delete Recipe Confirmation Modal */}
       {showDeleteConfirm && (
-        <div
-          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in font-sans"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) setShowDeleteConfirm(false);
-          }}
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="delete-recipe-title"
-        >
-          <div className="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl space-y-4 animate-scale-up">
-            <div className="w-12 h-12 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center mx-auto">
-              <Trash2 className="w-6 h-6" />
-            </div>
-
-            <div className="text-center space-y-1.5">
-              <h3 id="delete-recipe-title" className="font-serif font-bold text-lg text-stone-900">
-                Ta bort recept?
-              </h3>
-              <p className="text-xs text-stone-500 leading-relaxed">
-                Är du säker på att du vill ta bort <span className="font-semibold text-stone-800">"{formatRecipeTitle(recipe.title)}"</span>? Detta går inte att ångra.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2.5 pt-2">
-              <button
-                type="button"
-                onClick={() => setShowDeleteConfirm(false)}
-                className="py-3 px-4 rounded-xl border border-stone-200 text-stone-700 hover:bg-stone-100 font-semibold text-xs touch-manipulation transition-colors"
-              >
-                Avbryt
-              </button>
-              <button
-                type="button"
-                onClick={handleDeleteRecipe}
-                className="py-3 px-4 rounded-xl bg-rose-600 hover:bg-rose-700 active:scale-95 text-white font-bold text-xs shadow-xs touch-manipulation transition-all"
-              >
-                Ja, ta bort
-              </button>
-            </div>
-          </div>
-        </div>
+        <ConfirmSheet
+          title="Ta bort receptet?"
+          text={`${formatRecipeTitle(recipe.title)} tas bort för hela hushållet.`}
+          confirmLabel="Ta bort receptet"
+          onCancel={() => setShowDeleteConfirm(false)}
+          onConfirm={handleDeleteRecipe}
+        />
       )}
       </div>
     </div>

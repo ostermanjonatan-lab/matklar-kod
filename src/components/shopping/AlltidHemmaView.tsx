@@ -1,4 +1,5 @@
 ﻿import React, { useState, useMemo, useRef } from 'react';
+import { ConfirmSheet } from '../layout/ConfirmSheet';
 import { useRecipes } from '../../context/RecipeContext';
 import type { PantryItem } from '../../types/recipe';
 import { parseSmartItemInput } from '../../utils/ingredientParser';
@@ -794,50 +795,17 @@ export const AlltidHemmaView: React.FC<AlltidHemmaViewProps> = ({ onNavigateToSh
         </div>
       )}
 
-      {/* DELETE CONFIRMATION MODAL */}
-      {itemToDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4 animate-fade-in">
-          <div className="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl space-y-4 animate-scale-up border border-[#EBE7DF]">
-            <div className="w-12 h-12 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center mx-auto">
-              <Trash2 className="w-6 h-6" />
-            </div>
-
-            <div className="text-center space-y-1.5">
-              <h3 className="font-serif font-bold text-lg text-stone-900">
-                Ta bort vara?
-              </h3>
-              <p className="text-xs text-stone-500 leading-relaxed">
-                Är du säker på att du vill ta bort{' '}
-                <span className="font-semibold text-stone-800">
-                  "{typeof itemToDelete === 'object' ? itemToDelete.name : ''}"
-                </span>{' '}
-                från Hemmet?
-              </p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2.5 pt-2">
-              <button
-                type="button"
-                onClick={() => setItemToDelete(null)}
-                className="py-3 px-4 rounded-xl border border-stone-200 text-stone-700 hover:bg-stone-100 font-semibold text-xs touch-manipulation transition-colors min-h-[44px]"
-              >
-                Avbryt
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  if (typeof itemToDelete === 'object') {
-                    deletePantryItem(itemToDelete.id);
-                  }
-                  setItemToDelete(null);
-                }}
-                className="py-3 px-4 rounded-xl bg-rose-600 hover:bg-rose-700 active:scale-95 text-white font-bold text-xs shadow-xs touch-manipulation transition-all min-h-[44px]"
-              >
-                Ja, ta bort
-              </button>
-            </div>
-          </div>
-        </div>
+      {itemToDelete && typeof itemToDelete === 'object' && (
+        <ConfirmSheet
+          title={`Ta bort ${itemToDelete.name.toLowerCase()}?`}
+          text="Varan tas bort från Hemma."
+          confirmLabel="Ta bort"
+          onCancel={() => setItemToDelete(null)}
+          onConfirm={() => {
+            deletePantryItem(itemToDelete.id);
+            setItemToDelete(null);
+          }}
+        />
       )}
     </div>
   );

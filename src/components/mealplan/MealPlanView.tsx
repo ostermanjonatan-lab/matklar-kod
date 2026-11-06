@@ -781,7 +781,7 @@ export const MealPlanView: React.FC = () => {
                 <div className="p-5 space-y-4">
                   <div className="flex items-center justify-between">
                     <span className="bg-amber-50 text-amber-900 border border-amber-200/80 text-xs font-bold px-3 py-1 rounded-full shadow-2xs">
-                      Middag (Egen måltid)
+                      Middag
                     </span>
                     <div className="flex items-center gap-1">
                       <button
@@ -799,9 +799,6 @@ export const MealPlanView: React.FC = () => {
                     <h3 className="font-serif font-bold text-2xl text-stone-900">
                       {activeDayData.customDinner}
                     </h3>
-                    <p className="text-xs text-stone-500 mt-1">
-                      Egen notering / middag
-                    </p>
                   </div>
 
                   <div className="flex items-center justify-between gap-2 pt-2 border-t border-[#EBE7DF]">
@@ -957,7 +954,7 @@ export const MealPlanView: React.FC = () => {
               </div>
 
               {lunchRecipe ? (
-                <div className="flex items-center justify-between gap-3 bg-[#FCFAF5] border border-[#EBE7DF] rounded-2xl p-2.5">
+                <div className="flex items-center justify-between gap-3 py-1">
                   <div
                     onClick={() => openRecipeDetail(lunchRecipe)}
                     className="flex items-center gap-3 min-w-0 flex-1 cursor-pointer group touch-manipulation"
@@ -973,11 +970,6 @@ export const MealPlanView: React.FC = () => {
                       className="w-12 h-12 rounded-xl object-cover shrink-0 shadow-2xs group-hover:scale-105 transition-transform"
                     />
                     <div className="min-w-0 flex-1">
-                      {activeDayData.customLunch && (
-                        <span className="text-[10px] bg-amber-100 text-amber-900 font-bold px-1.5 py-0.2 rounded inline-block mb-0.5">
-                          {activeDayData.customLunch}
-                        </span>
-                      )}
                       <h4 className="font-serif font-bold text-sm text-stone-900 truncate group-hover:text-emerald-900 transition-colors">
                         {formatRecipeTitle(lunchRecipe.title)}
                       </h4>
@@ -1031,39 +1023,27 @@ export const MealPlanView: React.FC = () => {
                   </div>
                 </div>
               ) : activeDayData.customLunch?.trim() ? (
-                <div className="flex items-center justify-between gap-3 bg-[#FCFAF5] border border-[#EBE7DF] rounded-2xl p-2.5">
-                  <div
+                <div className="flex items-center justify-between gap-3 py-1">
+                  <button
+                    type="button"
                     onClick={() => openPickerModal(activeDayName, 'lunch')}
-                    className="flex items-center gap-3 min-w-0 flex-1 cursor-pointer group touch-manipulation"
+                    className="flex items-center gap-3 min-w-0 flex-1 text-left touch-manipulation"
                   >
-                    <div className="w-12 h-12 rounded-xl bg-amber-100 flex items-center justify-center text-amber-800 shrink-0 shadow-2xs">
-                      <LunchboxIcon className="w-5 h-5 text-amber-800" />
-                    </div>
+                    <LunchboxIcon className="w-5 h-5 text-stone-400 shrink-0" />
                     <div className="min-w-0 flex-1">
-                      <span className="text-[10px] bg-amber-100 text-amber-900 font-bold px-1.5 py-0.2 rounded inline-block mb-0.5">
-                        {parseLeftoverLunch(activeDayData.customLunch) ? 'Rester' : 'Egen måltid'}
-                      </span>
-                      <h4 className="font-serif font-bold text-sm text-stone-900 truncate">
+                      <h4 className="font-serif font-bold text-base text-stone-900 truncate">
                         {parseLeftoverLunch(activeDayData.customLunch)?.title ?? activeDayData.customLunch}
                       </h4>
-                      <p className="text-[11px] text-stone-500">
-                        {parseLeftoverLunch(activeDayData.customLunch)
-                          ? `Från middagen i ${parseLeftoverLunch(activeDayData.customLunch)!.day}s`
-                          : 'Klicka för att ändra'}
-                      </p>
+                      {parseLeftoverLunch(activeDayData.customLunch) && (
+                        <p className="text-xs text-stone-500">
+                          Rester från middagen i {parseLeftoverLunch(activeDayData.customLunch)!.day}s
+                        </p>
+                      )}
                     </div>
-                  </div>
+                  </button>
 
                   {/* Servings Stepper & Change Button */}
                   <div className="flex items-center gap-1.5 shrink-0">
-                    <button
-                      type="button"
-                      onClick={() => openPickerModal(activeDayName, 'lunch')}
-                      className="p-1.5 rounded-xl bg-white border border-[#EBE7DF] text-stone-600 hover:text-stone-900 transition-colors"
-                      title="Ändra lunch"
-                    >
-                      <Utensils className="w-3.5 h-3.5" />
-                    </button>
                     <div className="flex items-center gap-1">
                       <button
                         type="button"
