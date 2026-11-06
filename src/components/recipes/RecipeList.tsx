@@ -19,6 +19,7 @@ import {
   ShoppingCart,
   Dices,
   ListChecks,
+  Trash2,
 } from 'lucide-react';
 import { formatCookingTime, formatRecipeTitle } from '../../utils/formatters';
 import { todayISO } from '../../utils/mealPlanDates';
@@ -84,6 +85,10 @@ export const RecipeList: React.FC = () => {
   } = useRecipes();
 
   const [showTonightPicker, setShowTonightPicker] = useState<boolean>(false);
+
+  // Removing tonight's dinner, with a short undo
+  const [removedTonight, setRemovedTonight] = useState<{ recipeId: string | null; custom: string } | null>(null);
+  const removedTonightTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useModalBackHandler(showTonightPicker, () => setShowTonightPicker(false), 'tonight-picker');
 
   // Tonight's dinner from the meal plan, if any
@@ -95,6 +100,26 @@ export const RecipeList: React.FC = () => {
     if (day.customDinner?.trim()) return { recipe: undefined, text: day.customDinner.trim() };
     return null;
   }, [getMealPlanForDate, recipes]);
+
+  const handleRemoveTonight = () => {
+    const day = getMealPlanForDate(todayISO());
+    if (!day) return;
+    setRemovedTonight({ recipeId: day.dinnerRecipeId || null, custom: day.customDinner || '' });
+    setMealPlanForDate(todayISO(), 'dinner', null, '');
+    if (removedTonightTimerRef.current) clearTimeout(removedTonightTimerRef.current);
+    removedTonightTimerRef.current = setTimeout(() => setRemovedTonight(null), 5000);
+  };
+
+  const handleUndoRemoveTonight = () => {
+    if (!removedTonight) return;
+    if (removedTonight.recipeId) {
+      setMealPlanForDate(todayISO(), 'dinner', removedTonight.recipeId);
+    } else {
+      setMealPlanForDate(todayISO(), 'dinner', null, removedTonight.custom);
+    }
+    if (removedTonightTimerRef.current) clearTimeout(removedTonightTimerRef.current);
+    setRemovedTonight(null);
+  };
 
   const deferredSearchQuery = useDeferredValue(searchQuery);
 
@@ -500,6 +525,20 @@ export const RecipeList: React.FC = () => {
         />
       )}
 
+      {/* Undo after removing tonight's dinner */}
+      {removedTonight && (
+        <div className="fixed top-16 left-4 right-4 z-50 max-w-md mx-auto bg-stone-900 text-white pl-4 pr-2 py-2 rounded-2xl shadow-xl flex items-center justify-between gap-2 animate-slide-down text-xs font-semibold">
+          <span className="truncate">Kvällens middag är borttagen</span>
+          <button
+            type="button"
+            onClick={handleUndoRemoveTonight}
+            className="px-3 min-h-[36px] rounded-xl text-emerald-300 hover:bg-white/10 font-bold shrink-0 touch-manipulation"
+          >
+            Ångra
+          </button>
+        </div>
+      )}
+
       {/* Choose tonight's dinner by hand */}
       {showTonightPicker && (
         <TonightPickerModal
@@ -767,6 +806,17 @@ export const RecipeList: React.FC = () => {
                   <ListChecks className="w-4 h-4" />
                   <span>{tonight ? 'Byt' : 'Välj'}</span>
                 </button>
+                {tonight && (
+                  <button
+                    type="button"
+                    onClick={handleRemoveTonight}
+                    className="w-9 rounded-xl bg-white border border-[#EBE7DF] hover:bg-rose-50 hover:text-rose-700 active:scale-95 text-stone-500 flex items-center justify-center transition-all touch-manipulation min-h-[36px]"
+                    aria-label="Ta bort kvällens middag"
+                    title="Ta bort kvällens middag"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )}
                 {/* Slumpa only when nothing is planned for tonight */}
                 {!tonight && (
                   <button
