@@ -315,36 +315,39 @@ export const MealPlanView: React.FC = () => {
               <button
                 type="button"
                 onClick={() => goToWeek(addDaysISO(planWeekStart, -7))}
-                className="w-9 h-9 -ml-1.5 rounded-full flex items-center justify-center text-stone-600 hover:bg-stone-100 active:bg-stone-200 touch-manipulation shrink-0"
+                className="w-8 h-9 -ml-1.5 rounded-full flex items-center justify-center text-stone-600 hover:bg-stone-100 active:bg-stone-200 touch-manipulation shrink-0"
                 aria-label="Förra veckan"
               >
                 <ChevronLeft className="w-5 h-5" />
               </button>
-              <div className="min-w-0 text-center">
+              <div className="shrink-0 text-center leading-tight">
                 <div className="text-[15px] font-semibold text-stone-900 whitespace-nowrap">
-                  Vecka {weekNumber}, {formatWeekRange(planWeekStart)}
+                  Vecka {weekNumber}
+                </div>
+                <div className={`text-xs text-stone-500 whitespace-nowrap ${isThisWeek ? '' : 'hidden min-[380px]:block'}`}>
+                  {formatWeekRange(planWeekStart)}
                 </div>
                 {!isThisWeek && (
                   <button
                     type="button"
                     onClick={() => goToWeek(thisWeekStart)}
-                    className="text-xs text-[#284235] font-semibold underline underline-offset-2 touch-manipulation"
+                    className="min-[380px]:hidden text-xs font-semibold text-[#284235] whitespace-nowrap touch-manipulation"
                   >
-                    Till denna vecka
+                    Till i dag
                   </button>
                 )}
               </div>
               <button
                 type="button"
                 onClick={() => goToWeek(addDaysISO(planWeekStart, 7))}
-                className="w-9 h-9 rounded-full flex items-center justify-center text-stone-600 hover:bg-stone-100 active:bg-stone-200 touch-manipulation shrink-0"
+                className="w-8 h-9 rounded-full flex items-center justify-center text-stone-600 hover:bg-stone-100 active:bg-stone-200 touch-manipulation shrink-0"
                 aria-label="Nästa vecka"
               >
                 <ChevronRight className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="flex items-center gap-2 shrink-0">
+            <div className="flex items-center gap-1.5 shrink-0">
               {/* Desktop Create Shopping List Button */}
               <button
                 type="button"
@@ -354,6 +357,16 @@ export const MealPlanView: React.FC = () => {
                 <ShoppingCart className="w-3.5 h-3.5 text-emerald-300" />
                 <span>Skapa inköpslista</span>
               </button>
+
+              {!isThisWeek && (
+                <button
+                  type="button"
+                  onClick={() => goToWeek(thisWeekStart)}
+                  className="hidden min-[380px]:block px-2.5 min-h-[36px] rounded-xl text-xs font-semibold text-[#284235] border border-[#284235]/30 bg-white touch-manipulation whitespace-nowrap"
+                >
+                  I dag
+                </button>
+              )}
 
               {/* Day / Week view */}
               <div className="flex items-center bg-white border border-[#EBE7DF] p-0.5 rounded-xl shadow-xs" role="group" aria-label="Vy">
@@ -366,7 +379,7 @@ export const MealPlanView: React.FC = () => {
                     type="button"
                     onClick={() => setViewMode(mode)}
                     aria-pressed={viewMode === mode}
-                    className={`px-3 rounded-lg text-xs font-semibold transition-all touch-manipulation min-h-[34px] cursor-pointer ${
+                    className={`px-2.5 min-[380px]:px-3 rounded-lg text-xs font-semibold transition-all touch-manipulation min-h-[34px] cursor-pointer ${
                       viewMode === mode ? 'bg-[#284235] text-white shadow-xs' : 'text-stone-600 hover:text-stone-900'
                     }`}
                   >
@@ -399,9 +412,7 @@ export const MealPlanView: React.FC = () => {
                   setSelectedDayIndex(idx);
                   if (viewMode === 'overview') setViewMode('split');
                 }}
-                className={`flex-1 flex flex-col items-center gap-1 py-1 rounded-2xl transition-all touch-manipulation active:scale-95 group ${
-                  isSelected ? 'bg-stone-200/50' : 'hover:bg-stone-100/60'
-                }`}
+                className="flex-1 min-w-0 flex flex-col items-center gap-1 py-1 transition-all touch-manipulation active:scale-95 group"
               >
                 {/* Day name */}
                 <span
@@ -414,10 +425,8 @@ export const MealPlanView: React.FC = () => {
 
                 {/* Circular thumbnail with active ring */}
                 <div
-                  className={`relative w-10 h-10 sm:w-11 sm:h-11 rounded-full overflow-hidden flex items-center justify-center transition-all duration-200 ${
-                    hasDinner
-                      ? 'border border-[#EBE7DF] shadow-2xs opacity-90 group-hover:opacity-100'
-                      : 'border-2 border-dashed border-stone-300 bg-stone-100/70 text-stone-400 group-hover:border-stone-400'
+                  className={`relative w-9 h-9 min-[380px]:w-10 min-[380px]:h-10 sm:w-11 sm:h-11 rounded-full overflow-hidden flex items-center justify-center transition-all duration-200 ${
+                    hasDinner ? 'border border-[#EBE7DF]' : 'bg-stone-200/60'
                   } ${
                     isSelected
                       ? 'ring-2 ring-[#284235] ring-offset-2 ring-offset-[#FCFAF5] shadow-sm'
@@ -439,11 +448,7 @@ export const MealPlanView: React.FC = () => {
                     <div className="w-full h-full bg-amber-100 flex items-center justify-center text-amber-900" title={dayData?.customDinner}>
                       <Utensils className="w-3.5 h-3.5 text-amber-900" />
                     </div>
-                  ) : (
-                    <span className="text-xs font-bold leading-none select-none text-stone-400">
-                      +
-                    </span>
-                  )}
+                  ) : null}
 
                   {/* Tiny badge indicating lunch / matlåda */}
                   {hasLunch && (
