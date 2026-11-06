@@ -788,13 +788,15 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
                                     toggleMention(key);
                                   }}
                                   aria-expanded={open}
-                                  className="inline p-0 m-0 bg-transparent text-inherit underline decoration-dotted decoration-stone-400 underline-offset-4 touch-manipulation"
+                                  className={`inline p-0 m-0 bg-transparent touch-manipulation ${
+                                    open
+                                      ? 'font-bold text-[#284235]'
+                                      : 'text-inherit underline decoration-dotted decoration-stone-400 underline-offset-4'
+                                  }`}
                                 >
                                   {inst.text.slice(m.start, m.end)}
+                                  {open && <span className="whitespace-nowrap"> ({mentionAmount(m.ingredients)})</span>}
                                 </button>
-                                {open && (
-                                  <span className="font-semibold text-[#284235] whitespace-nowrap"> ({mentionAmount(m.ingredients)})</span>
-                                )}
                               </React.Fragment>
                             );
                             pos = m.end;
