@@ -1,6 +1,7 @@
 ﻿import React, { useState, useMemo } from 'react';
 import type { Recipe, RecipeDifficulty } from '../../types/recipe';
 import { DifficultyFilter } from './DifficultyPicker';
+import { MaxTimeInput } from './MaxTimeInput';
 import { getRecipeSubcategories } from '../../types/recipe';
 import { DEFAULT_SUBCATEGORIES, DIETARY_SUBCATEGORIES, getAllStandardSubcategories } from '../../data/categories';
 import { useRecipes } from '../../context/RecipeContext';
@@ -9,7 +10,6 @@ import {
   Check,
   Search,
   SlidersHorizontal,
-  Clock,
   Heart,
   RotateCcw
 } from 'lucide-react';
@@ -46,14 +46,6 @@ export interface RecipeFilterModalProps {
   sortBy?: string;
   onChangeSort?: (id: string) => void;
 }
-
-const COOKING_TIME_OPTIONS = [
-  { label: 'Alla tider', value: null },
-  { label: '≤ 20 min', value: 20 },
-  { label: '≤ 30 min', value: 30 },
-  { label: '≤ 45 min', value: 45 },
-  { label: '≤ 60 min', value: 60 },
-];
 
 export const RecipeFilterModal: React.FC<RecipeFilterModalProps> = ({
   isOpen,
@@ -428,34 +420,12 @@ export const RecipeFilterModal: React.FC<RecipeFilterModalProps> = ({
               </button>
             </div>
 
-            {/* Max tillagningstid */}
+            {/* Max tillagningstid, typed in by hand */}
             <div className="space-y-2">
-              <div className="flex items-center gap-1.5">
-                <Clock className="w-3.5 h-3.5 text-stone-600" />
-                <label className="text-xs font-bold text-stone-800 uppercase tracking-wider">
-                  Max tillagningstid
-                </label>
-              </div>
-
-              <div className="flex flex-wrap gap-1.5">
-                {COOKING_TIME_OPTIONS.map((opt) => {
-                  const isSelected = maxCookingTime === opt.value;
-                  return (
-                    <button
-                      key={opt.label}
-                      type="button"
-                      onClick={() => onChangeMaxCookingTime(opt.value)}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all touch-manipulation min-h-[36px] ${
-                        isSelected
-                          ? 'bg-[#284235] text-white shadow-xs'
-                          : 'bg-[#FCFAF5] border border-stone-200 text-stone-700 hover:bg-stone-100'
-                      }`}
-                    >
-                      {opt.label}
-                    </button>
-                  );
-                })}
-              </div>
+              <label htmlFor="filter-max-time" className="block text-xs font-bold text-stone-800">
+                Max tillagningstid
+              </label>
+              <MaxTimeInput id="filter-max-time" value={maxCookingTime} onChange={onChangeMaxCookingTime} />
             </div>
 
             <div className="space-y-2">

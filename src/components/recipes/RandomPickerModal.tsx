@@ -3,6 +3,7 @@ import { DifficultyDots } from './DifficultyPicker';
 import { DIFFICULTY_LABELS } from '../../utils/recipeDifficulty';
 import type { Recipe, RecipeDifficulty } from '../../types/recipe';
 import { DifficultyFilter, matchesDifficulty } from './DifficultyPicker';
+import { MaxTimeInput } from './MaxTimeInput';
 import { isRecipeNew } from '../../types/recipe';
 import {
   X,
@@ -43,14 +44,6 @@ interface CategoryOption {
   subtitle: string;
   icon: React.ReactNode;
 }
-
-const COOKING_TIME_OPTIONS = [
-  { label: 'Alla tider', value: null },
-  { label: '≤ 20 min', value: 20 },
-  { label: '≤ 30 min', value: 30 },
-  { label: '≤ 45 min', value: 45 },
-  { label: '≤ 60 min', value: 60 },
-];
 
 function getRecipeCookingTime(recipe: Recipe): number {
   if (typeof recipe.cookTimeMinutes === 'number' && recipe.cookTimeMinutes > 0) {
@@ -348,13 +341,13 @@ export const RandomPickerModal: React.FC<RandomPickerModalProps> = ({
             </h3>
             {step === 'question' ? (
               <p className="text-xs text-stone-500">
-                {maxCookingTime ? `Välj kategori (≤ ${maxCookingTime} min)` : 'Välj kategori nedan'}
+                {maxCookingTime ? `Välj kategori, högst ${maxCookingTime} min` : 'Välj kategori nedan'}
               </p>
             ) : (
               <div className="text-xs text-stone-500 flex items-center gap-1.5 flex-wrap mt-0.5">
                 <span>
                   {seenCountInPool} av {pool.length} visade
-                  {maxCookingTime ? ` (≤ ${maxCookingTime} min)` : ''}
+                  {maxCookingTime ? `, högst ${maxCookingTime} min` : ''}
                 </span>
                 {seenCountInPool > 1 && (
                   <>
@@ -387,42 +380,12 @@ export const RandomPickerModal: React.FC<RandomPickerModalProps> = ({
         {/* STEP 1: CATEGORY SELECTION */}
         {step === 'question' && (
           <div className="p-5 space-y-3.5 overflow-y-auto flex-1 text-xs animate-fade-in">
-            {/* Cooking Time Filter */}
-            <div className="bg-[#FCFAF5] border border-[#EBE7DF] rounded-2xl p-3 space-y-2">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1.5 text-stone-700 font-semibold text-xs">
-                  <Clock className="w-3.5 h-3.5 text-[#284235]" />
-                  <span>Max tillagningstid</span>
-                </div>
-                {maxCookingTime !== null && (
-                  <button
-                    type="button"
-                    onClick={() => setMaxCookingTime(null)}
-                    className="text-[11px] text-[#284235] hover:underline font-semibold cursor-pointer touch-manipulation"
-                  >
-                    Återställ
-                  </button>
-                )}
-              </div>
-              <div className="flex flex-wrap items-center gap-1.5 pb-0.5">
-                {COOKING_TIME_OPTIONS.map((opt) => {
-                  const isSelected = maxCookingTime === opt.value;
-                  return (
-                    <button
-                      key={opt.label}
-                      type="button"
-                      onClick={() => setMaxCookingTime(opt.value)}
-                      className={`px-3 py-1.5 rounded-full text-xs font-semibold shrink-0 transition-all touch-manipulation cursor-pointer ${
-                        isSelected
-                          ? 'bg-[#284235] text-white shadow-2xs'
-                          : 'bg-white border border-[#EBE7DF] text-stone-600 hover:border-stone-400 hover:bg-stone-50'
-                      }`}
-                    >
-                      {opt.label}
-                    </button>
-                  );
-                })}
-              </div>
+            {/* Max cooking time, typed in by hand */}
+            <div className="space-y-2">
+              <label htmlFor="random-max-time" className="block text-stone-700 font-semibold text-xs">
+                Max tillagningstid
+              </label>
+              <MaxTimeInput id="random-max-time" value={maxCookingTime} onChange={setMaxCookingTime} />
             </div>
 
             {/* Difficulty */}
@@ -474,30 +437,10 @@ export const RandomPickerModal: React.FC<RandomPickerModalProps> = ({
         {/* STEP 2: RESULT VIEW */}
         {step === 'result' && (
           <div className="p-5 space-y-3.5 overflow-y-auto flex-1 text-xs animate-fade-in">
-            {/* Quick time filter bar */}
-            <div className="flex flex-wrap items-center gap-1.5 pb-0.5">
-              <div className="flex items-center gap-1 text-stone-500 text-[11px] font-semibold shrink-0 mr-0.5">
-                <Clock className="w-3.5 h-3.5 text-stone-400" />
-                <span>Tid:</span>
-              </div>
-              {COOKING_TIME_OPTIONS.map((opt) => {
-                const isSelected = maxCookingTime === opt.value;
-                return (
-                  <button
-                    key={opt.label}
-                    type="button"
-                    disabled={isRolling}
-                    onClick={() => handleTimeFilterChangeInResult(opt.value)}
-                    className={`px-2.5 py-1 rounded-full text-[11px] font-semibold shrink-0 transition-all touch-manipulation cursor-pointer disabled:opacity-50 ${
-                      isSelected
-                        ? 'bg-[#284235] text-white shadow-2xs'
-                        : 'bg-[#FCFAF5] border border-[#EBE7DF] text-stone-600 hover:border-stone-400 hover:bg-stone-100'
-                    }`}
-                  >
-                    {opt.label}
-                  </button>
-                );
-              })}
+            {/* Max cooking time: rolls again when you leave the field */}
+            <div className="flex items-center gap-2">
+              <Clock className="w-4 h-4 text-stone-400 shrink-0" />
+              <MaxTimeInput value={maxCookingTime} onChange={handleTimeFilterChangeInResult} commitOnBlur disabled={isRolling} />
             </div>
 
             {/* Difficulty */}
@@ -511,7 +454,7 @@ export const RandomPickerModal: React.FC<RandomPickerModalProps> = ({
               <div className="text-center py-8 space-y-3">
                 <p className="text-sm font-semibold text-stone-800">
                   Inga recept i {selectedCategory === 'Alla' ? 'urvalet' : `kategorin ${selectedCategory.toLowerCase()}`}
-                  {maxCookingTime ? ` under ${maxCookingTime} minuter` : ''}
+                  {maxCookingTime ? ` på högst ${maxCookingTime} minuter` : ''}
                   {difficultyFilter.length > 0 ? ' med den svårighetsgraden' : ''}.
                 </p>
                 <div className="flex flex-wrap gap-2 justify-center">
