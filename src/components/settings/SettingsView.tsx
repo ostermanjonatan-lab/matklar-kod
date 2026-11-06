@@ -394,7 +394,7 @@ export const SettingsView: React.FC = () => {
         <h2 className={sectionHeading}>Utseende</h2>
         <div className="grid grid-cols-3 gap-1 p-1 bg-stone-100 rounded-xl" role="radiogroup" aria-label="Utseende">
           {([
-            ['system', 'Som telefonen'],
+            ['system', 'System'],
             ['light', 'Ljust'],
             ['dark', 'Mörkt'],
           ] as [ThemeChoice, string][]).map(([value, label]) => (
