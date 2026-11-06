@@ -22,6 +22,7 @@ import {
   Users,
 } from 'lucide-react';
 import { LunchboxIcon } from '../icons/LunchboxIcon';
+import { DinnerBrowser } from '../recipes/DinnerPickerModal';
 import { formatCookingTime, scaleIngredientAmount, formatAmount, formatRecipeTitle } from '../../utils/formatters';
 import {
   addDaysISO,
@@ -1254,7 +1255,11 @@ export const MealPlanView: React.FC = () => {
       {/* =================================================================== */}
       {pickerState && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 animate-fade-in font-sans">
-          <div className="bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl shadow-2xl p-4 sm:p-5 space-y-3.5 max-h-[90vh] flex flex-col">
+          <div
+            className={`bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl shadow-2xl p-4 sm:p-5 space-y-3.5 flex flex-col ${
+              pickerState.mealType === 'dinner' && pickerTab === 'recipe' ? 'h-[85vh]' : 'max-h-[90vh]'
+            }`}
+          >
             <div className="flex items-center justify-between shrink-0">
               <div>
                 <h3 className="font-serif font-bold text-lg text-stone-900">
@@ -1314,7 +1319,14 @@ export const MealPlanView: React.FC = () => {
               </button>
             </div>
 
-            {pickerTab === 'recipe' ? (
+            {pickerTab === 'recipe' && pickerState.mealType === 'dinner' ? (
+              /* Dinner: subcategories with slideshows, then recipes (same as Välj middag on the start page) */
+              <DinnerBrowser
+                recipes={recipes}
+                currentRecipeId={mealPlan.find((d) => d.dayName === pickerState.dayName)?.dinnerRecipeId}
+                onSelect={(r) => handleSelectRecipe(r.id)}
+              />
+            ) : pickerTab === 'recipe' ? (
               <>
                 {/* Search filter input */}
                 <input
