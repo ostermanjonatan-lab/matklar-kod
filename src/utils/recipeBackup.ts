@@ -15,8 +15,12 @@ interface BackupFile {
   customSubcategories?: string[];
 }
 
-/** Saves the recipes to a JSON file named like matklar-recept-2026-11-06.json. */
-export function downloadRecipeBackup(recipes: Recipe[], customSubcategories: string[]): string {
+/**
+ * Saves the recipes to a JSON file named like matklar-recept-2026-11-06.json. On a phone the
+ * share sheet is used (Spara i Filer), because a download link in an app on the home screen can
+ * open the file full screen with no way back. Returns false if the person cancelled.
+ */
+export async function saveRecipeBackup(recipes: Recipe[], customSubcategories: string[]): Promise<boolean> {
   const data: BackupFile = {
     app: 'matklar',
     kind: 'recept',
@@ -26,7 +30,23 @@ export function downloadRecipeBackup(recipes: Recipe[], customSubcategories: str
     customSubcategories,
   };
   const fileName = `matklar-recept-${toISODate(new Date())}.json`;
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const json = JSON.stringify(data, null, 2);
+  const isTouch = typeof window !== 'undefined' && window.matchMedia?.('(pointer: coarse)').matches;
+
+  if (isTouch && typeof File !== 'undefined' && navigator.canShare) {
+    const file = new File([json], fileName, { type: 'application/json' });
+    if (navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file] });
+        return true;
+      } catch (err) {
+        if (err instanceof DOMException && err.name === 'AbortError') return false;
+        // Sharing failed for another reason: fall back to a download
+      }
+    }
+  }
+
+  const blob = new Blob([json], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
@@ -35,7 +55,7 @@ export function downloadRecipeBackup(recipes: Recipe[], customSubcategories: str
   a.click();
   a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
-  return fileName;
+  return true;
 }
 
 export interface ReadBackupResult {

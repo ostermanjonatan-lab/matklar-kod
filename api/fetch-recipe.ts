@@ -90,6 +90,8 @@ export default async function handler(req: any, res: any) {
       try {
         const crawlerRes = await fetch(targetUrl, {
           redirect: 'follow',
+          // The first try may already have used some of the app's 8 seconds
+          signal: AbortSignal.timeout(4000),
           headers: {
             'User-Agent': 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',

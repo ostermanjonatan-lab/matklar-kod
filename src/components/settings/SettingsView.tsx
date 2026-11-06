@@ -6,7 +6,7 @@ import { SupabaseConfigModal } from './SupabaseConfigModal';
 import { useModalBackHandler } from '../../hooks/useModalBackHandler';
 import { APP_VERSION } from '../../version';
 import { OPEN_STORE_ORDER_KEY } from '../shopping/storeOrderLink';
-import { downloadRecipeBackup, readRecipeBackup } from '../../utils/recipeBackup';
+import { saveRecipeBackup, readRecipeBackup } from '../../utils/recipeBackup';
 import { Check, Copy, ChevronRight, ChevronDown, Clock, ShieldAlert } from 'lucide-react';
 
 /** A plain row in a list: text on the left, optional detail and arrow on the right. */
@@ -120,13 +120,13 @@ export const SettingsView: React.FC = () => {
   };
 
   // Backup: save the recipes to a file, and read them back
-  const handleSaveBackup = () => {
+  const handleSaveBackup = async () => {
     if (recipes.length === 0) {
       showToast('Det finns inga recept att spara');
       return;
     }
-    const fileName = downloadRecipeBackup(recipes, customSubcategories || []);
-    showToast(`${recipes.length} recept sparade i ${fileName}`);
+    const saved = await saveRecipeBackup(recipes, customSubcategories || []);
+    if (saved) showToast(`${recipes.length} recept sparade i en fil`);
   };
 
   const handleReadBackup = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -144,7 +144,8 @@ export const SettingsView: React.FC = () => {
           skipped++;
           continue;
         }
-        addRecipe(recipe);
+        // A new id, so a file from another household does not take over that household's recipe
+        addRecipe({ ...recipe, id: `custom-rec-${Date.now()}-${added}` });
         existingTitles.add(recipe.title.trim().toLowerCase());
         added++;
       }

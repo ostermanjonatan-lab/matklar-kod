@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { flushSync } from 'react-dom';
 import type { MealPlanDay } from '../../types/recipe';
 import { useRecipes } from '../../context/RecipeContext';
@@ -33,7 +33,6 @@ import {
   getISOWeekNumber,
   getWeekDates,
   getWeekStart,
-  todayISO,
 } from '../../utils/mealPlanDates';
 
 const DAYS_OF_WEEK: MealPlanDay['dayName'][] = [
@@ -59,9 +58,9 @@ export const MealPlanView: React.FC = () => {
     planWeekStart,
     setPlanWeekStart,
     getMealPlanForDate,
+    today,
   } = useRecipes();
 
-  const today = todayISO();
   const thisWeekStart = getWeekStart();
   const isThisWeek = planWeekStart === thisWeekStart;
   const weekDates = useMemo(() => getWeekDates(planWeekStart), [planWeekStart]);
@@ -205,6 +204,14 @@ export const MealPlanView: React.FC = () => {
   const [selectedDayIndex, setSelectedDayIndex] = useState<number>(() => {
     return (new Date().getDay() + 6) % 7;
   });
+
+  // Opened again on a new day: show today
+  const shownTodayRef = useRef(today);
+  useEffect(() => {
+    if (shownTodayRef.current === today) return;
+    shownTodayRef.current = today;
+    setSelectedDayIndex((new Date().getDay() + 6) % 7);
+  }, [today]);
 
   // View Mode: 'split' (Master-Detail Split View on desktop / Story Card on mobile) vs 'overview' (compact list)
   const [viewMode, setViewMode] = useState<'split' | 'overview'>('split');

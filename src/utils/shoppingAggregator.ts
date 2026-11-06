@@ -258,6 +258,21 @@ export function mergeIngredientsIntoShoppingList(
     const key = normalizeIngredientKey(item.name, item.unit);
     const sourceTitle = item.recipeTitle || item.recipeSource;
 
+    if (!item.checked && keyMap.has(key) && keyMap.get(key)!.checked) {
+      // Already bought: the item is needed again, so it starts over with the new amount
+      // instead of adding to what was bought.
+      const existing = keyMap.get(key)!;
+      const newSources = normalizeSourcesList(item.mergedSources || (sourceTitle ? [sourceTitle] : []));
+      existing.amount = item.amount;
+      if (item.unit) existing.unit = item.unit;
+      existing.mergedSources = newSources;
+      existing.recipeSource = newSources.length > 0 ? newSources.join(' + ') : undefined;
+      existing.comment = item.comment || undefined;
+      existing.checked = false;
+      if (item.isPantryStaple) existing.isPantryStaple = true;
+      continue;
+    }
+
     if (keyMap.has(key)) {
       const existing = keyMap.get(key)!;
 

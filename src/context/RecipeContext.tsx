@@ -11,6 +11,7 @@ import {
   getWeekDates,
   getWeekStart,
   isISODate,
+  todayISO,
 } from '../utils/mealPlanDates';
 import { isCommonPantryStaple, detectAisle, resolveSavedAisle } from '../utils/ingredientParser';
 
@@ -178,6 +179,8 @@ interface RecipeContextType {
   mealPlan: MealPlanDay[];
   /** Monday of the week shown in the meal plan, YYYY-MM-DD. */
   planWeekStart: string;
+  /** Today's date (YYYY-MM-DD). Changes when the app is opened again on a new day. */
+  today: string;
   setPlanWeekStart: (weekStart: string) => void;
   getMealPlanForDate: (dateStr: string) => MealPlanDay | undefined;
   shoppingList: ShoppingItem[];
@@ -428,6 +431,30 @@ export const RecipeProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   const [planWeekStart, setPlanWeekStartState] = useState<string>(() => getWeekStart());
   const setPlanWeekStart = useCallback((weekStart: string) => {
     setPlanWeekStartState(getWeekStart(weekStart));
+  }, []);
+  // The app can stay open in the background for days. When it comes back on a new day,
+  // everything is drawn again so "i dag" is right, and the plan moves on if it showed
+  // the week that was current before.
+  const [today, setToday] = useState<string>(() => todayISO());
+  const todayRef = useRef(today);
+  useEffect(() => {
+    const check = () => {
+      if (document.visibilityState === 'hidden') return;
+      const prev = todayRef.current;
+      const now = todayISO();
+      if (prev === now) return;
+      todayRef.current = now;
+      setToday(now);
+      setPlanWeekStartState((week) => (week === getWeekStart(prev) ? getWeekStart(now) : week));
+    };
+    document.addEventListener('visibilitychange', check);
+    window.addEventListener('focus', check);
+    const timer = window.setInterval(check, 60000);
+    return () => {
+      document.removeEventListener('visibilitychange', check);
+      window.removeEventListener('focus', check);
+      window.clearInterval(timer);
+    };
   }, []);
   const weekMealPlan = useMemo(() => buildWeek(mealPlan, planWeekStart), [mealPlan, planWeekStart]);
   const getMealPlanForDate = useCallback(
@@ -2050,13 +2077,25 @@ export const RecipeProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 
     if (includeStarterRecipes) {
       const baseTime = Date.now() - INITIAL_RECIPES.length * 60000;
+      // Recipe ids are shared by all households in Supabase, so each household gets its own
+      // copies of the starter recipes. With the plain ids a new household would take over
+      // (and could delete) another household's starter recipes.
+      const seededId = (id: string) => `${id}-${newHhId}`;
       const seeded = INITIAL_RECIPES.map((r, idx) => ({
         ...r,
+        id: seededId(r.id),
         householdId: newHhId,
         createdAt: r.createdAt || new Date(baseTime + (INITIAL_RECIPES.length - idx) * 60000).toISOString(),
       }));
       setRecipes(seeded);
-      const initialPlan = normalizeMealPlan(INITIAL_MEAL_PLAN, seeded);
+      const initialPlan = normalizeMealPlan(
+        INITIAL_MEAL_PLAN.map((d) => ({
+          ...d,
+          dinnerRecipeId: d.dinnerRecipeId ? seededId(d.dinnerRecipeId) : d.dinnerRecipeId,
+          lunchRecipeId: d.lunchRecipeId ? seededId(d.lunchRecipeId) : d.lunchRecipeId,
+        })),
+        seeded
+      );
       setMealPlan(initialPlan);
       try {
         localStorage.setItem(MEAL_PLAN_STORAGE_KEY, JSON.stringify(initialPlan));
@@ -2611,6 +2650,7 @@ export const RecipeProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         mealPlan: weekMealPlan,
         planWeekStart,
         setPlanWeekStart,
+        today,
         getMealPlanForDate,
         shoppingList,
         household,
