@@ -15,7 +15,8 @@ export function detectCategory(rawText?: string): RecipeCategory {
     c.includes('plockmat') ||
     c.includes('snack') ||
     c.includes('bruschetta') ||
-    c.includes('snittar')
+    c.includes('snittar') ||
+    c.includes('skagen')
   ) {
     return 'Förrätt';
   }
@@ -32,7 +33,17 @@ export function detectCategory(rawText?: string): RecipeCategory {
     c.includes('fika') ||
     c.includes('godis') ||
     c.includes('godsaker') ||
-    c.includes('paj')
+    c.includes('paj') ||
+    // Buns, but not "köttbullar" or "fiskbullar"
+    (/bull(e|ar)/.test(c) && !/(kött|fisk|kyckling|fläsk|vego|lamm|kalkon)bull/.test(c)) ||
+    c.includes('våffl') ||
+    c.includes('muffin') ||
+    c.includes('scones') ||
+    c.includes('cookies') ||
+    c.includes('bakelse') ||
+    c.includes('mazarin') ||
+    c.includes('semla') ||
+    c.includes('semlor')
   ) {
     return 'Efterrätt';
   }
@@ -224,7 +235,7 @@ export function detectSubcategories(
       if (/gryta|chili con carne|gulasch|kalops|stroganoff|boeuf|currygryta|daal|tagine|dillkött/i.test(mText)) {
         matches.push('Grytor');
       }
-      if (/gratäng|i ugn|ugnsbakad|ugnsstekt|paj|låda|ugnsform/i.test(mText)) {
+      if (/gratäng|i ugn|ugnsbakad|ugnsstekt|ugnsrost|paj|låda|ugnsform/i.test(mText)) {
         matches.push('Ugn & Gratäng');
       }
       if (/kåldolmar|raggmunk|stekt fläsk|pyttipanna|ärtsoppa|kroppkakor|rotmos|blodpudding|pannbiff|janssons|husman/i.test(mText)) {

@@ -1006,13 +1006,13 @@ export function cleanOcrArtifacts(rawText: string, options: { ocr?: boolean } = 
     // Separate fractions joined with units: e.g. "½dl" -> "½ dl"
     .replace(/([½¼¾⅓⅔⅛])\s*([a-zA-ZåäöÅÄÖ]+)/g, '$1 $2')
     // Separate joined number and unit (e.g. "400g", "2st", "1msk", "2,5dl", "2burkar")
-    .replace(/(\d+(?:[,\.]\d+)?)\s*(g|gram|kg|kilo|kilogram|hg|hekto|hektogram|dl|deciliter|cl|centiliter|ml|milliliter|liter|msk|matsked|matskedar|tsk|tesked|teskedar|krm|kryddmått|st|styck|stycken|kruka|krukor|burk|burkar|pkt|paket|skiva|skivor|klyfta|klyftor|blad|påse|påsar|förp|frp|förpackning|förpackningar|nypa|nypor|knippe|knippen|tärning|tärningar|kub|kuber|kopp|koppar|glas|näve|nävar|droppe|droppar|kanna|kannor|bit|bitar|tub|tuber|flaska|flaskor|rulle|rullar|bunt|buntar|stång|stänger|kvist|kvistar|kula|kulor|huvud|huvuden|ask|askar|stjälk|stjälkar|skopa|skopor|korg|korgar|kartong|kartonger|bägare|tråg)\b/gi, '$1 $2 ')
+    .replace(/(\d+(?:[,\.]\d+)?)[ \t]*(g|gram|kg|kilo|kilogram|hg|hekto|hektogram|dl|deciliter|cl|centiliter|ml|milliliter|liter|msk|matsked|matskedar|tsk|tesked|teskedar|krm|kryddmått|st|styck|stycken|kruka|krukor|burk|burkar|pkt|paket|skiva|skivor|klyfta|klyftor|blad|påse|påsar|förp|frp|förpackning|förpackningar|nypa|nypor|knippe|knippen|tärning|tärningar|kub|kuber|kopp|koppar|glas|näve|nävar|droppe|droppar|kanna|kannor|bit|bitar|tub|tuber|flaska|flaskor|rulle|rullar|bunt|buntar|stång|stänger|kvist|kvistar|kula|kulor|huvud|huvuden|ask|askar|stjälk|stjälkar|skopa|skopor|korg|korgar|kartong|kartonger|bägare|tråg)\b/gi, '$1 $2 ')
     // Separate multi-letter unit and following food word (e.g. "1dlrött" -> "1 dl rött", "3mskolio" -> "3 msk olio")
-    .replace(/\b(\d+(?:[,\.]\d+)?)\s*(dl|cl|ml|liter|msk|tsk|krm|st|kg|hg)\s*([a-zA-ZåäöÅÄÖ]{3,})\b/gi, '$1 $2 $3')
+    .replace(/\b(\d+(?:[,\.]\d+)?)[ \t]*(dl|cl|ml|liter|msk|tsk|krm|st|kg|hg)[ \t]*([a-zA-ZåäöÅÄÖ]{3,})\b/gi, '$1 $2 $3')
     // Separate joined number and word at word boundary (e.g. "2vitlöksklyftor" -> "2 vitlöksklyftor", "1gullök" -> "1 gullök")
     .replace(/\b(\d+)([a-zA-ZåäöÅÄÖ]{3,})\b/g, '$1 $2')
     // Strip abbreviation periods after common Swedish units (e.g. "st." -> "st", "dl." -> "dl")
-    .replace(/\b(st|pkt|frp|förp|burk|burkar|dl|cl|ml|l|g|kg|hg|msk|tsk|krm)\.\s*/gi, '$1 ')
+    .replace(/(?<![a-zA-ZåäöÅÄÖé])(st|pkt|frp|förp|burk|burkar|dl|cl|ml|l|g|kg|hg|msk|tsk|krm)\.(?=\s+[a-zåäö\d]|$)\s*/g, '$1 ')
     // Normalize "2x mjölk" or "2 x mjölk" to "2 st mjölk"
     .replace(/^(\d+(?:[,\.]\d+)?)\s*[xX]\s+/i, '$1 st ')
     // Normalize inline multiple horizontal spaces (without replacing newlines)
@@ -2034,7 +2034,18 @@ export function extractRecipeTitleFromLines(rawLines: string[]): {
 
 /** Lines copied along from recipe web pages that are not part of the recipe. */
 const CLUTTER_LINE =
-  /^(spara(d)?|dela|skriv ut|printa|betyg(sätt)?(\s.*)?|kommentarer?|kommentera|gilla|logga in|annons(er)?|hoppa till recept(et)?|visa fler|visa mer|läs mer|prenumerera|nyhetsbrev|köp ingredienser(na)?|handla ingredienser(na)?|lägg (i|till i) inköpslista(n)?|starta timer|kopiera länk|recept(et)? av\b.*|foto:.*|bild:.*|text:.*|publicerad.*|uppdaterad.*|\(\d[\d\s]*(röster|betyg)?\)|\d+[,.]?\d*\s*\(\d[\d\s]*\)|\d+[,.]?\d*\s*av\s*5.*|\d+\s*(kommentarer|röster|recensioner))$/i;
+  /^(spara(d)?|dela|skriv ut|printa|betyg(sätt)?(\s.*)?|kommentarer?(\s*\(\d+\))?|kommentera|lämna en kommentar|gilla|logga in|annons(er)?|recept|recept från .*|.*\svarukorg(en)?|lägg i varukorg(en)?|köp alla varor|hem\s*>.*|.*\s>\s.*|[★☆✩✪⭐\s]+|hoppa till recept(et)?|visa fler|visa mer|läs mer|prenumerera|nyhetsbrev|köp ingredienser(na)?|handla ingredienser(na)?|lägg (i|till i) inköpslista(n)?|starta timer|kopiera länk|recept(et)? av\b.*|foto:.*|bild:.*|text:.*|publicerad.*|uppdaterad.*|\(\d[\d\s]*(röster|betyg)?\)|\d+[,.]?\d*\s*\(\d[\d\s]*\)|\d+[,.]?\d*\s*av\s*5.*|\d+\s*(kommentarer|röster|recensioner))$/i;
+
+/** Names of recipe sites, which some pages put above the recipe name. */
+const SITE_NAME =
+  /^(coop|ica|ica\.se|arla|köket|köket\.se|tasteline|allt om mat|mathem|dansukker|kungsörnen|matklubben|recepten\.se|recepten|zeinas kitchen|zeinas kök|mitt kök|godare|hemköp|willys|lidl|lantmännen|santa maria|dagens recept|receptfavoriter|buzzfeed|tv4|svt|aftonbladet|expressen)$/i;
+
+/** Nutrition facts at the end of some recipes. They are skipped. */
+const NUTRITION_LINE =
+  /^(näringsvärde.*|näringsinnehåll.*|(energi|protein|fett|mättat fett|kolhydrater|varav socker|socker|fibrer|kostfiber|salt|natrium|kalorier|kcal|kj)\s*:?\s*[\d,.]+\s*(kcal|kj|g|mg|%)?)$/i;
+
+/** Words that describe the recipe ("Vegetariskt") and help choose subcategories. */
+const DIET_WORD = /^(vegetarisk|vegetariskt|vegansk|veganskt|glutenfri|glutenfritt|laktosfri|laktosfritt|mjölkfri|mjölkfritt|sockerfri|sockerfritt|nötfri|nötfritt)$/i;
 
 /** "Ingredienser", "Du behöver" and similar, possibly followed by portions. */
 const INGREDIENT_HEADER =
@@ -2078,7 +2089,7 @@ function stripBullet(line: string): string {
 function findServings(line: string): number | null {
   const m =
     line.match(/(?:^|\s)(\d+)(?:\s*[-–]\s*\d+)?\s*(portioner|portion|port\.?|personer|pers\.?|bitar|stycken|st\b|bullar|skivor|muffins|kakor)(\s|$|,)/i) ||
-    line.match(/^(?:portioner|antal portioner|antal|serverar)\s*:?\s*(\d+)/i);
+    line.match(/^(?:portioner|antal portioner|antal|serverar|mängd|räcker till|ger)\s*:?\s*(?:ca\.?\s*)?(\d+)/i);
   if (!m) return null;
   const n = parseInt(m[1], 10);
   return n > 0 && n <= 100 ? n : null;
@@ -2088,8 +2099,8 @@ function findServings(line: string): number | null {
 function isTimeLine(line: string): boolean {
   return (
     line.length <= 40 &&
-    (/^(tid|tillagningstid|total tid|tidsåtgång|tillagning)\s*:?\s*\S/i.test(line) ||
-      /^(ca\.?\s*|cirka\s*|under\s*|över\s*|max\s*|ungefär\s*)?\d+([.,]\d+)?\s*(min|minuter|minut|tim|timme|timmar|h)\b/i.test(line))
+    (/^(tid|tillagningstid|total tid|tidsåtgång|tillagning|klart på|klar på|bakning|baktid|tillredningstid)\s*:?\s*(ca\.?\s*)?\d/i.test(line) ||
+      /^(ca\.?\s*|cirka\s*|under\s*|över\s*|max\s*|ungefär\s*)?\d+([.,]\d+)?\s*(min|minuter|minut|tim|timme|timmar|h)(?![a-zåäöA-ZÅÄÖ])/i.test(line))
   );
 }
 
@@ -2097,10 +2108,10 @@ function isTimeLine(line: string): boolean {
 function findDifficulty(line: string, alone: boolean): 1 | 2 | 3 | null {
   const m =
     line.match(/^(?:svårighetsgrad|svårighet|nivå)\s*:?\s*(\S+)/i) ||
-    (alone ? line.match(/^(lätt|enkel|enkelt|lättlagad|medel|medelsvår|svår|avancerad)$/i) : null);
+    (alone ? line.match(/^(lätt|enkel|enkelt|lättlagad|lättlagat|medel|medelsvår|svår|avancerad)$/i) : null);
   if (!m) return null;
   const w = m[1].toLowerCase();
-  if (/^(lätt|enkel|enkelt|lättlagad)/.test(w)) return 1;
+  if (/^(lätt|enkel|enkelt|lättlagad|lättlagat)/.test(w)) return 1;
   if (/^(medel|medelsvår|mellan)/.test(w)) return 2;
   if (/^(svår|avancerad)/.test(w)) return 3;
   return null;
@@ -2156,19 +2167,13 @@ export function parseRawRecipeText(text: string, options: { fromOcr?: boolean } 
   const steps: string[] = [];
   let section: 'header' | 'ingredients' | 'instructions' = 'header';
   let newStepPending = false;
+  const dietWords: string[] = [];
 
   const startsWithQuantity = (l: string) => QUANTITY_START.test(l) && !/^\d+[.)]\s/.test(l);
   const looksLikeIngredient = (l: string) =>
     l.length <= 70 &&
     !/[.!?]$/.test(l) &&
     (startsWithQuantity(l) || isLikelyIngredientLine(l, true));
-  // A sentence that tells you what to do: numbered, ends like a sentence, or is long
-  const looksLikeStep = (l: string) =>
-    (/^\d+[.)]\s+\S/.test(l) && !isLikelyIngredientLine(l, false)) ||
-    (!startsWithQuantity(l) && startsWithStepVerb(l) && l.split(/\s+/).length >= 2) ||
-    (l.length > 25 && /[.!]$/.test(l)) ||
-    l.length > 70;
-
   const addStep = (l: string) => {
     const t = cleanLeadingStepNumber(l).trim();
     if (t.length < 2) return;
@@ -2188,7 +2193,7 @@ export function parseRawRecipeText(text: string, options: { fromOcr?: boolean } 
     // Amount and food on separate lines, as some web pages copy ("500 g" / "torskfilé")
     if (
       section !== 'instructions' &&
-      /^(ca\.?\s+)?(\d+([.,]\d+)?|\d+\s*[-–]\s*\d+|\d+\/\d+|[½¼¾⅓⅔⅛])(\s*[a-zåäö]{1,6}\.?)?$/i.test(line) &&
+      /^(ca\.?\s+)?(\d+([.,]\d+)?|\d+\s*[-–]\s*\d+|\d+\/\d+|[½¼¾⅓⅔⅛])(\s*(g|kg|hg|dl|cl|ml|l|liter|msk|tsk|krm|st|förp|pkt|paket|burk|burkar|påse|påsar|knippe|kruka|klyftor|klyfta|skivor|bitar)\.?)?$/i.test(line) &&
       !isTimeLine(line) &&
       next &&
       !startsWithQuantity(next) &&
@@ -2213,7 +2218,31 @@ export function parseRawRecipeText(text: string, options: { fromOcr?: boolean } 
 
     // Page numbers from photos, and web page clutter
     if (/^(sida\s*)?\d{1,3}$/i.test(line) || /^[-–—\s]*\d{1,3}[-–—\s]*$/.test(line)) continue;
-    if (CLUTTER_LINE.test(line)) continue;
+    if (CLUTTER_LINE.test(line) || SITE_NAME.test(line) || NUTRITION_LINE.test(line)) continue;
+
+    // "Vegetariskt", "Glutenfritt": used for subcategories, not part of the recipe text
+    if (DIET_WORD.test(line)) {
+      dietWords.push(line);
+      continue;
+    }
+
+    // "Tips! Marinera över natten" goes with the notes
+    if (/^tips\s*[!:.]?(\s|$)/i.test(line)) {
+      const tip = line.replace(/^tips\s*[!:.]?\s*/i, '').trim();
+      if (tip) descriptionParts.push(tip);
+      continue;
+    }
+
+    // "4 portioner, 50 minuter": portions and time on one line
+    if (line.length <= 40 && /^(ca\.?\s*)?\d+\s*(portioner|portion|personer|pers\.?|bitar|st|stycken|bullar)\b/i.test(line)) {
+      const n = findServings(line);
+      if (n) servings = servings ?? n;
+      if (/(min|tim|timme|timmar)/i.test(line)) {
+        const t = parseRecipeTimeString(line);
+        if (t && t > 0 && cookingTimeMinutes === undefined) cookingTimeMinutes = t;
+      }
+      continue;
+    }
 
     // "Steg 1" on a line of its own marks the start of a step
     if (/^steg\s*\d+\s*[:.]?$/i.test(line)) {
@@ -2228,7 +2257,7 @@ export function parseRawRecipeText(text: string, options: { fromOcr?: boolean } 
       difficulty = difficulty ?? diff;
       continue;
     }
-    if (isTimeLine(line) && section !== 'instructions') {
+    if (isTimeLine(line) && (section !== 'instructions' || line.length <= 15)) {
       const t = parseRecipeTimeString(line);
       if (t && t > 0 && cookingTimeMinutes === undefined) cookingTimeMinutes = t;
       continue;
@@ -2250,7 +2279,7 @@ export function parseRawRecipeText(text: string, options: { fromOcr?: boolean } 
     // A line that only gives the portions
     if (line.length <= 30 && !/[.!?]$/.test(line)) {
       const n = findServings(line);
-      if (n && (/^\d+\s*(portioner|portion|port|personer|pers|bitar|stycken|st|bullar|skivor|muffins|kakor)\.?$/i.test(line) || /^(portioner|antal|serverar)/i.test(line) || /^(ca\.?|cirka)\s+\d/i.test(line))) {
+      if (n && (/^\d+\s*(portioner|portion|port|personer|pers|bitar|stycken|st|bullar|skivor|muffins|kakor)\.?$/i.test(line) || /^(portioner|antal|serverar|mängd|räcker till|ger)/i.test(line) || /^(ca\.?|cirka)\s+\d/i.test(line))) {
         servings = servings ?? n;
         continue;
       }
@@ -2293,7 +2322,9 @@ export function parseRawRecipeText(text: string, options: { fromOcr?: boolean } 
       if (looksLikeIngredient(line)) {
         section = 'ingredients';
         ingredientLines.push(line);
-      } else if (looksLikeStep(line)) {
+      } else if (/^\d+[.)]\s+\S/.test(line) || (!startsWithQuantity(line) && startsWithStepVerb(line) && line.split(/\s+/).length >= 3)) {
+        // Before the ingredients, only numbered lines or lines that start like a step are steps.
+        // Other text there, like a blog's introduction, is a description.
         section = 'instructions';
         addStep(line);
       } else if (line.length > 15) {
@@ -2339,7 +2370,7 @@ export function parseRawRecipeText(text: string, options: { fromOcr?: boolean } 
 
   const description = descriptionParts.join(' ').trim();
   const category = detectCategory(title || description);
-  const subcategories = detectSubcategories(title, category, ingredients, description);
+  const subcategories = detectSubcategories(title, category, ingredients, description, dietWords.join(' '));
 
   return {
     title,
