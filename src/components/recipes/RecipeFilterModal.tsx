@@ -1,5 +1,4 @@
 ﻿import React, { useState, useMemo } from 'react';
-import { categoryLabel } from '../../data/categories';
 import type { Recipe, RecipeDifficulty } from '../../types/recipe';
 import { DifficultyFilter } from './DifficultyPicker';
 import { MaxTimeInput } from './MaxTimeInput';
@@ -18,8 +17,6 @@ export interface RecipeFilterModalProps {
   recipes: Recipe[];
   // Category
   selectedCategory: string;
-  onSelectCategory: (cat: string) => void;
-  categories: string[];
   // Subcategories
   selectedSubcategories: string[];
   onToggleSubcategory: (subcat: string) => void;
@@ -33,7 +30,6 @@ export interface RecipeFilterModalProps {
   onChangeDifficultyFilter: (selected: RecipeDifficulty[]) => void;
   // Favorites
   onlyFavorites: boolean;
-  onToggleFavorites: () => void;
   // Reset
   onResetFilters: () => void;
   // Active count
@@ -50,8 +46,6 @@ export const RecipeFilterModal: React.FC<RecipeFilterModalProps> = ({
   onClose,
   recipes,
   selectedCategory,
-  onSelectCategory,
-  categories,
   selectedSubcategories,
   onToggleSubcategory,
   onSelectAllSubcategories,
@@ -61,7 +55,6 @@ export const RecipeFilterModal: React.FC<RecipeFilterModalProps> = ({
   difficultyFilter,
   onChangeDifficultyFilter,
   onlyFavorites,
-  onToggleFavorites,
   onResetFilters,
   activeFilterCount,
   matchingCount,
@@ -224,32 +217,8 @@ export const RecipeFilterModal: React.FC<RecipeFilterModalProps> = ({
 
         {/* Scrollable Body */}
         <div className="p-5 overflow-y-auto space-y-6 divide-y divide-stone-100">
-          {/* 1. Huvudkategori (Category) */}
-          <div className="space-y-2.5">
-            <span className="text-sm font-semibold text-stone-900 block">Kategori</span>
-            <div className="flex flex-wrap gap-1.5">
-              {categories.map((cat) => {
-                const isSelected = selectedCategory === cat;
-                return (
-                  <button
-                    key={cat}
-                    type="button"
-                    onClick={() => onSelectCategory(cat)}
-                    className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition-all active:scale-95 touch-manipulation min-h-[38px] ${
-                      isSelected
-                        ? 'bg-[#284235] text-white shadow-xs'
-                        : 'bg-[#FCFAF5] border border-stone-200 text-stone-700 hover:bg-stone-100'
-                    }`}
-                  >
-                    {categoryLabel(cat)}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* 2. Underkategorier med kryssrutor (The Main Requested Feature!) */}
-          <div className="pt-5 space-y-3.5">
+          {/* Category and favourites are chosen in the tabs above the recipes */}
+          <div className="space-y-3.5">
             <div className="flex items-center justify-between">
               <div>
                 <span className="text-sm font-semibold text-stone-900">
@@ -354,27 +323,6 @@ export const RecipeFilterModal: React.FC<RecipeFilterModalProps> = ({
 
           {/* 3. Snabbval & Fler Filter */}
           <div className="pt-5 space-y-4">
-            {/* Endast favoriter */}
-            <div className="flex items-center justify-between min-h-[44px]">
-              <span className="text-sm font-semibold text-stone-900">Bara favoriter</span>
-
-              <button
-                type="button"
-                onClick={onToggleFavorites}
-                role="switch"
-                aria-checked={onlyFavorites}
-                className={`w-12 h-6 rounded-full transition-colors relative p-0.5 touch-manipulation ${
-                  onlyFavorites ? 'bg-rose-600' : 'bg-stone-300'
-                }`}
-              >
-                <div
-                  className={`w-5 h-5 rounded-full bg-white shadow-xs transition-transform transform ${
-                    onlyFavorites ? 'translate-x-6' : 'translate-x-0'
-                  }`}
-                />
-              </button>
-            </div>
-
             {/* Max tillagningstid, typed in by hand */}
             <div className="space-y-2">
               <label htmlFor="filter-max-time" className="block text-sm font-semibold text-stone-900">

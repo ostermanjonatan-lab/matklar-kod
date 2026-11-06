@@ -38,7 +38,6 @@ html.dark, html.dark body { background-color: #1B1916 !important; color: #DCD4C7
 .dark .bg-stone-100 { background-color: #2E2A25 !important; }
 .dark .bg-stone-200 { background-color: #3A352F !important; }
 .dark .bg-stone-200\/70 { background-color: rgba(58,53,47,0.70) !important; }
-.dark .bg-stone-300 { background-color: #4A443D !important; }
 .dark .bg-stone-300\/80 { background-color: rgba(74,68,61,0.80) !important; }
 .dark .bg-stone-400 { background-color: #5A544C !important; }
 .dark .bg-stone-50 { background-color: #201D1A !important; }
@@ -50,11 +49,8 @@ html.dark, html.dark body { background-color: #1B1916 !important; color: #DCD4C7
 .dark .bg-stone-900\/15 { background-color: rgba(58,53,47,0.15) !important; }
 .dark .bg-stone-900\/35 { background-color: rgba(58,53,47,0.35) !important; }
 .dark .bg-stone-900\/60 { background-color: rgba(58,53,47,0.60) !important; }
-.dark .bg-stone-900\/80 { background-color: rgba(58,53,47,0.80) !important; }
-.dark .bg-stone-900\/90 { background-color: rgba(58,53,47,0.90) !important; }
 .dark .bg-stone-900\/95 { background-color: rgba(58,53,47,0.95) !important; }
 .dark .bg-white { background-color: #25221E !important; }
-.dark .bg-white\/20 { background-color: rgba(37,34,30,0.20) !important; }
 .dark .bg-white\/35 { background-color: rgba(37,34,30,0.35) !important; }
 .dark .bg-white\/80 { background-color: rgba(37,34,30,0.80) !important; }
 .dark .bg-white\/95 { background-color: rgba(37,34,30,0.95) !important; }
@@ -67,7 +63,6 @@ html.dark, html.dark body { background-color: #1B1916 !important; color: #DCD4C7
 .dark .border-amber-200\/80 { border-color: rgba(245,158,11,0.24) !important; }
 .dark .border-amber-300 { border-color: rgba(245,158,11,0.40) !important; }
 .dark .border-amber-300\/80 { border-color: rgba(245,158,11,0.32) !important; }
-.dark .border-black\/10 { border-color: rgba(255,250,240,0.01) !important; }
 .dark .border-emerald-300 { border-color: rgba(52,211,153,0.35) !important; }
 .dark .border-emerald-300\/70 { border-color: rgba(52,211,153,0.24) !important; }
 .dark .border-rose-200 { border-color: rgba(244,63,94,0.30) !important; }

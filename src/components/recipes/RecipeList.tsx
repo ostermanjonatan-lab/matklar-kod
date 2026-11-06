@@ -15,7 +15,6 @@ import {
   Search,
   SlidersHorizontal,
   X,
-  Heart,
   ArrowUpDown,
   Check,
 } from 'lucide-react';
@@ -406,7 +405,9 @@ export const RecipeList: React.FC = () => {
     activeFilterCount > 0 ||
     sortBy !== 'default';
 
-  const filterAndSortCount = activeFilterCount + (sortBy !== 'default' ? 1 : 0);
+  // The number on the filter button: only what is chosen inside it. Category and favourites show in the tabs.
+  const filterAndSortCount =
+    selectedSubcategories.length + (maxCookingTime !== null ? 1 : 0) + difficultyFilter.length + (sortBy !== 'default' ? 1 : 0);
   const isNarrowed = searchQuery.trim() !== '' || activeFilterCount > 0 || selectedCategory !== 'Alla';
 
   const activeSortLabel =
@@ -455,8 +456,6 @@ export const RecipeList: React.FC = () => {
           onClose={() => setShowFilterModal(false)}
           recipes={recipes}
           selectedCategory={selectedCategory}
-          onSelectCategory={(cat) => setSelectedCategory(cat)}
-          categories={categories}
           selectedSubcategories={selectedSubcategories}
           onToggleSubcategory={toggleSubcategory}
           onSelectAllSubcategories={(subcats) => setSelectedSubcategories(subcats)}
@@ -466,7 +465,6 @@ export const RecipeList: React.FC = () => {
           difficultyFilter={difficultyFilter}
           onChangeDifficultyFilter={setDifficultyFilter}
           onlyFavorites={onlyFavorites}
-          onToggleFavorites={() => setOnlyFavorites((prev) => !prev)}
           onResetFilters={clearFilters}
           activeFilterCount={activeFilterCount}
           matchingCount={sortedAndFilteredRecipes.length}
@@ -584,40 +582,44 @@ export const RecipeList: React.FC = () => {
 
           {/* Category & Filter Row (Horizontal Scroll on mobile, unified bar on desktop) */}
           <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar flex-1 min-w-0">
-              {/* Categories */}
-              {categories.map((cat, catIdx) => {
-                const isSelected = selectedCategory === cat;
+            {/* Light text tabs: Alla, Favoriter, then the categories. The row fades out at the
+                right edge so it is clear that it can be swiped. */}
+            <div
+              className="flex items-center gap-5 overflow-x-auto no-scrollbar flex-1 min-w-0 pr-6"
+              role="tablist"
+              aria-label="Kategorier"
+              style={{
+                WebkitMaskImage: 'linear-gradient(to right, #000 calc(100% - 28px), transparent)',
+                maskImage: 'linear-gradient(to right, #000 calc(100% - 28px), transparent)',
+              }}
+            >
+              {[categories[0], 'Favoriter', ...categories.slice(1)].map((cat) => {
+                const isFavorites = cat === 'Favoriter';
+                const isSelected = isFavorites ? onlyFavorites : !onlyFavorites && selectedCategory === cat;
                 return (
-                  <React.Fragment key={cat}>
                   <button
                     key={cat}
                     type="button"
-                    onClick={() => setSelectedCategory(cat)}
-                    className={`px-4 py-2.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all active:scale-95 shrink-0 touch-manipulation min-h-[40px] cursor-pointer ${
-                      isSelected
-                        ? 'bg-[#284235] text-white shadow-xs'
-                        : 'bg-white border border-[#EBE7DF] text-stone-700 hover:bg-stone-50'
+                    role="tab"
+                    aria-selected={isSelected}
+                    onClick={() => {
+                      if (isFavorites) {
+                        setOnlyFavorites(true);
+                        setSelectedCategory('Alla');
+                      } else {
+                        setOnlyFavorites(false);
+                        setSelectedCategory(cat);
+                      }
+                    }}
+                    className={`relative shrink-0 whitespace-nowrap min-h-[40px] text-[15px] touch-manipulation cursor-pointer ${
+                      isSelected ? 'text-stone-900 font-semibold' : 'text-stone-500 hover:text-stone-800'
                     }`}
                   >
-                    {categoryLabel(cat)}
+                    {isFavorites ? 'Favoriter' : categoryLabel(cat)}
+                    {isSelected && (
+                      <span className="absolute left-0 right-0 bottom-1 h-[2px] rounded-full bg-[#284235]" aria-hidden="true" />
+                    )}
                   </button>
-                  {catIdx === 0 && (
-                    <button
-                      type="button"
-                      onClick={() => setOnlyFavorites((prev) => !prev)}
-                      aria-pressed={onlyFavorites}
-                      className={`px-4 py-2.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all active:scale-95 shrink-0 touch-manipulation min-h-[40px] cursor-pointer flex items-center gap-1.5 ${
-                        onlyFavorites
-                          ? 'bg-[#284235] text-white shadow-xs'
-                          : 'bg-white border border-[#EBE7DF] text-stone-700 hover:bg-stone-50'
-                      }`}
-                    >
-                      <Heart className={`w-3.5 h-3.5 ${onlyFavorites ? 'fill-white' : ''}`} />
-                      Favoriter
-                    </button>
-                  )}
-                  </React.Fragment>
                 );
               })}
             </div>
