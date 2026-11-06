@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { DifficultyDots } from './DifficultyPicker';
 import { DIFFICULTY_LABELS } from '../../utils/recipeDifficulty';
-import type { Recipe } from '../../types/recipe';
+import type { Recipe, RecipeDifficulty } from '../../types/recipe';
+import { DifficultyFilter, matchesDifficulty } from './DifficultyPicker';
 import { isRecipeNew } from '../../types/recipe';
 import {
   X,
@@ -127,6 +128,7 @@ export const RandomPickerModal: React.FC<RandomPickerModalProps> = ({
     () => startCategory || (currentCategoryFilter && currentCategoryFilter !== 'Alla' ? currentCategoryFilter : 'Middag')
   );
   const [maxCookingTime, setMaxCookingTime] = useState<number | null>(initialMaxCookingTime ?? null);
+  const [difficultyFilter, setDifficultyFilter] = useState<RecipeDifficulty[]>([]);
   const [isRolling, setIsRolling] = useState<boolean>(false);
   const [displayedRecipe, setDisplayedRecipe] = useState<Recipe | null>(null);
   const [showResetNotice, setShowResetNotice] = useState<boolean>(false);
@@ -155,11 +157,15 @@ export const RandomPickerModal: React.FC<RandomPickerModalProps> = ({
     };
   }, []);
 
-  const getPool = (category: string, timeLimit: number | null = maxCookingTime) => {
+  const getPool = (
+    category: string,
+    timeLimit: number | null = maxCookingTime,
+    difficulties: RecipeDifficulty[] = difficultyFilter
+  ) => {
     return recipes.filter((r) => {
       const matchCat = category === 'Alla' || (r.category || '').toLowerCase() === category.toLowerCase();
       if (!matchCat) return false;
-      return matchesCookingTime(r, timeLimit);
+      return matchesCookingTime(r, timeLimit) && matchesDifficulty(r.difficulty, difficulties);
     });
   };
 
@@ -181,6 +187,20 @@ export const RandomPickerModal: React.FC<RandomPickerModalProps> = ({
     setShowResetNotice(false);
   };
 
+  // Changing difficulty on the result: roll again if the shown recipe no longer fits
+  const handleDifficultyChangeInResult = (next: RecipeDifficulty[]) => {
+    if (isRolling) return;
+    setDifficultyFilter(next);
+    const newPool = getPool(selectedCategory, maxCookingTime, next);
+    if (newPool.length === 0) {
+      setDisplayedRecipe(null);
+      return;
+    }
+    if (!displayedRecipe || !matchesDifficulty(displayedRecipe.difficulty, next)) {
+      startRoll(selectedCategory, maxCookingTime, next);
+    }
+  };
+
   const handleTimeFilterChangeInResult = (newTime: number | null) => {
     if (isRolling) return;
     setMaxCookingTime(newTime);
@@ -195,7 +215,11 @@ export const RandomPickerModal: React.FC<RandomPickerModalProps> = ({
     }
   };
 
-  const startRoll = (category: string, timeLimit: number | null = maxCookingTime) => {
+  const startRoll = (
+    category: string,
+    timeLimit: number | null = maxCookingTime,
+    difficulties: RecipeDifficulty[] = difficultyFilter
+  ) => {
     if (isRolling) return;
     if (rollTimerRef.current) clearInterval(rollTimerRef.current);
     setShowResetNotice(false);
@@ -203,7 +227,7 @@ export const RandomPickerModal: React.FC<RandomPickerModalProps> = ({
     setSelectedCategory(category);
     setStep('result');
 
-    const activePool = getPool(category, timeLimit);
+    const activePool = getPool(category, timeLimit, difficulties);
     if (activePool.length === 0) {
       setDisplayedRecipe(null);
       setIsRolling(false);
@@ -401,6 +425,12 @@ export const RandomPickerModal: React.FC<RandomPickerModalProps> = ({
               </div>
             </div>
 
+            {/* Difficulty */}
+            <div className="space-y-2">
+              <span className="block text-stone-700 font-semibold text-xs">Svårighetsgrad</span>
+              <DifficultyFilter selected={difficultyFilter} onChange={setDifficultyFilter} className="flex-wrap" />
+            </div>
+
             {/* Categories list */}
             <div className="space-y-2.5">
               {CATEGORY_OPTIONS.map((opt) => {
@@ -470,12 +500,30 @@ export const RandomPickerModal: React.FC<RandomPickerModalProps> = ({
               })}
             </div>
 
+            {/* Difficulty */}
+            <DifficultyFilter
+              selected={difficultyFilter}
+              onChange={handleDifficultyChangeInResult}
+              className="flex-wrap"
+            />
+
             {pool.length === 0 ? (
               <div className="text-center py-8 space-y-3">
                 <p className="text-sm font-semibold text-stone-800">
-                  Inga recept i {selectedCategory === 'Alla' ? 'urvalet' : `kategorin "${selectedCategory}"`} {maxCookingTime ? `under ${maxCookingTime} minuter` : ''}.
+                  Inga recept i {selectedCategory === 'Alla' ? 'urvalet' : `kategorin ${selectedCategory.toLowerCase()}`}
+                  {maxCookingTime ? ` under ${maxCookingTime} minuter` : ''}
+                  {difficultyFilter.length > 0 ? ' med den svårighetsgraden' : ''}.
                 </p>
-                <div className="flex gap-2 justify-center">
+                <div className="flex flex-wrap gap-2 justify-center">
+                  {difficultyFilter.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => handleDifficultyChangeInResult([])}
+                      className="px-4 py-2.5 bg-[#284235] text-white rounded-xl font-bold text-xs"
+                    >
+                      Alla svårighetsgrader
+                    </button>
+                  )}
                   {maxCookingTime !== null && (
                     <button
                       type="button"
