@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { ConfirmSheet } from '../layout/ConfirmSheet';
 import { DifficultyDots } from './DifficultyPicker';
 import { DIFFICULTY_LABELS } from '../../utils/recipeDifficulty';
 import type { Recipe } from '../../types/recipe';
@@ -21,6 +22,7 @@ import {
   Circle,
   CalendarPlus,
   Edit3,
+  Trash2,
   Timer,
   Play,
   Pause,
@@ -52,6 +54,7 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
     recipes,
     shoppingList,
     toggleFavorite,
+    deleteRecipe,
     updateNotes,
     addIngredientsToShoppingList,
     setMealPlanForDate,
@@ -74,6 +77,7 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
   const [addedToCart, setAddedToCart] = useState<boolean>(false);
   const [showPantryChoice, setShowPantryChoice] = useState<boolean>(false);
   const [showMealPlanPicker, setShowMealPlanPicker] = useState<boolean>(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<boolean>(false);
   const [mealPlanMealType, setMealPlanMealType] = useState<'dinner' | 'lunch'>('dinner');
   const [shareToast, setShareToast] = useState<boolean>(false);
   const [copiedRecently, setCopiedRecently] = useState<boolean>(false);
@@ -182,18 +186,25 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
     `edit-recipe-${editBackRound}`
   );
   useModalBackHandler(showMealPlanPicker, () => setShowMealPlanPicker(false), 'meal-plan-picker');
+  useModalBackHandler(showDeleteConfirm, () => setShowDeleteConfirm(false), 'delete-confirm');
+
+  const handleDeleteRecipe = () => {
+    deleteRecipe(recipe.id);
+    setShowDeleteConfirm(false);
+    onBack();
+  };
   useModalBackHandler(showPantryChoice, () => setShowPantryChoice(false), 'pantry-choice');
 
   // Close modal on Escape key if no child dialog is active
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !isEditingRecipe && !showMealPlanPicker) {
+      if (e.key === 'Escape' && !isEditingRecipe && !showMealPlanPicker && !showDeleteConfirm) {
         onBack();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onBack, isEditingRecipe, showMealPlanPicker]);
+  }, [onBack, isEditingRecipe, showMealPlanPicker, showDeleteConfirm]);
 
   // Lock body scroll while recipe modal is open
   useEffect(() => {
@@ -834,6 +845,26 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
             <span>Lägg till i veckoplanen</span>
           </button>
 
+          <button
+            type="button"
+            onClick={() => setIsEditingRecipe(true)}
+            className="w-full py-3.5 px-4 rounded-2xl bg-white border border-[#EBE7DF] hover:bg-stone-50 active:scale-[0.98] text-stone-800 font-semibold text-xs flex items-center justify-center gap-2 transition-all touch-manipulation"
+            style={{ minHeight: '48px' }}
+          >
+            <Edit3 className="w-4 h-4" />
+            <span>Redigera receptet</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setShowDeleteConfirm(true)}
+            className="w-full py-3.5 px-4 rounded-2xl bg-rose-50/70 hover:bg-rose-100/80 border border-rose-200 active:scale-[0.98] text-rose-700 font-semibold text-xs flex items-center justify-center gap-2 transition-all touch-manipulation"
+            style={{ minHeight: '48px' }}
+          >
+            <Trash2 className="w-4 h-4 text-rose-600" />
+            <span>Ta bort recept</span>
+          </button>
+
         </div>
 
         {/* Source link if URL */}
@@ -1011,6 +1042,15 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
         </div>
       )}
 
+      {showDeleteConfirm && (
+        <ConfirmSheet
+          title="Ta bort receptet?"
+          text={`${formatRecipeTitle(recipe.title)} tas bort för hela hushållet.`}
+          confirmLabel="Ta bort receptet"
+          onCancel={() => setShowDeleteConfirm(false)}
+          onConfirm={handleDeleteRecipe}
+        />
+      )}
       </div>
     </div>
   );
