@@ -1223,8 +1223,9 @@ export const MealPlanView: React.FC = () => {
                     )}
                   </div>
 
-                  {/* Day, dinner and lunch */}
-                  <div className="flex-1 min-w-0">
+                  {/* Day, dinner, and one line with time, portions and lunch. Always three lines
+                      high, so a day does not grow when a dinner is chosen and push the others down. */}
+                  <div className="flex-1 min-w-0 min-h-[52px] flex flex-col justify-center">
                     <div className={`text-xs ${isToday ? 'font-bold text-[#284235]' : 'text-stone-500'}`}>
                       {day} {formatDayMonth(weekDates[idx])}{isToday ? ', i dag' : ''}
                     </div>
@@ -1233,30 +1234,32 @@ export const MealPlanView: React.FC = () => {
                       {dRecipe ? formatRecipeTitle(dRecipe.title) : hasCustomDinner ? dayData?.customDinner : 'Välj middag'}
                     </div>
 
-                    {(dRecipe || hasCustomDinner) && (
-                      <div className="text-xs text-stone-500 whitespace-nowrap">
-                        {dRecipe ? `${formatCookingTime(dRecipe.prepTimeMinutes, dRecipe.cookTimeMinutes)}, ` : ''}
-                        {dayData?.dinnerServings || 4} portioner
+                    {(hasDinnerHere || hasLunchHere) && (
+                      <div className="flex items-baseline gap-1 text-xs text-stone-500 whitespace-nowrap min-w-0">
+                        {hasDinnerHere && (
+                          <span className="shrink-0">
+                            {dRecipe ? `${formatCookingTime(dRecipe.prepTimeMinutes, dRecipe.cookTimeMinutes)}, ` : ''}
+                            {dayData?.dinnerServings || 4} port
+                          </span>
+                        )}
+                        {hasDinnerHere && <span aria-hidden="true">·</span>}
+                        {hasLunchHere ? (
+                          <span className="truncate min-w-0">
+                            Lunch: {lRecipe ? formatRecipeTitle(lRecipe.title) : dayData?.customLunch}
+                          </span>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openPickerModal(day, 'lunch');
+                            }}
+                            className="font-semibold text-[#284235] hover:text-stone-900 py-2 -my-2 touch-manipulation"
+                          >
+                            Lägg till lunch
+                          </button>
+                        )}
                       </div>
-                    )}
-
-                    {hasLunchHere ? (
-                      <div className="text-xs text-stone-500 truncate">
-                        Lunch: {lRecipe ? formatRecipeTitle(lRecipe.title) : dayData?.customLunch}
-                      </div>
-                    ) : (
-                      hasDinnerHere && (
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            openPickerModal(day, 'lunch');
-                          }}
-                          className="text-xs font-semibold text-[#284235] hover:text-stone-900 py-1 -my-0.5 touch-manipulation"
-                        >
-                          Lägg till lunch
-                        </button>
-                      )
                     )}
                   </div>
 
