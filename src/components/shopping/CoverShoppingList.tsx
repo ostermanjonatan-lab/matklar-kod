@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Circle, CheckCircle2 } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Check, Circle, CheckCircle2 } from 'lucide-react';
 import { AisleIcon } from './AisleIcon';
 import type { ShoppingItem } from '../../types/recipe';
 import { useRecipes } from '../../context/RecipeContext';
@@ -37,13 +37,13 @@ function amountOf(item: ShoppingItem): string {
 }
 
 /**
- * The shopping list alone, for the outer screen: what is left to buy in the store's aisle order,
+ * The shopping list alone, for the outer screen, in the store's aisle order and working like the
+ * ordinary list: a ticked item is struck through and moves to the end of its aisle. Text is
  * large enough to tick off with a thumb. It looks like the rest of the app: the green bar at the
  * top, the aisles with their icons, rings to tick off. The screen is kept awake while it is open.
  */
 export const CoverShoppingList: React.FC = () => {
   const { shoppingList, toggleShoppingItem } = useRecipes();
-  const [showDone, setShowDone] = useState(false);
 
   const { aisleOrder, storeName } = useMemo(() => {
     const layouts = loadStoreLayouts();
@@ -73,42 +73,13 @@ export const CoverShoppingList: React.FC = () => {
     };
   }, []);
 
-  // A ticked item stays a moment, struck through, before it leaves the list. A tap on it while it
-  // is still there ticks it back.
-  const [leaving, setLeaving] = useState<Set<string>>(new Set());
-  const timers = useRef<number[]>([]);
-  useEffect(() => () => timers.current.forEach((t) => window.clearTimeout(t)), []);
-
-  const tick = (item: ShoppingItem) => {
-    toggleShoppingItem(item.id);
-    if (item.checked) {
-      setLeaving((prev) => {
-        const next = new Set(prev);
-        next.delete(item.id);
-        return next;
-      });
-      return;
-    }
-    setLeaving((prev) => new Set(prev).add(item.id));
-    timers.current.push(
-      window.setTimeout(() => {
-        setLeaving((prev) => {
-          const next = new Set(prev);
-          next.delete(item.id);
-          return next;
-        });
-      }, 1500)
-    );
-  };
-
-  const left = shoppingList.filter((i) => !i.checked || leaving.has(i.id));
-  const done = shoppingList.filter((i) => i.checked && !leaving.has(i.id));
+  // Like the ordinary list: a ticked item stays in its aisle, struck through, below what is left
   const leftCount = shoppingList.filter((i) => !i.checked).length;
 
-  // What is left, grouped by aisle in the order of the chosen store
+  // Everything, grouped by aisle in the order of the chosen store
   const groups = useMemo(() => {
     const map = new Map<string, ShoppingItem[]>();
-    for (const item of left) {
+    for (const item of shoppingList) {
       const aisle = item.aisle || 'Övrigt';
       map.set(aisle, [...(map.get(aisle) || []), item]);
     }
@@ -116,8 +87,10 @@ export const CoverShoppingList: React.FC = () => {
       const i = aisleOrder.indexOf(a);
       return i === -1 ? aisleOrder.length : i;
     };
-    return [...map.entries()].sort((a, b) => rank(a[0]) - rank(b[0]));
-  }, [left, aisleOrder]);
+    return [...map.entries()]
+      .sort((a, b) => rank(a[0]) - rank(b[0]))
+      .map(([aisle, items]) => [aisle, [...items].sort((x, y) => Number(x.checked) - Number(y.checked))] as const);
+  }, [shoppingList, aisleOrder]);
 
   const row = (item: ShoppingItem) => {
     const struck = item.checked;
@@ -126,7 +99,7 @@ export const CoverShoppingList: React.FC = () => {
       <li key={item.id}>
         <button
           type="button"
-          onClick={() => tick(item)}
+          onClick={() => toggleShoppingItem(item.id)}
           className="w-full flex items-center gap-3.5 py-3 text-left touch-manipulation"
           aria-pressed={item.checked}
         >
@@ -167,37 +140,24 @@ export const CoverShoppingList: React.FC = () => {
           <p className="pt-6 text-xl text-stone-600">Listan är tom. Lägg till varor på telefonens stora skärm.</p>
         ) : (
           <>
-            {leftCount === 0 && left.length === 0 && (
-              <div className="pt-10 pb-4 flex flex-col items-center text-center gap-3">
-                <CheckCircle2 className="w-14 h-14 text-[#284235]" strokeWidth={1.5} />
-                <p className="text-2xl font-semibold text-stone-900">Allt är köpt</p>
-              </div>
-            )}
+            {groups.map(([aisle, items]) => {
+              const remaining = items.filter((i) => !i.checked).length;
+              return (
+                <section key={aisle}>
+                  <h2 className={`pt-5 pb-1 flex items-center gap-2 text-lg font-semibold ${remaining === 0 ? 'text-stone-400' : 'text-stone-900'}`}>
+                    <AisleIcon aisle={aisle} className={`w-5 h-5 ${remaining === 0 ? 'text-stone-300' : 'text-stone-500'}`} />
+                    {aisle}
+                    {remaining === 0 ? (
+                      <Check className="w-5 h-5 text-[#284235]" aria-label="Klart" />
+                    ) : (
+                      <span className="text-base font-normal text-stone-400 tabular-nums">{remaining}</span>
+                    )}
+                  </h2>
+                  <ul className="divide-y divide-[#EBE7DF]">{items.map(row)}</ul>
+                </section>
+              );
+            })}
 
-            {groups.map(([aisle, items]) => (
-              <section key={aisle}>
-                <h2 className="pt-5 pb-1 flex items-center gap-2 text-lg font-semibold text-stone-900">
-                  <AisleIcon aisle={aisle} className="w-5 h-5 text-stone-500" />
-                  {aisle}
-                  <span className="text-base font-normal text-stone-400 tabular-nums">{items.filter((i) => !i.checked).length}</span>
-                </h2>
-                <ul className="divide-y divide-[#EBE7DF]">{items.map(row)}</ul>
-              </section>
-            ))}
-
-            {done.length > 0 && (
-              <section className="pt-5">
-                <button
-                  type="button"
-                  onClick={() => setShowDone((v) => !v)}
-                  className="min-h-[48px] text-lg font-semibold text-[#284235] touch-manipulation"
-                  aria-expanded={showDone}
-                >
-                  {showDone ? 'Dölj avbockade' : `Visa avbockade (${done.length})`}
-                </button>
-                {showDone && <ul className="divide-y divide-[#EBE7DF] border-t border-[#EBE7DF]">{done.map(row)}</ul>}
-              </section>
-            )}
           </>
         )}
       </div>
