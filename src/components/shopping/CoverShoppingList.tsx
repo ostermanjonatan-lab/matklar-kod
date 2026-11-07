@@ -65,21 +65,21 @@ export const CoverShoppingList: React.FC = () => {
       <button
         type="button"
         onClick={() => toggleShoppingItem(item.id)}
-        className="w-full flex items-center gap-3 py-2.5 text-left touch-manipulation"
+        className="w-full flex items-center gap-3.5 py-3.5 text-left touch-manipulation"
         aria-pressed={item.checked}
       >
         <span
-          className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 ${
+          className={`w-8 h-8 rounded-full border-2 flex items-center justify-center shrink-0 ${
             item.checked ? 'bg-[#284235] border-[#284235] text-white' : 'border-stone-300'
           }`}
         >
-          {item.checked && <Check className="w-4 h-4 stroke-[3]" />}
+          {item.checked && <Check className="w-5 h-5 stroke-[3]" />}
         </span>
-        <span className={`flex-1 min-w-0 text-[17px] leading-snug ${item.checked ? 'line-through text-stone-400' : 'text-stone-900'}`}>
+        <span className={`flex-1 min-w-0 text-[24px] leading-tight ${item.checked ? 'line-through text-stone-400' : 'text-stone-900'}`}>
           {capitalizeFirst(formatIngredientName(item.name, item.amount, item.unit))}
         </span>
         {amountOf(item) && (
-          <span className={`text-[15px] tabular-nums shrink-0 ${item.checked ? 'text-stone-400' : 'text-stone-500'}`}>
+          <span className={`text-[20px] tabular-nums shrink-0 ${item.checked ? 'text-stone-400' : 'text-stone-500'}`}>
             {amountOf(item)}
           </span>
         )}
@@ -91,19 +91,19 @@ export const CoverShoppingList: React.FC = () => {
     // The outer screen has its cameras along the bottom, so the end of the list stays clear of them
     <div className="min-h-[100dvh] bg-[#FCFAF5] font-sans px-4 pt-3 pb-20 overflow-x-hidden">
       <header className="flex items-baseline justify-between gap-3 pb-1">
-        <h1 className="font-serif font-bold text-xl text-stone-900">Inköpslista</h1>
-        <span className="text-sm text-stone-500 tabular-nums">
+        <h1 className="font-serif font-bold text-[26px] text-stone-900">Inköpslista</h1>
+        <span className="text-lg text-stone-500 tabular-nums">
           {left.length === 0 ? 'Allt klart' : `${left.length} kvar`}
         </span>
       </header>
 
       {shoppingList.length === 0 ? (
-        <p className="pt-6 text-base text-stone-600">Listan är tom. Lägg till varor på telefonens stora skärm.</p>
+        <p className="pt-6 text-xl text-stone-600">Listan är tom. Lägg till varor på telefonens stora skärm.</p>
       ) : (
         <>
           {groups.map(([aisle, items]) => (
             <section key={aisle}>
-              <h2 className="pt-3 pb-0.5 text-xs font-semibold text-stone-500">{aisle}</h2>
+              <h2 className="pt-4 pb-1 text-base font-semibold text-stone-500">{aisle}</h2>
               <ul className="divide-y divide-[#EBE7DF] border-t border-[#EBE7DF]">{items.map(row)}</ul>
             </section>
           ))}
@@ -113,7 +113,7 @@ export const CoverShoppingList: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setShowDone((v) => !v)}
-                className="min-h-[40px] text-sm font-semibold text-[#284235] touch-manipulation"
+                className="min-h-[48px] text-lg font-semibold text-[#284235] touch-manipulation"
                 aria-expanded={showDone}
               >
                 {showDone ? 'Dölj avbockade' : `Visa avbockade (${done.length})`}
