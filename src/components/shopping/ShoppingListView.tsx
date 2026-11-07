@@ -7,6 +7,7 @@ import { useRecipes } from '../../context/RecipeContext';
 import { EditShoppingItemSheet } from './EditShoppingItemSheet';
 import { SwipeToDelete } from './SwipeToDelete';
 import { AisleIcon } from './AisleIcon';
+import { useStoredState } from '../../hooks/useStoredState';
 import { useModalBackHandler } from '../../hooks/useModalBackHandler';
 import { AlltidHemmaView } from './AlltidHemmaView';
 import { takeOpenStoreOrderFlag } from './storeOrderLink';
@@ -73,6 +74,9 @@ export const ShoppingListView: React.FC = () => {
   const [activeStoreId, setActiveStoreId] = useState<string>(() => loadActiveStoreId());
   const [collapsedAisles, setCollapsedAisles] = useState<Set<string>>(() => new Set(loadCollapsedAisles()));
   const [showStoreDropdown, setShowStoreDropdown] = useState<boolean>(false);
+  // Everything in one list without the aisle headings, remembered on this phone
+  const [flatList, setFlatList] = useStoredState<boolean>('matklar_shopping_flat', false);
+
   // Opened from Settings: go straight to Ordna
   const [showReorderModal, setShowReorderModal] = useState<boolean>(() => takeOpenStoreOrderFlag());
   useModalBackHandler(showReorderModal, () => setShowReorderModal(false), 'reorder-shopping-aisles');
@@ -525,15 +529,14 @@ export const ShoppingListView: React.FC = () => {
                     <span>{areAllCollapsed ? 'Fäll ut alla' : 'Fäll ihop alla'}</span>
                   </button>
 
-                  {/* Reorder Aisles button */}
+                  {/* All items in one list, or by aisle */}
                   <button
                     type="button"
-                    onClick={() => setShowReorderModal(true)}
+                    onClick={() => setFlatList((v) => !v)}
+                    aria-pressed={flatList}
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-stone-100 hover:bg-stone-200/70 text-stone-700 text-xs font-semibold transition-colors cursor-pointer h-9 border border-stone-200/70"
-                    title="Ändra ordning på butikens avdelningar"
                   >
-                    <ArrowUpDown className="w-3.5 h-3.5 text-stone-500" />
-                    <span>Ordna</span>
+                    <span>{flatList ? 'Visa kategorier' : 'Utan kategorier'}</span>
                   </button>
 
                   {/* Share / Copy button */}
@@ -669,7 +672,7 @@ export const ShoppingListView: React.FC = () => {
                 )}
 
                 {/* Store Profile & Category Tools Bar */}
-                {/* One row: the store to the left, Fäll ihop and Ordna as plain text to the right */}
+                {/* One row: the store to the left, Fäll ihop and Utan kategorier as plain text to the right */}
                 <div className="flex items-center justify-between gap-3 pt-2.5 mt-2 border-t border-[#FFFFFF]/15 text-xs w-full">
                   {/* Active Store Button with Dropdown */}
                   <div className="relative min-w-0">
@@ -729,22 +732,24 @@ export const ShoppingListView: React.FC = () => {
 
                   {/* Action buttons: Collapse/Expand All & Reorder Modal */}
                   <div className="flex items-center gap-4 shrink-0">
-                    <button
-                      type="button"
-                      onClick={handleToggleAllCollapse}
-                      className="text-xs font-semibold text-white/80 whitespace-nowrap touch-manipulation min-h-[40px]"
-                      title={areAllCollapsed ? 'Fäll ut alla kategorier' : 'Fäll ihop alla kategorier'}
-                    >
-                      {areAllCollapsed ? 'Fäll ut' : 'Fäll ihop'}
-                    </button>
+                    {!flatList && (
+                      <button
+                        type="button"
+                        onClick={handleToggleAllCollapse}
+                        className="text-xs font-semibold text-white/80 whitespace-nowrap touch-manipulation min-h-[40px]"
+                        title={areAllCollapsed ? 'Fäll ut alla kategorier' : 'Fäll ihop alla kategorier'}
+                      >
+                        {areAllCollapsed ? 'Fäll ut' : 'Fäll ihop'}
+                      </button>
+                    )}
 
                     <button
                       type="button"
-                      onClick={() => setShowReorderModal(true)}
+                      onClick={() => setFlatList((v) => !v)}
+                      aria-pressed={flatList}
                       className="text-xs font-semibold text-white whitespace-nowrap touch-manipulation min-h-[40px]"
-                      title="Ändra ordning på butikens avdelningar"
                     >
-                      Ordna
+                      {flatList ? 'Visa kategorier' : 'Utan kategorier'}
                     </button>
                   </div>
                 </div>
@@ -894,13 +899,17 @@ export const ShoppingListView: React.FC = () => {
         {groupedByAisle.length > 0 ? (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-2 md:gap-y-4 items-start w-full">
-              {groupedByAisle.map((group) => {
-                const isCollapsed = collapsedAisles.has(group.aisleName);
+              {(flatList
+                ? [{ aisleName: '', items: groupedByAisle.flatMap((g) => g.items) }]
+                : groupedByAisle
+              ).map((group) => {
+                const isCollapsed = !flatList && collapsedAisles.has(group.aisleName);
                 const remainingInAisle = group.items.filter((i) => !i.checked).length;
 
                 return (
-                  <section key={group.aisleName} className="w-full">
-                    {/* Aisle heading: tap to collapse. Order is changed under "Ordna". */}
+                  <section key={group.aisleName || 'alla'} className={`w-full ${flatList ? 'md:col-span-2 lg:col-span-3' : ''}`}>
+                    {/* Aisle heading: tap to collapse. Order is changed under Hantera butiker & ordning. */}
+                    {!flatList && (
                     <button
                       type="button"
                       onClick={() => handleToggleCollapseAisle(group.aisleName)}
@@ -922,6 +931,7 @@ export const ShoppingListView: React.FC = () => {
                         }`}
                       />
                     </button>
+                    )}
 
                   {/* Items in Aisle (collapsible) */}
                   {!isCollapsed && (
