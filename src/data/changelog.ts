@@ -11,6 +11,13 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.0.150',
+    date: '2026-11-07',
+    items: [
+      'Sök och kategorier står kvar överst när receptlistan skrollas, och veckan står kvar överst i veckoplanen.',
+    ],
+  },
+  {
     version: '1.0.149',
     date: '2026-11-07',
     items: [
