@@ -21,6 +21,7 @@ import {
   X,
   ChefHat,
   Users,
+  CookingPot,
 } from 'lucide-react';
 import { LunchboxIcon } from '../icons/LunchboxIcon';
 import { DinnerBrowser } from '../recipes/DinnerBrowser';
@@ -976,9 +977,11 @@ export const MealPlanView: React.FC = () => {
                         <Dices className="w-4 h-4" />
                       </button>
                     </div>
-                    <div className="absolute bottom-3.5 left-3.5 right-3.5">
-                      <h3 className="font-serif font-bold text-xl leading-snug text-stone-500">Ingen middag än</h3>
+                    {/* A pot in the middle: nothing chosen yet */}
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none" aria-hidden="true">
+                      <CookingPot className="w-14 h-14 text-stone-300 stroke-[1.25]" />
                     </div>
+                    <span className="sr-only">Ingen middag vald</span>
                   </div>
 
                   <div className="p-3.5 bg-white">
