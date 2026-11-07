@@ -250,6 +250,9 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
     const scrollToTop = () => {
       if (scrollContainerRef.current) {
         scrollContainerRef.current.scrollTop = 0;
+        scrollContainerRef.current.querySelectorAll<HTMLElement>('[data-scroll-column]').forEach((col) => {
+          col.scrollTop = 0;
+        });
       }
     };
 
@@ -409,7 +412,7 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
       aria-label={recipe.title}
     >
       <div
-        className="bg-[#FCFAF5] w-full max-w-md sm:max-w-lg md:max-w-xl lg:max-w-6xl rounded-t-3xl sm:rounded-3xl shadow-2xl border border-[#E8E4DC] overflow-hidden flex flex-col max-h-[94vh] sm:max-h-[90vh] transition-all relative"
+        className="bg-[#FCFAF5] w-full max-w-md sm:max-w-lg md:max-w-xl lg:max-w-6xl rounded-t-3xl sm:rounded-3xl shadow-2xl border border-[#E8E4DC] overflow-hidden flex flex-col max-h-[94vh] sm:max-h-[90vh] lg:h-[90vh] transition-all relative"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Full Recipe Editing Modal */}
@@ -517,14 +520,14 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
         )}
 
         {/* Scrollable Single-Column Body */}
-        <div ref={scrollContainerRef} className="overflow-y-auto flex-1 overscroll-contain">
+        <div ref={scrollContainerRef} className="overflow-y-auto flex-1 overscroll-contain lg:overflow-hidden lg:min-h-0 lg:flex lg:flex-col">
           {/* Cover image: full width on a phone */}
           {renderCover('aspect-16/10 lg:hidden')}
 
-          <div className="p-4 sm:p-5 space-y-4 sm:space-y-5">
-            {/* Ingredients and instructions, side by side on wide screens */}
-            <div className="space-y-4 sm:space-y-5 lg:space-y-0 lg:grid lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:gap-6 lg:items-start">
-            <div className="space-y-4 sm:space-y-5">
+          <div className="p-4 sm:p-5 space-y-4 sm:space-y-5 lg:p-0 lg:space-y-0 lg:flex-1 lg:min-h-0">
+            {/* Ingredients and instructions, side by side on wide screens, each column with its own scroll */}
+            <div className="space-y-4 sm:space-y-5 lg:space-y-0 lg:grid lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:grid-rows-[minmax(0,1fr)] lg:h-full">
+            <div data-scroll-column className="space-y-4 sm:space-y-5 lg:overflow-y-auto lg:overscroll-contain lg:p-5 lg:pr-4">
             {/* Cover image: in the left column on a wide screen */}
             {renderCover('hidden lg:block aspect-[4/3] rounded-2xl')}
 
@@ -615,7 +618,7 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
             </div>
 
         {/* Instructions Steps, Timers, Notes & Actions */}
-        <div className="space-y-5">
+        <div data-scroll-column className="space-y-5 lg:overflow-y-auto lg:overscroll-contain lg:p-5 lg:pl-6 lg:border-l lg:border-[#EBE7DF]">
           {/* Instructions Steps */}
           <div>
             <h2 className="font-serif text-lg font-bold text-stone-900 mb-3">
