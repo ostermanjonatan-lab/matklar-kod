@@ -16,10 +16,12 @@ interface RecipeCardProps {
   /** Returns false if the recipe wasn't added right away, e.g. while a question is shown. */
   onAddToShoppingList?: (recipe: Recipe) => boolean;
   isInShoppingList?: boolean;
+  /** A low row with a small photo to the left and the text to the right */
+  compact?: boolean;
 }
 
 export const RecipeCard = React.memo<RecipeCardProps>(
-  ({ recipe, onClick, onToggleFavorite, onAddToShoppingList, isInShoppingList }) => {
+  ({ recipe, onClick, onToggleFavorite, onAddToShoppingList, isInShoppingList, compact }) => {
     // Only access context if onToggleFavorite was not provided by parent
     const recipesContext = useRecipes();
     const toggleFav = onToggleFavorite || recipesContext.toggleFavorite;
@@ -86,6 +88,71 @@ export const RecipeCard = React.memo<RecipeCardProps>(
       setTimeout(() => setAddedToCart(false), 2000);
     };
 
+    const meta = [
+      categoryLabel(recipe.category),
+      formatCookingTime(recipe.prepTimeMinutes, recipe.cookTimeMinutes),
+      recipe.difficulty ? DIFFICULTY_LABELS[recipe.difficulty] : '',
+      recipe.sourceType === 'recipe_image' ? 'Foto' : recipe.sourceType === 'pdf' || recipe.recipeDocumentUrl ? 'PDF' : '',
+    ]
+      .filter(Boolean)
+      .join(' · ');
+
+    const cartLabel = addedToCart
+      ? 'Receptet tillagt i inköpslistan'
+      : isInShoppingList
+      ? 'Receptet finns i inköpslistan, tryck för att lägga till igen'
+      : 'Lägg till receptet i inköpslistan';
+
+    if (compact) {
+      return (
+        <div
+          onClick={handleCardClick}
+          style={{ contentVisibility: 'auto', containIntrinsicSize: '88px' }}
+          className="flex items-center gap-3 py-2.5 border-b border-[#EBE7DF] cursor-pointer active:bg-stone-100/70"
+        >
+          <div className="relative w-20 h-16 rounded-xl overflow-hidden bg-stone-100 shrink-0">
+            <FadeImage
+              src={recipe.coverImageUrl}
+              alt=""
+              loading="lazy"
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+          </div>
+          <div className="flex-1 min-w-0">
+            <h3 className="font-serif text-[15px] font-bold text-stone-900 leading-snug line-clamp-2">
+              {formatRecipeTitle(recipe.title)}
+            </h3>
+            <p className="mt-0.5 text-xs text-stone-500 truncate">
+              {meta}
+              {isRecipeNew(recipe) && <span className="text-emerald-700"> · Ny</span>}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={handleHeartClick}
+            className="w-10 h-11 -mr-1 flex items-center justify-center text-stone-400 active:scale-110 transition-transform touch-manipulation shrink-0"
+            aria-label={recipe.isFavorite ? 'Ta bort favorit' : 'Lägg till som favorit'}
+          >
+            <Heart className={`w-5 h-5 ${recipe.isFavorite ? 'fill-rose-500 text-rose-500' : ''}`} />
+          </button>
+          <button
+            type="button"
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+            onClick={handleShoppingClick}
+            className="relative w-10 h-11 -mr-2 flex items-center justify-center text-stone-500 active:scale-110 transition-transform touch-manipulation shrink-0"
+            aria-label={cartLabel}
+          >
+            {addedToCart ? <Check className="w-5 h-5 stroke-[2.5] text-[#284235]" /> : <ShoppingCart className="w-5 h-5" />}
+            {isInShoppingList && !addedToCart && (
+              <span className="absolute top-2.5 right-1.5 w-2 h-2 bg-emerald-500 rounded-full" />
+            )}
+          </button>
+        </div>
+      );
+    }
+
     return (
       <div
         onClick={handleCardClick}
@@ -120,14 +187,7 @@ export const RecipeCard = React.memo<RecipeCardProps>(
             {formatRecipeTitle(recipe.title)}
           </h3>
           <p className="mt-1 text-[13px] text-white/85 drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)] truncate">
-            {[
-              categoryLabel(recipe.category),
-              formatCookingTime(recipe.prepTimeMinutes, recipe.cookTimeMinutes),
-              recipe.difficulty ? DIFFICULTY_LABELS[recipe.difficulty] : '',
-              recipe.sourceType === 'recipe_image' ? 'Foto' : recipe.sourceType === 'pdf' || recipe.recipeDocumentUrl ? 'PDF' : '',
-            ]
-              .filter(Boolean)
-              .join(' · ')}
+            {meta}
             {isRecipeNew(recipe) && <span className="text-emerald-200"> · Ny</span>}
           </p>
         </div>
@@ -140,13 +200,7 @@ export const RecipeCard = React.memo<RecipeCardProps>(
           onTouchEnd={handleTouchEnd}
           onClick={handleShoppingClick}
           className="absolute bottom-2 right-2 w-11 h-11 flex items-center justify-center text-white active:scale-110 transition-transform touch-manipulation z-20 drop-shadow-[0_1px_3px_rgba(0,0,0,0.6)]"
-          aria-label={
-            addedToCart
-              ? 'Receptet tillagt i inköpslistan'
-              : isInShoppingList
-              ? 'Receptet finns i inköpslistan, tryck för att lägga till igen'
-              : 'Lägg till receptet i inköpslistan'
-          }
+          aria-label={cartLabel}
         >
           {addedToCart ? <Check className="w-5 h-5 stroke-[2.5]" /> : <ShoppingCart className="w-5 h-5" />}
           {isInShoppingList && !addedToCart && (
@@ -172,7 +226,9 @@ export const RecipeCard = React.memo<RecipeCardProps>(
       prevProps.onToggleFavorite === nextProps.onToggleFavorite &&
       prevProps.onShareRecipe === nextProps.onShareRecipe &&
       prevProps.onAddToShoppingList === nextProps.onAddToShoppingList &&
-      prevProps.isInShoppingList === nextProps.isInShoppingList
+      prevProps.isInShoppingList === nextProps.isInShoppingList &&
+      prevProps.compact === nextProps.compact &&
+      prevProps.recipe.difficulty === nextProps.recipe.difficulty
     );
   }
 );

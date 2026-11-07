@@ -19,6 +19,8 @@ import {
   Check,
   ChevronDown,
   Heart,
+  LayoutGrid,
+  List,
 } from 'lucide-react';
 
 
@@ -44,6 +46,10 @@ const SORT_OPTIONS: SortItem[] = [
 const INITIAL_BATCH_SIZE = 24;
 const BATCH_INCREMENT = 18;
 
+const VIEW_KEY = 'matklar_recipe_view';
+/** The rows in the list view: one column on a phone, more beside each other on wider screens */
+const LIST_CLASS = 'border-t border-[#EBE7DF] md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-x-8';
+
 export const RecipeList: React.FC = () => {
   const {
     isLoadingHousehold,
@@ -62,6 +68,24 @@ export const RecipeList: React.FC = () => {
   const deferredSearchQuery = useDeferredValue(searchQuery);
 
   const [selectedCategory, setSelectedCategory] = useState<string>('Alla');
+  // Big cards with the photo, or low rows with a small photo. Remembered on this phone.
+  const [compact, setCompact] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem(VIEW_KEY) === 'list';
+    } catch {
+      return false;
+    }
+  });
+  const toggleView = () => {
+    setCompact((c) => {
+      try {
+        localStorage.setItem(VIEW_KEY, c ? 'cards' : 'list');
+      } catch {
+        // ignore
+      }
+      return !c;
+    });
+  };
   const [selectedSubcategories, setSelectedSubcategories] = useState<string[]>([]);
   const [maxCookingTime, setMaxCookingTime] = useState<number | null>(null);
   const [difficultyFilter, setDifficultyFilter] = useState<RecipeDifficulty[]>([]);
@@ -665,12 +689,12 @@ export const RecipeList: React.FC = () => {
             {onlyFavorites && ' bland favoriter'}
           </span>
 
-          <div className="md:hidden flex items-center gap-3">
+          <div className="flex items-center gap-3">
             {hasActiveFilters && (
               <button
                 type="button"
                 onClick={clearFilters}
-                className="text-xs text-[#284235] font-semibold min-h-[36px] touch-manipulation"
+                className="md:hidden text-xs text-[#284235] font-semibold min-h-[36px] touch-manipulation"
               >
                 Återställ
               </button>
@@ -678,11 +702,20 @@ export const RecipeList: React.FC = () => {
             <button
               type="button"
               onClick={() => setShowSortSheet(true)}
-              className="flex items-center gap-1 text-xs text-stone-600 min-h-[36px] touch-manipulation"
+              className="md:hidden flex items-center gap-1 text-xs text-stone-600 min-h-[36px] touch-manipulation"
               aria-label={`Sortera, nu ${activeSortLabel}`}
             >
               {activeSortLabel}
               <ChevronDown className="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={toggleView}
+              className="w-9 h-9 -mr-2 flex items-center justify-center text-stone-600 hover:text-stone-900 touch-manipulation"
+              aria-label={compact ? 'Visa som stora kort' : 'Visa som lista'}
+              title={compact ? 'Visa som stora kort' : 'Visa som lista'}
+            >
+              {compact ? <LayoutGrid className="w-4 h-4" /> : <List className="w-4 h-4" />}
             </button>
           </div>
         </div>
@@ -690,20 +723,35 @@ export const RecipeList: React.FC = () => {
         {/* Recipe Cards List / Grid (1 col on mobile, 2 cols on tablet, 3-4 cols on desktop) */}
         {isLoadingHousehold ? (
           /* The household's recipes are on their way: the shape of the cards while they load */
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6" aria-label="Hämtar recepten" role="status">
-            {[0, 1, 2].map((i) => (
-              <div key={i} className="relative aspect-[16/11] md:aspect-[4/5] w-full rounded-2xl overflow-hidden">
-                <span className="skeleton absolute inset-0 block" />
-              </div>
-            ))}
-          </div>
+          compact ? (
+            <div className={LIST_CLASS} aria-label="Hämtar recepten" role="status">
+              {[0, 1, 2, 3, 4].map((i) => (
+                <div key={i} className="flex items-center gap-3 py-2.5 border-b border-[#EBE7DF]">
+                  <span className="skeleton block w-20 h-16 rounded-xl shrink-0" />
+                  <span className="flex-1 space-y-2">
+                    <span className="skeleton block h-4 w-3/4 rounded" />
+                    <span className="skeleton block h-3 w-1/2 rounded" />
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6" aria-label="Hämtar recepten" role="status">
+              {[0, 1, 2].map((i) => (
+                <div key={i} className="relative aspect-[16/11] md:aspect-[4/5] w-full rounded-2xl overflow-hidden">
+                  <span className="skeleton absolute inset-0 block" />
+                </div>
+              ))}
+            </div>
+          )
         ) : sortedAndFilteredRecipes.length > 0 ? (
           <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+            <div className={compact ? LIST_CLASS : 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6'}>
               {visibleRecipes.map((recipe) => (
                 <RecipeCard
                   key={recipe.id}
                   recipe={recipe}
+                  compact={compact}
                   onClick={handleSelectRecipe}
                   onToggleFavorite={handleToggleFavorite}
                   onShareRecipe={handleShareRecipe}
