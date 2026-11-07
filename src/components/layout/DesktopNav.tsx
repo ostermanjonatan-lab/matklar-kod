@@ -91,7 +91,7 @@ export const DesktopNav: React.FC<DesktopNavProps> = ({
             <span>Recept</span>
           </button>
 
-          {/* Veckoplan */}
+          {/* Planerare */}
           <button
             type="button"
             onClick={() => handleTabClick('mealplan')}
@@ -102,7 +102,7 @@ export const DesktopNav: React.FC<DesktopNavProps> = ({
             }`}
           >
             <CalendarDays className="w-4 h-4 stroke-[2] shrink-0" />
-            <span>Veckoplan</span>
+            <span>Planerare</span>
           </button>
 
           {/* Inköp */}

@@ -25,7 +25,7 @@ export const TermsSheet: React.FC<{ onClose: () => void }> = ({ onClose }) => (
 
     <h3 className={h}>Hushållet</h3>
     <p className={p}>
-      Alla med hushållets kod kan se och ändra recept, veckoplan och inköpslista. Ge bara koden till dem du bor
+      Alla med hushållets kod kan se och ändra recept, planerare och inköpslista. Ge bara koden till dem du bor
       med, och byt kod om den kommit i fel händer.
     </p>
 

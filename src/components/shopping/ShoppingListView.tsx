@@ -1090,7 +1090,7 @@ export const ShoppingListView: React.FC = () => {
         ) : (
           <div className="py-8 space-y-2">
             <h3 className="font-serif text-lg font-bold text-stone-900">Inköpslistan är tom</h3>
-            <p className="text-sm text-stone-600">Lägg till varor här, eller ingredienser från ett recept eller veckoplanen.</p>
+            <p className="text-sm text-stone-600">Lägg till varor här, eller ingredienser från ett recept eller planeraren.</p>
             <div className="pt-2">
               <button
                 type="button"

@@ -299,7 +299,7 @@ export const SettingsView: React.FC = () => {
           <div className="bg-white rounded-2xl border border-[#EBE7DF] p-4 space-y-3 mt-2">
             <div>
               <h2 className="font-serif text-lg font-bold text-stone-900">Hushåll</h2>
-              <p className="text-sm text-stone-600 mt-0.5">Dela recept, veckoplan och inköpslista med dem du bor med.</p>
+              <p className="text-sm text-stone-600 mt-0.5">Dela recept, planerare och inköpslista med dem du bor med.</p>
             </div>
             <div className="grid grid-cols-2 gap-2">
               <button
@@ -509,7 +509,7 @@ export const SettingsView: React.FC = () => {
               />
               {confirming === 'reset' && (
                 <Confirm
-                  text="Recepten byts mot demorecepten, och veckoplanen och inköpslistan töms på den här telefonen."
+                  text="Recepten byts mot demorecepten, och planeraren och inköpslistan töms på den här telefonen."
                   confirmLabel="Återställ"
                   onCancel={() => setConfirming(null)}
                   onConfirm={() => {
@@ -533,9 +533,9 @@ export const SettingsView: React.FC = () => {
                   text={
                     household && isLiveSupabase
                       ? isHouseholdAdmin
-                        ? `${household.name} tas bort ur databasen med alla recept, veckoplaner och inköpslistan, för alla medlemmar. Sedan raderas allt på den här telefonen. Det går inte att ångra.`
+                        ? `${household.name} tas bort ur databasen med alla recept, planerade måltider och inköpslistan, för alla medlemmar. Sedan raderas allt på den här telefonen. Det går inte att ångra.`
                         : `Du tas bort ur ${household.name} i databasen, och allt på den här telefonen raderas. Hushållets recept finns kvar hos de andra. Det går inte att ångra.`
-                      : 'Recept, veckoplan, inköpslista och inställningar raderas från den här telefonen. Det går inte att ångra.'
+                      : 'Recept, planerare, inköpslista och inställningar raderas från den här telefonen. Det går inte att ångra.'
                   }
                   confirmLabel={erasing ? 'Raderar' : 'Radera allt'}
                   onCancel={() => setConfirming(null)}

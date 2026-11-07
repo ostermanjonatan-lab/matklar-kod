@@ -797,7 +797,7 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
             className="w-full py-3.5 px-4 rounded-2xl bg-white border border-[#EBE7DF] hover:bg-stone-50 active:scale-[0.98] text-stone-800 font-semibold text-xs flex items-center justify-center gap-2 transition-all touch-manipulation shadow-xs"
             style={{ minHeight: '48px' }}
           >
-            <span>Lägg till i veckoplanen</span>
+            <span>Lägg till i planeraren</span>
           </button>
 
           <button
@@ -861,7 +861,7 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
           <div className="bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl p-5 shadow-2xl space-y-4 max-h-[85vh] overflow-y-auto">
             <div className="flex items-center justify-between">
               <h3 className="font-serif font-bold text-lg text-stone-900">
-                Lägg till i veckoplanen
+                Lägg till i planeraren
               </h3>
               <button
                 type="button"

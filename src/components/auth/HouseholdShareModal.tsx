@@ -547,7 +547,7 @@ export const HouseholdShareModal: React.FC<HouseholdShareModalProps> = ({ onClos
                   <ConfirmBox
                     text={
                       isHouseholdAdmin
-                        ? `${household.name} tas bort för alla medlemmar, med recept, veckoplan och inköpslista.`
+                        ? `${household.name} tas bort för alla medlemmar, med recept, planerare och inköpslista.`
                         : `Du lämnar ${household.name}. Du kan gå med igen med koden.`
                     }
                     label={isHouseholdAdmin ? 'Ta bort' : 'Lämna'}

@@ -25,7 +25,7 @@ export class ErrorBoundary extends React.Component<{ children: React.ReactNode }
       <div className="min-h-[100dvh] bg-[#FCFAF5] font-sans px-6 pt-16 max-w-md mx-auto">
         <h1 className="font-serif font-bold text-2xl text-stone-900">Något gick fel</h1>
         <p className="mt-2 text-base text-stone-600">
-          Appen stötte på ett fel. Dina recept, veckoplanen och inköpslistan finns kvar.
+          Appen stötte på ett fel. Dina recept, planeraren och inköpslistan finns kvar.
         </p>
         <button
           type="button"

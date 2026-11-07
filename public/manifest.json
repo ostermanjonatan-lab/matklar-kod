@@ -1,7 +1,7 @@
 {
   "name": "MatKlar",
   "short_name": "MatKlar",
-  "description": "Recept, veckoplan och inköpslista för hushållet.",
+  "description": "Recept, planerare och inköpslista för hushållet.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
@@ -55,9 +55,9 @@
       ]
     },
     {
-      "name": "Veckoplan",
-      "short_name": "Vecka",
-      "description": "Öppna veckomenyn",
+      "name": "Planerare",
+      "short_name": "Planerare",
+      "description": "Öppna planeraren",
       "url": "./?tab=mealplan",
       "icons": [
         {

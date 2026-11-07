@@ -137,7 +137,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ onAddRecipeClick, onAddSho
         {/* See-through background with blur, cut to the menu's shape: a low arc on top that
             rises about 14 px towards the middle. It is a layer of its own so the plus button,
             which reaches a little above the arc, is not cut off.
-            The inner buttons (Veckoplan, Inköp) sit about 6 px higher than the outer ones,
+            The inner buttons (Planerare, Inköp) sit about 6 px higher than the outer ones,
             which is how much higher the arc is at their place, so the row follows the curve. */}
         <div
           aria-hidden="true"
@@ -181,7 +181,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ onAddRecipeClick, onAddSho
             <span className="text-[11px] mt-1 font-semibold leading-tight">Recept</span>
           </button>
 
-          {/* Veckoplan */}
+          {/* Planerare */}
           <button
             type="button"
             onClick={() => handleTabClick('mealplan')}
@@ -190,14 +190,14 @@ export const BottomNav: React.FC<BottomNavProps> = ({ onAddRecipeClick, onAddSho
                 ? 'text-[#284235] font-bold'
                 : 'text-stone-500 hover:text-stone-800'
             }`}
-            aria-label="Veckoplan"
+            aria-label="Planerare"
           >
             <CalendarDays
               className={`w-5 h-5 transition-transform ${
                 activeTab === 'mealplan' && !selectedRecipe ? 'scale-110 stroke-[2.3]' : 'stroke-[1.6]'
               }`}
             />
-            <span className="text-[11px] mt-1 font-semibold leading-tight">Veckoplan</span>
+            <span className="text-[11px] mt-1 font-semibold leading-tight">Planerare</span>
           </button>
 
           {/* Prominent Center Action Button */}

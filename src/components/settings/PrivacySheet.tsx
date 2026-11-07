@@ -11,7 +11,7 @@ export const PrivacySheet: React.FC<{ onClose: () => void }> = ({ onClose }) => 
 
     <h3 className={h}>Med hushåll</h3>
     <p className={p}>
-      Recept, veckoplan, inköpslista, Hemmet, val av avdelningar, hushållets namn och medlemmarnas namn sparas i
+      Recept, planerare, inköpslista, Hemmet, val av avdelningar, hushållets namn och medlemmarnas namn sparas i
       en databas hos Supabase, så att alla i hushållet ser samma sak. Bilder du laddar upp sparas där också.
       Namnet är det du själv skriver in. Appen frågar inte efter e-post, telefonnummer eller lösenord.
     </p>
