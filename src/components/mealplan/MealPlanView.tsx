@@ -952,27 +952,46 @@ export const MealPlanView: React.FC = () => {
                   </div>
                 </div>
               ) : (
-                /* Empty state for Dinner */
-                <div className="p-5 space-y-4">
-                  <h3 className="font-serif font-bold text-lg text-stone-900">Ingen middag än</h3>
+                /* Empty state for Dinner: the same shape as a chosen dinner, so Slumpa, the button
+                   for choosing and everything below stay in the same place */
+                <div>
+                  <div
+                    onClick={() => openPickerModal(activeDayName, 'dinner')}
+                    className="relative aspect-16/10 rounded-t-3xl overflow-hidden bg-stone-100 cursor-pointer touch-manipulation"
+                  >
+                    <div className="absolute top-3 left-3 right-3 flex items-center justify-between">
+                      <span className="bg-white text-stone-900 text-[11px] font-bold px-2.5 py-1 rounded-full shadow-xs">
+                        Middag
+                      </span>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setRandomFor({ dayName: activeDayName, mealType: 'dinner' });
+                        }}
+                        className="w-8 h-8 rounded-full bg-white text-stone-700 hover:bg-stone-50 flex items-center justify-center active:scale-90 transition-all touch-manipulation shadow-xs"
+                        aria-label="Slumpa middag"
+                        title="Slumpa middag för denna dag"
+                      >
+                        <Dices className="w-4 h-4" />
+                      </button>
+                    </div>
+                    <div className="absolute bottom-3.5 left-3.5 right-3.5">
+                      <h3 className="font-serif font-bold text-xl leading-snug text-stone-500">Ingen middag än</h3>
+                    </div>
+                  </div>
 
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => openPickerModal(activeDayName, 'dinner')}
-                      className="flex-1 py-3 px-3 rounded-2xl bg-[#284235] hover:bg-black active:scale-95 text-white font-bold text-xs flex items-center justify-center transition-all shadow-xs touch-manipulation min-h-[46px]"
-                    >
-                      Planera middag
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setRandomFor({ dayName: activeDayName, mealType: 'dinner' })}
-                      className="py-3 px-3.5 rounded-2xl bg-[#FCFAF5] hover:bg-stone-100 border border-[#EBE7DF] active:scale-95 text-stone-700 font-semibold text-xs flex items-center justify-center transition-all touch-manipulation min-h-[46px]"
-                      title="Slumpa middag för denna dag"
-                    >
-                      Slumpa
-                    </button>
+                  <div className="p-3.5 bg-white">
+                    <div className="flex items-center justify-end gap-2 min-h-[42px]">
+                      <button
+                        type="button"
+                        onClick={() => openPickerModal(activeDayName, 'dinner')}
+                        className="shrink-0 whitespace-nowrap py-2 px-3.5 rounded-2xl bg-[#284235] hover:bg-black text-xs font-bold text-white flex items-center gap-1.5 transition-all active:scale-95 touch-manipulation"
+                      >
+                        <Utensils className="w-3.5 h-3.5" />
+                        <span>Välj middag</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}
