@@ -11,6 +11,14 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.0.139',
+    date: '2026-11-07',
+    items: [
+      'Recepten kan visas som en lista med liten bild. Byt vy med ikonen bredvid sorteringen.',
+      'Favoriter är ett hjärta först i raden med kategorier.',
+    ],
+  },
+  {
     version: '1.0.138',
     date: '2026-11-07',
     items: [
