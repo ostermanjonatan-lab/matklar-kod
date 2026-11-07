@@ -107,10 +107,10 @@ export const RecipeCard = React.memo<RecipeCardProps>(
       return (
         <div
           onClick={handleCardClick}
-          style={{ contentVisibility: 'auto', containIntrinsicSize: '88px' }}
+          style={{ contentVisibility: 'auto', containIntrinsicSize: '80px' }}
           className="flex items-center gap-3 py-2.5 border-b border-[#EBE7DF] cursor-pointer active:bg-stone-100/70"
         >
-          <div className="relative w-20 h-16 rounded-xl overflow-hidden bg-stone-100 shrink-0">
+          <div className="relative w-16 h-14 rounded-xl overflow-hidden bg-stone-100 shrink-0">
             <FadeImage
               src={recipe.coverImageUrl}
               alt=""

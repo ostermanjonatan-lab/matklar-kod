@@ -751,7 +751,7 @@ export const RecipeList: React.FC = () => {
             <div className={LIST_CLASS} aria-label="Hämtar recepten" role="status">
               {[0, 1, 2, 3, 4].map((i) => (
                 <div key={i} className="flex items-center gap-3 py-2.5 border-b border-[#EBE7DF]">
-                  <span className="skeleton block w-20 h-16 rounded-xl shrink-0" />
+                  <span className="skeleton block w-16 h-14 rounded-xl shrink-0" />
                   <span className="flex-1 space-y-2">
                     <span className="skeleton block h-4 w-3/4 rounded" />
                     <span className="skeleton block h-3 w-1/2 rounded" />
