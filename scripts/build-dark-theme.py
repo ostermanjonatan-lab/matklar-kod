@@ -126,7 +126,7 @@ PROP_CSS = {
 VARIANTS = {'': '', 'hover': ':hover', 'active': ':active', 'focus': ':focus', 'disabled': ':disabled', 'group-hover': ''}
 
 CLASS_RE = re.compile(
-    r'(?<![\w-])((?:hover|active|focus|disabled|group-hover):)?'
+    r'(?<![\w-])(md:)?((?:hover|active|focus|disabled|group-hover):)?'
     r'(bg|text|border|divide|ring|accent|placeholder|from|to)-'
     r'(white|black|stone-\d+|emerald-\d+|amber-\d+|rose-\d+|orange-\d+|\[#[0-9A-Fa-f]{6}\])'
     r'(?:/(\d+))?'
@@ -160,7 +160,7 @@ def main() -> None:
     rules = []
     for cls in sorted(found):
         m = CLASS_RE.fullmatch(cls)
-        variant, prop, colour, alpha = m.group(1), m.group(2), m.group(3), m.group(4)
+        wide, variant, prop, colour, alpha = m.group(1), m.group(2), m.group(3), m.group(4), m.group(5)
         variant = (variant or '').rstrip(':')
         value = None
         if variant == 'hover' and prop == 'bg' and colour == 'black':
@@ -180,7 +180,11 @@ def main() -> None:
         if prop == 'placeholder':
             sel += '::placeholder'
         decls = '; '.join(f'{p}: {value} !important' for p in PROP_CSS[prop])
-        rules.append(f'{sel} {{ {decls}; }}')
+        if wide:
+            # md: classes only apply on a wide screen, and so does their dark counterpart
+            rules.append(f'@media (min-width: 768px) {{ {sel} {{ {decls}; }} }}')
+        else:
+            rules.append(f'{sel} {{ {decls}; }}')
 
     header = (
         '/* Dark theme. Made by scripts/build-dark-theme.py, do not edit by hand.\n'
@@ -189,8 +193,8 @@ def main() -> None:
         f'html.dark, html.dark body {{ background-color: {BG} !important; color: {TEXT} !important; }}\n'
         '.dark nav svg path[stroke] { stroke: #3A352E; }\n'
         '.dark .shadow-xs, .dark .shadow-2xs, .dark .shadow-sm { --tw-shadow: 0 0 #0000 !important; }\n'
-        '/* The green header of the recipe list on a phone: a deeper green than the buttons */\n'
-        '@media (max-width: 767.98px) { html.dark .recipes-header { background-color: rgba(31,51,40,0.85) !important; } }\n'
+        '/* The green headers on a phone: a deeper green than the buttons */\n'
+        '@media (max-width: 767.98px) { html.dark .green-header { background-color: rgba(31,51,40,0.85) !important; } }\n'
         '/* A selected tab (white on a grey track in the light theme) is lighter than its track */\n'
         '.dark .bg-stone-100 > .bg-white, .dark .bg-\\[\\#F0ECE1\\] > .bg-white, .dark .bg-stone-100 > * > .bg-white { background-color: #474038 !important; }\n'
     )

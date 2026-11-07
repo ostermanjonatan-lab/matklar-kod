@@ -463,7 +463,7 @@ export const MealPlanView: React.FC = () => {
       )}
 
       {/* HEADER & THUMBNAIL STRIP (Sticky top-0 on mobile, static on desktop) */}
-      <div className="sticky top-0 md:static z-20 md:z-auto bg-[#FCFAF5]/95 backdrop-blur-md border-b border-[#EBE7DF] px-3.5 md:px-6 pt-3 pb-3 shadow-xs">
+      <div className="green-header sticky top-0 md:static z-20 md:z-auto bg-[#284235]/85 backdrop-blur-xl backdrop-saturate-150 md:bg-[#FCFAF5]/95 md:backdrop-blur-md md:border-b md:border-[#EBE7DF] px-3.5 md:px-6 pt-3 pb-3 shadow-xs">
         <div className="w-full max-w-md md:max-w-5xl lg:max-w-7xl mx-auto">
           {/* Row 1: Week with arrows, and Day / Week view */}
           <h1 className="sr-only">Veckoplan</h1>
@@ -472,23 +472,23 @@ export const MealPlanView: React.FC = () => {
               <button
                 type="button"
                 onClick={() => goToWeek(addDaysISO(planWeekStart, -7))}
-                className="w-8 h-9 -ml-1.5 rounded-full flex items-center justify-center text-stone-600 hover:bg-stone-100 active:bg-stone-200 touch-manipulation shrink-0"
+                className="w-8 h-9 -ml-1.5 rounded-full flex items-center justify-center text-white/80 md:text-stone-600 active:bg-[#FFFFFF]/15 md:hover:bg-stone-100 md:active:bg-stone-200 touch-manipulation shrink-0"
                 aria-label="Förra veckan"
               >
                 <ChevronLeft className="w-5 h-5" />
               </button>
               <div className="shrink-0 text-center leading-tight">
-                <div className="text-[15px] font-semibold text-stone-900 whitespace-nowrap">
+                <div className="text-[15px] font-semibold text-white md:text-stone-900 whitespace-nowrap">
                   Vecka {weekNumber}
                 </div>
-                <div className={`text-xs text-stone-500 whitespace-nowrap ${isThisWeek ? '' : 'hidden min-[380px]:block'}`}>
+                <div className={`text-xs text-white/70 md:text-stone-500 whitespace-nowrap ${isThisWeek ? '' : 'hidden min-[380px]:block'}`}>
                   {formatWeekRange(planWeekStart)}
                 </div>
                 {!isThisWeek && (
                   <button
                     type="button"
                     onClick={() => goToWeek(thisWeekStart)}
-                    className="min-[380px]:hidden text-xs font-semibold text-[#284235] whitespace-nowrap touch-manipulation"
+                    className="min-[380px]:hidden text-xs font-semibold text-white whitespace-nowrap touch-manipulation"
                   >
                     Till i dag
                   </button>
@@ -497,7 +497,7 @@ export const MealPlanView: React.FC = () => {
               <button
                 type="button"
                 onClick={() => goToWeek(addDaysISO(planWeekStart, 7))}
-                className="w-8 h-9 rounded-full flex items-center justify-center text-stone-600 hover:bg-stone-100 active:bg-stone-200 touch-manipulation shrink-0"
+                className="w-8 h-9 rounded-full flex items-center justify-center text-white/80 md:text-stone-600 active:bg-[#FFFFFF]/15 md:hover:bg-stone-100 md:active:bg-stone-200 touch-manipulation shrink-0"
                 aria-label="Nästa vecka"
               >
                 <ChevronRight className="w-5 h-5" />

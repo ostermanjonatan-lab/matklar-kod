@@ -404,7 +404,7 @@ export const ShoppingListView: React.FC = () => {
       )}
 
       {/* Header (Sticky top-0 on mobile, static below DesktopNav on desktop) */}
-      <div className="relative sticky top-0 md:static z-20 md:z-auto bg-[#FCFAF5]/95 backdrop-blur-md border-b border-[#EBE7DF] px-4 md:px-6 py-2.5 md:py-0 shadow-xs w-full">
+      <div className="green-header relative sticky top-0 md:static z-20 md:z-auto bg-[#284235]/85 backdrop-blur-xl backdrop-saturate-150 md:bg-[#FCFAF5]/95 md:backdrop-blur-md md:border-b md:border-[#EBE7DF] px-4 md:px-6 py-2.5 md:py-0 shadow-xs w-full">
         <div className="w-full max-w-md md:max-w-5xl lg:max-w-7xl mx-auto">
           {/* DESKTOP HEADER (MD+) */}
           <div className="hidden md:flex items-center justify-between gap-4 h-16">
@@ -596,14 +596,14 @@ export const ShoppingListView: React.FC = () => {
           {/* MOBILE HEADER (<MD) */}
           <div className="md:hidden">
             {/* Navigation Switcher: Inköpslista / Hemmet */}
-            <div className="flex bg-[#F0ECE1] p-1 rounded-2xl mb-2.5 border border-[#EBE7DF]/80">
+            <div className="flex bg-[#FFFFFF]/15 p-1 rounded-2xl mb-2.5">
               <button
                 type="button"
                 onClick={() => setActiveSubTab('list')}
                 className={`flex-1 py-1.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 touch-manipulation min-h-[36px] ${
                   activeSubTab === 'list'
                     ? 'bg-white text-stone-900 shadow-xs'
-                    : 'text-stone-600 hover:text-stone-900'
+                    : 'text-white/80'
                 }`}
               >
                 <ShoppingCart className="w-3.5 h-3.5" />
@@ -611,7 +611,7 @@ export const ShoppingListView: React.FC = () => {
                 {remainingCount > 0 && (
                   <span
                     className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
-                      activeSubTab === 'list' ? 'bg-[#FCFAF5] text-stone-700' : 'bg-stone-300/80 text-stone-700'
+                      activeSubTab === 'list' ? 'bg-[#FCFAF5] text-stone-700' : 'bg-[#FFFFFF]/20 text-white'
                     }`}
                   >
                     {remainingCount}
@@ -625,7 +625,7 @@ export const ShoppingListView: React.FC = () => {
                 className={`flex-1 py-1.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 touch-manipulation min-h-[36px] ${
                   activeSubTab === 'pantry'
                     ? 'bg-white text-stone-900 shadow-xs'
-                    : 'text-stone-600 hover:text-stone-900'
+                    : 'text-white/80'
                 }`}
               >
                 <Home className="w-3.5 h-3.5" />
@@ -637,7 +637,7 @@ export const ShoppingListView: React.FC = () => {
                 ) : pantryItems.length > 0 ? (
                   <span
                     className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
-                      activeSubTab === 'pantry' ? 'bg-[#FCFAF5] text-stone-700' : 'bg-stone-300/80 text-stone-700'
+                      activeSubTab === 'pantry' ? 'bg-[#FCFAF5] text-stone-700' : 'bg-[#FFFFFF]/20 text-white'
                     }`}
                   >
                     {pantryItems.length}
@@ -651,7 +651,7 @@ export const ShoppingListView: React.FC = () => {
                 <div className="flex flex-wrap items-center justify-between mb-2.5 gap-2 min-w-0">
                   <div className="min-w-fit flex-1">
                     <h1 className="sr-only">Inköpslista</h1>
-                    <p className="text-sm text-stone-600 tabular-nums">
+                    <p className="text-sm text-white/80 tabular-nums">
                       {totalCount > 0 ? `${checkedCount} av ${totalCount} klara` : 'Listan är tom'}
                     </p>
                   </div>
@@ -682,9 +682,9 @@ export const ShoppingListView: React.FC = () => {
 
                 {/* Progress Bar */}
                 {totalCount > 0 && (
-                  <div className="w-full bg-[#EBE7DF] h-1.5 rounded-full overflow-hidden mb-2.5">
+                  <div className="w-full bg-[#FFFFFF]/20 h-1.5 rounded-full overflow-hidden mb-2.5">
                     <div
-                      className="bg-[#284235] h-full rounded-full transition-[width] duration-150 ease-out will-change-[width]"
+                      className="bg-[#FFFFFF] h-full rounded-full transition-[width] duration-150 ease-out will-change-[width]"
                       style={{ width: `${progressPercent}%` }}
                     />
                   </div>
@@ -692,7 +692,7 @@ export const ShoppingListView: React.FC = () => {
 
                 {/* Store Profile & Category Tools Bar */}
                 {/* One row: the store to the left, Fäll ihop and Ordna as plain text to the right */}
-                <div className="flex items-center justify-between gap-3 pt-2.5 mt-2 border-t border-[#EBE7DF]/80 text-xs w-full">
+                <div className="flex items-center justify-between gap-3 pt-2.5 mt-2 border-t border-[#FFFFFF]/15 text-xs w-full">
                   {/* Active Store Button with Dropdown */}
                   <div className="relative min-w-0">
                     <button
@@ -754,7 +754,7 @@ export const ShoppingListView: React.FC = () => {
                     <button
                       type="button"
                       onClick={handleToggleAllCollapse}
-                      className="text-xs font-semibold text-stone-600 hover:text-stone-900 whitespace-nowrap touch-manipulation min-h-[40px]"
+                      className="text-xs font-semibold text-white/80 whitespace-nowrap touch-manipulation min-h-[40px]"
                       title={areAllCollapsed ? 'Fäll ut alla kategorier' : 'Fäll ihop alla kategorier'}
                     >
                       {areAllCollapsed ? 'Fäll ut' : 'Fäll ihop'}
@@ -763,7 +763,7 @@ export const ShoppingListView: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setShowReorderModal(true)}
-                      className="text-xs font-semibold text-[#284235] hover:text-stone-900 whitespace-nowrap touch-manipulation min-h-[40px]"
+                      className="text-xs font-semibold text-white whitespace-nowrap touch-manipulation min-h-[40px]"
                       title="Ändra ordning på butikens avdelningar"
                     >
                       Ordna

@@ -588,7 +588,7 @@ export const RecipeList: React.FC = () => {
       )}
 
       {/* Search & Filter Header (sticky top-0 on mobile, static on desktop below the hero banner) */}
-      <div className="recipes-header sticky top-0 md:static z-20 md:z-auto bg-[#284235]/85 backdrop-blur-xl backdrop-saturate-150 md:bg-transparent md:backdrop-blur-none shadow-xs md:shadow-none py-2.5 md:py-2 w-full min-w-0">
+      <div className="green-header sticky top-0 md:static z-20 md:z-auto bg-[#284235]/85 backdrop-blur-xl backdrop-saturate-150 md:bg-transparent md:backdrop-blur-none shadow-xs md:shadow-none py-2.5 md:py-2 w-full min-w-0">
         <div className="w-full max-w-md md:max-w-5xl lg:max-w-7xl mx-auto px-4 md:px-6">
           {/* Mobile Search Input (Hidden on desktop since DesktopNav handles search) */}
           <div className="md:hidden mb-2.5 flex items-center gap-2">
