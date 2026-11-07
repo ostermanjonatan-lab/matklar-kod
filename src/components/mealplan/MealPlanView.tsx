@@ -977,11 +977,11 @@ export const MealPlanView: React.FC = () => {
                         <Dices className="w-4 h-4" />
                       </button>
                     </div>
-                    {/* A pot in the middle: nothing chosen yet */}
-                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none" aria-hidden="true">
-                      <CookingPot className="w-14 h-14 text-stone-300 stroke-[1.25]" />
+                    {/* A pot in the middle and a short line: nothing chosen yet */}
+                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 pointer-events-none">
+                      <CookingPot className="w-14 h-14 text-stone-300 stroke-[1.25]" aria-hidden="true" />
+                      <span className="text-sm text-stone-500">Ingen middag vald</span>
                     </div>
-                    <span className="sr-only">Ingen middag vald</span>
                   </div>
 
                   <div className="p-3.5 bg-white">
