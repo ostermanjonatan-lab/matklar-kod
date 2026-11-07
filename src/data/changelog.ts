@@ -11,6 +11,14 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.0.153',
+    date: '2026-11-07',
+    items: [
+      'Inköpslistan på den yttre skärmen har grön topp med antal kvar, ikoner vid avdelningarna och kommentarer under varorna.',
+      'På den yttre skärmen står en avbockad vara kvar en stund, så att ett nytt tryck ångrar. Skärmen hålls vaken medan listan är öppen.',
+    ],
+  },
+  {
     version: '1.0.152',
     date: '2026-11-07',
     items: [
