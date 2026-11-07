@@ -11,6 +11,14 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.0.152',
+    date: '2026-11-07',
+    items: [
+      'Veckoplan heter Planerare.',
+      'Planeraren, inköpslistan och inställningarna har samma gröna, lite genomskinliga topp som receptlistan på telefonen.',
+    ],
+  },
+  {
     version: '1.0.151',
     date: '2026-11-07',
     items: [
