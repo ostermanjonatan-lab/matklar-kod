@@ -1068,7 +1068,7 @@ export const MealPlanView: React.FC = () => {
               </div>
 
               {lunchRecipe ? (
-                <div className="flex items-center justify-between gap-3 py-1">
+                <div className="flex items-center justify-between gap-3 py-1 min-h-[64px]">
                   <div
                     onClick={() => openRecipeDetail(lunchRecipe)}
                     className="flex items-center gap-3 min-w-0 flex-1 cursor-pointer group touch-manipulation"
@@ -1077,7 +1077,7 @@ export const MealPlanView: React.FC = () => {
                       <FadeImage src={lunchRecipe.coverImageUrl} alt={lunchRecipe.title} className="absolute inset-0 w-full h-full object-cover" />
                     </span>
                     <div className="min-w-0 flex-1">
-                      <h4 className="font-serif font-bold text-sm text-stone-900 truncate group-hover:text-emerald-900 transition-colors">
+                      <h4 className="font-serif font-bold text-sm leading-5 text-stone-900 line-clamp-2 group-hover:text-emerald-900 transition-colors">
                         {formatRecipeTitle(lunchRecipe.title)}
                       </h4>
                       <p className="text-[11px] text-stone-500">
@@ -1130,7 +1130,7 @@ export const MealPlanView: React.FC = () => {
                   </div>
                 </div>
               ) : activeDayData.customLunch?.trim() ? (
-                <div className="flex items-center justify-between gap-3 py-1">
+                <div className="flex items-center justify-between gap-3 py-1 min-h-[64px]">
                   <button
                     type="button"
                     onClick={() => openPickerModal(activeDayName, 'lunch')}
@@ -1138,7 +1138,7 @@ export const MealPlanView: React.FC = () => {
                   >
                     <LunchboxIcon className="w-5 h-5 text-stone-400 shrink-0" />
                     <div className="min-w-0 flex-1">
-                      <h4 className="font-serif font-bold text-base text-stone-900 truncate">
+                      <h4 className="font-serif font-bold text-base leading-5 text-stone-900 line-clamp-2">
                         {parseLeftoverLunch(activeDayData.customLunch)?.title ?? activeDayData.customLunch}
                       </h4>
                       {parseLeftoverLunch(activeDayData.customLunch) && (
@@ -1186,7 +1186,7 @@ export const MealPlanView: React.FC = () => {
                 </div>
               ) : (
                 /* No lunch: the same shape as a chosen lunch, with a lunchbox where the photo goes */
-                <div className="flex items-center justify-between gap-3 py-1">
+                <div className="flex items-center justify-between gap-3 py-1 min-h-[64px]">
                   <button
                     type="button"
                     onClick={() => openPickerModal(activeDayName, 'lunch')}
@@ -1261,17 +1261,22 @@ export const MealPlanView: React.FC = () => {
                     )}
                   </div>
 
-                  {/* Day, dinner, and one line with time, portions and lunch. Always three lines
-                      high, so a day does not grow when a dinner is chosen and push the others down. */}
-                  <div className="flex-1 min-w-0 min-h-[52px] flex flex-col justify-center">
+                  {/* Day, dinner (room for two lines), and one line with time, portions and lunch.
+                      Always as high, so a day does not grow when a dinner is chosen and push the others down. */}
+                  <div className="flex-1 min-w-0 flex flex-col justify-center">
                     <div className={`text-xs ${isToday ? 'font-bold text-[#284235]' : 'text-stone-500'}`}>
                       {day} {formatDayMonth(weekDates[idx])}{isToday ? ', i dag' : ''}
                     </div>
 
-                    <div className={`text-sm truncate ${hasDinnerHere ? 'font-semibold text-stone-900' : 'font-semibold text-[#284235]'}`}>
-                      {dRecipe ? formatRecipeTitle(dRecipe.title) : hasCustomDinner ? dayData?.customDinner : 'Välj middag'}
+                    {/* Room for two lines of name on every day, so a long name is shown whole and
+                        all days stay equally high. A short name sits in the middle of the room. */}
+                    <div className="h-10 flex items-center">
+                      <div className={`text-sm leading-5 line-clamp-2 ${hasDinnerHere ? 'font-semibold text-stone-900' : 'font-semibold text-[#284235]'}`}>
+                        {dRecipe ? formatRecipeTitle(dRecipe.title) : hasCustomDinner ? dayData?.customDinner : 'Välj middag'}
+                      </div>
                     </div>
 
+                    {!(hasDinnerHere || hasLunchHere) && <div className="h-4" aria-hidden="true" />}
                     {(hasDinnerHere || hasLunchHere) && (
                       <div className="flex items-baseline gap-1 text-xs text-stone-500 whitespace-nowrap min-w-0">
                         {hasDinnerHere && (
