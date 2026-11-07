@@ -1,7 +1,7 @@
 {
   "name": "matklar",
   "private": true,
-  "version": "1.0.139",
+  "version": "1.0.140",
   "type": "module",
   "scripts": {
     "dev": "vite",

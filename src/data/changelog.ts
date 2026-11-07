@@ -11,6 +11,13 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.0.140',
+    date: '2026-11-07',
+    items: [
+      'Kött & Färs är uppdelat i Nöt, Fläsk, Lamm, Vilt och Färs. Recept som redan finns sorteras om efter namn och ingredienser.',
+    ],
+  },
+  {
     version: '1.0.139',
     date: '2026-11-07',
     items: [
