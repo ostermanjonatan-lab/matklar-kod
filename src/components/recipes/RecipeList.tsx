@@ -274,7 +274,7 @@ export const RecipeList: React.FC = () => {
             setSelectedCategory(cat);
           }
         }}
-        className={`relative shrink-0 whitespace-nowrap min-h-[40px] text-[15px] touch-manipulation cursor-pointer ${
+        className={`relative shrink-0 whitespace-nowrap min-h-[44px] text-[15px] touch-manipulation cursor-pointer ${
           isSelected ? 'text-stone-900 font-semibold' : 'text-stone-500 hover:text-stone-800'
         }`}
       >

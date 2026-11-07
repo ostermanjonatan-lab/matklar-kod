@@ -30,6 +30,28 @@
     min-height: 100%;
   }
 
+  /* Every button can be hit on at least 44 × 44 px, the size a finger needs, also when it looks
+     smaller: an invisible area around it takes the tap. It does not change how anything looks.
+     (Positioned buttons keep their own position: the utility classes come after this.) */
+  button,
+  [role='button'],
+  [role='tab'],
+  a[href] {
+    position: relative;
+  }
+  button::after,
+  [role='button']::after,
+  [role='tab']::after,
+  a[href]::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: max(100%, 44px);
+    height: max(100%, 44px);
+    transform: translate(-50%, -50%);
+  }
+
   .font-serif {
     font-family: var(--font-serif);
   }

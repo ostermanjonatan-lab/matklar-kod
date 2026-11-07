@@ -827,7 +827,7 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
               href={recipe.sourceUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-sm text-stone-500 hover:text-stone-800 inline-flex items-center gap-1.5 py-2 touch-manipulation truncate max-w-full"
+              className="text-sm text-stone-500 hover:text-stone-800 inline-flex items-center gap-1.5 py-2 min-h-[44px] touch-manipulation truncate max-w-full"
             >
               <span>Receptet kommer från {new URL(recipe.sourceUrl).hostname.replace(/^www\./, '')}</span>
               <ExternalLink className="w-3.5 h-3.5 shrink-0" />
