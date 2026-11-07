@@ -11,6 +11,14 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.0.145',
+    date: '2026-11-07',
+    items: [
+      'Ändra namn, mängd och enhet på varor i inköpslistan, via de tre prickarna vid varan.',
+      'Byt kategori i inköpslistan öppnas igen.',
+    ],
+  },
+  {
     version: '1.0.144',
     date: '2026-11-07',
     items: [
