@@ -1244,7 +1244,7 @@ export const MealPlanView: React.FC = () => {
                       openDayFromWeek(idx, day, hasDinnerHere);
                     }
                   }}
-                  className="flex-1 min-w-0 text-left py-3 md:py-0 flex items-center gap-3 cursor-pointer touch-manipulation active:bg-stone-100/60"
+                  className="flex-1 min-w-0 text-left py-3 md:py-0 flex items-start gap-3 cursor-pointer touch-manipulation active:bg-stone-100/60"
                 >
                   {/* Thumbnail */}
                   <div className="relative w-12 h-12 rounded-xl overflow-hidden bg-stone-100 shrink-0">
@@ -1261,22 +1261,18 @@ export const MealPlanView: React.FC = () => {
                     )}
                   </div>
 
-                  {/* Day, dinner (room for two lines), and one line with time, portions and lunch.
-                      Always as high, so a day does not grow when a dinner is chosen and push the others down. */}
-                  <div className="flex-1 min-w-0 flex flex-col justify-center">
+                  {/* Day, dinner and one line with time, portions and lunch, with room for two lines of
+                      name on every day: a long name is shown whole and all days stay equally high. The
+                      text starts at the top; a short name leaves the room at the bottom. */}
+                  <div className="flex-1 min-w-0 min-h-[72px] flex flex-col justify-start">
                     <div className={`text-xs ${isToday ? 'font-bold text-[#284235]' : 'text-stone-500'}`}>
                       {day} {formatDayMonth(weekDates[idx])}{isToday ? ', i dag' : ''}
                     </div>
 
-                    {/* Room for two lines of name on every day, so a long name is shown whole and
-                        all days stay equally high. A short name sits in the middle of the room. */}
-                    <div className="h-10 flex items-center">
-                      <div className={`text-sm leading-5 line-clamp-2 ${hasDinnerHere ? 'font-semibold text-stone-900' : 'font-semibold text-[#284235]'}`}>
-                        {dRecipe ? formatRecipeTitle(dRecipe.title) : hasCustomDinner ? dayData?.customDinner : 'Välj middag'}
-                      </div>
+                    <div className={`text-sm leading-5 line-clamp-2 ${hasDinnerHere ? 'font-semibold text-stone-900' : 'font-semibold text-[#284235]'}`}>
+                      {dRecipe ? formatRecipeTitle(dRecipe.title) : hasCustomDinner ? dayData?.customDinner : 'Välj middag'}
                     </div>
 
-                    {!(hasDinnerHere || hasLunchHere) && <div className="h-4" aria-hidden="true" />}
                     {(hasDinnerHere || hasLunchHere) && (
                       <div className="flex items-baseline gap-1 text-xs text-stone-500 whitespace-nowrap min-w-0">
                         {hasDinnerHere && (
