@@ -11,6 +11,16 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.0.142',
+    date: '2026-11-07',
+    items: [
+      'I veckovyn öppnas valet av middag direkt för en tom dag, och du stannar kvar i veckan.',
+      'Lunch läggs till och middagen tas bort, med papperskorgen, direkt från veckovyn.',
+      'När någon bockar av en vara i inköpslistan syns det direkt hos de andra i hushållet.',
+      'Inköpslistan hämtas på nytt när appen öppnas efter en stund.',
+    ],
+  },
+  {
     version: '1.0.141',
     date: '2026-11-07',
     items: [
