@@ -189,6 +189,8 @@ def main() -> None:
         f'html.dark, html.dark body {{ background-color: {BG} !important; color: {TEXT} !important; }}\n'
         '.dark nav svg path[stroke] { stroke: #3A352E; }\n'
         '.dark .shadow-xs, .dark .shadow-2xs, .dark .shadow-sm { --tw-shadow: 0 0 #0000 !important; }\n'
+        '/* The green header of the recipe list on a phone: a deeper green than the buttons */\n'
+        '@media (max-width: 767.98px) { html.dark .recipes-header { background-color: #1F3328 !important; } }\n'
         '/* A selected tab (white on a grey track in the light theme) is lighter than its track */\n'
         '.dark .bg-stone-100 > .bg-white, .dark .bg-\\[\\#F0ECE1\\] > .bg-white, .dark .bg-stone-100 > * > .bg-white { background-color: #474038 !important; }\n'
     )

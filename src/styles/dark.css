@@ -4,6 +4,8 @@
 html.dark, html.dark body { background-color: #1B1916 !important; color: #DCD4C7 !important; }
 .dark nav svg path[stroke] { stroke: #3A352E; }
 .dark .shadow-xs, .dark .shadow-2xs, .dark .shadow-sm { --tw-shadow: 0 0 #0000 !important; }
+/* The green header of the recipe list on a phone: a deeper green than the buttons */
+@media (max-width: 767.98px) { html.dark .recipes-header { background-color: #1F3328 !important; } }
 /* A selected tab (white on a grey track in the light theme) is lighter than its track */
 .dark .bg-stone-100 > .bg-white, .dark .bg-\[\#F0ECE1\] > .bg-white, .dark .bg-stone-100 > * > .bg-white { background-color: #474038 !important; }
 .dark .accent-\[\#284235\] { accent-color: #5E9478 !important; }
@@ -51,6 +53,7 @@ html.dark, html.dark body { background-color: #1B1916 !important; color: #DCD4C7
 .dark .bg-stone-900\/60 { background-color: rgba(58,53,47,0.60) !important; }
 .dark .bg-stone-900\/95 { background-color: rgba(58,53,47,0.95) !important; }
 .dark .bg-white { background-color: #25221E !important; }
+.dark .bg-white\/30 { background-color: rgba(37,34,30,0.30) !important; }
 .dark .bg-white\/35 { background-color: rgba(37,34,30,0.35) !important; }
 .dark .bg-white\/80 { background-color: rgba(37,34,30,0.80) !important; }
 .dark .bg-white\/95 { background-color: rgba(37,34,30,0.95) !important; }
