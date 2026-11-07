@@ -106,7 +106,7 @@ DARK = {
     'from:[#FCFAF5]': BG,
     'to:[#F1EBE0]': '#211E1A',
     'from:white': BG,
-    'to:[#A9C8B4]': '#22372B',  # the bottom menu: green from below
+    'to:[#BFD6C7]': '#202F26',  # the bottom menu: green from below
     # A hover to black on green buttons becomes a darker green
     'bg:black@hover': '#34624A',
 }

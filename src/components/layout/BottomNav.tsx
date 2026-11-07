@@ -141,7 +141,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ onAddRecipeClick, onAddSho
             which is how much higher the arc is at their place, so the row follows the curve. */}
         <div
           aria-hidden="true"
-          className="absolute inset-0 pointer-events-none bg-gradient-to-b from-white/70 to-[#A9C8B4]/95 backdrop-blur-xl backdrop-saturate-150"
+          className="absolute inset-0 pointer-events-none bg-gradient-to-b from-white/70 to-[#BFD6C7]/90 backdrop-blur-xl backdrop-saturate-150"
           style={{
             WebkitMaskImage: `${NAV_ARC_MASK}, linear-gradient(#000, #000)`,
             maskImage: `${NAV_ARC_MASK}, linear-gradient(#000, #000)`,
