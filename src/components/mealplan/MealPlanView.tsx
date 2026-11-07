@@ -1244,7 +1244,7 @@ export const MealPlanView: React.FC = () => {
                       openDayFromWeek(idx, day, hasDinnerHere);
                     }
                   }}
-                  className="flex-1 min-w-0 text-left py-3 md:py-0 flex items-start gap-3 cursor-pointer touch-manipulation active:bg-stone-100/60"
+                  className="flex-1 min-w-0 text-left py-3 md:py-0 flex items-center gap-3 cursor-pointer touch-manipulation active:bg-stone-100/60"
                 >
                   {/* Thumbnail */}
                   <div className="relative w-12 h-12 rounded-xl overflow-hidden bg-stone-100 shrink-0">
