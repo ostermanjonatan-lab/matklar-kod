@@ -174,20 +174,20 @@ export const CoverShoppingList: React.FC = () => {
           aria-pressed={item.checked}
         >
           {struck ? (
-            <CheckCircle2 className="w-8 h-8 shrink-0 text-[#284235] fill-emerald-100" strokeWidth={2} />
+            <CheckCircle2 className="w-9 h-9 shrink-0 text-[#284235] fill-emerald-100" strokeWidth={2} />
           ) : (
-            <Circle className="w-8 h-8 shrink-0 text-stone-400" strokeWidth={2} />
+            <Circle className="w-9 h-9 shrink-0 text-stone-400" strokeWidth={2} />
           )}
           <span className="flex-1 min-w-0">
-            <span className={`block text-[24px] leading-tight ${struck ? 'line-through text-stone-400' : 'text-stone-900'}`}>
+            <span className={`block text-[29px] leading-tight ${struck ? 'line-through text-stone-400' : 'text-stone-900'}`}>
               {capitalizeFirst(formatIngredientName(item.name, item.amount, item.unit))}
             </span>
             {item.comment && (
-              <span className={`block text-base leading-snug mt-0.5 ${struck ? 'text-stone-400' : 'text-amber-800'}`}>{item.comment}</span>
+              <span className={`block text-[19px] leading-snug mt-0.5 ${struck ? 'text-stone-400' : 'text-amber-800'}`}>{item.comment}</span>
             )}
           </span>
           {amount && (
-            <span className={`text-[20px] tabular-nums shrink-0 ${struck ? 'text-stone-400 line-through' : 'text-stone-600'}`}>{amount}</span>
+            <span className={`text-[23px] tabular-nums shrink-0 ${struck ? 'text-stone-400 line-through' : 'text-stone-600'}`}>{amount}</span>
           )}
         </button>
         </SwipeToDelete>
@@ -200,28 +200,28 @@ export const CoverShoppingList: React.FC = () => {
     <div className="min-h-[100dvh] bg-[#FCFAF5] font-sans pb-20 overflow-x-clip">
       {/* What is left, always in sight: the same green bar as at the top of the app */}
       <header className="green-header sticky top-0 z-10 bg-[#284235]/85 backdrop-blur-xl backdrop-saturate-150 px-4 py-2.5 flex items-baseline justify-between gap-3">
-        <h1 className="text-[22px] font-semibold text-white tabular-nums">
+        <h1 className="text-[26px] font-semibold text-white tabular-nums">
           {shoppingList.length === 0 ? 'Inköpslista' : leftCount === 0 ? 'Allt är köpt' : `${leftCount} kvar`}
         </h1>
-        {storeName && <span className="text-base text-white/70 truncate min-w-0">{storeName}</span>}
+        {storeName && <span className="text-lg text-white/70 truncate min-w-0">{storeName}</span>}
       </header>
 
       <div className="px-4">
         {shoppingList.length === 0 ? (
-          <p className="pt-6 text-xl text-stone-600">Listan är tom. Lägg till varor på telefonens stora skärm.</p>
+          <p className="pt-6 text-2xl text-stone-600">Listan är tom. Lägg till varor på telefonens stora skärm.</p>
         ) : (
           <>
             {groups.map(([aisle, items]) => {
               const remaining = items.filter((i) => !i.checked).length;
               return (
                 <section key={aisle}>
-                  <h2 className={`pt-5 pb-1 flex items-center gap-2 text-lg font-semibold ${remaining === 0 ? 'text-stone-400' : 'text-stone-900'}`}>
-                    <AisleIcon aisle={aisle} className={`w-5 h-5 ${remaining === 0 ? 'text-stone-300' : 'text-stone-500'}`} />
+                  <h2 className={`pt-5 pb-1 flex items-center gap-2 text-[21px] font-semibold ${remaining === 0 ? 'text-stone-400' : 'text-stone-900'}`}>
+                    <AisleIcon aisle={aisle} className={`w-6 h-6 ${remaining === 0 ? 'text-stone-300' : 'text-stone-500'}`} />
                     {aisle}
                     {remaining === 0 ? (
-                      <Check className="w-5 h-5 text-[#284235]" aria-label="Klart" />
+                      <Check className="w-6 h-6 text-[#284235]" aria-label="Klart" />
                     ) : (
-                      <span className="text-base font-normal text-stone-400 tabular-nums">{remaining}</span>
+                      <span className="text-lg font-normal text-stone-400 tabular-nums">{remaining}</span>
                     )}
                   </h2>
                   <ul className="divide-y divide-[#EBE7DF]">{items.map(row)}</ul>
