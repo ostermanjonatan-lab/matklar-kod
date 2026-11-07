@@ -31,6 +31,18 @@ export function isCommonPantryStaple(name: string): boolean {
   if (!name || typeof name !== 'string') return false;
   const lower = name.toLowerCase().trim();
 
+  // Several things in one line ("Salt och limejuice", "Limejuice eller olivolja"): a staple only
+  // if every one of them is, so the limejuice is still bought. What follows a comma describes the
+  // thing ("Peppar, nymald", "Salt, efter smak") and is left out.
+  const parts = lower
+    .replace(/\([^)]*\)/g, ' ')
+    .split(',')[0]
+    .split(/\s+och\s+|\s+eller\s+|\s*&\s*|\s*\+\s*/)
+    .map((part) => part.trim())
+    .filter(Boolean);
+  if (parts.length > 1) return parts.every((part) => isCommonPantryStaple(part));
+  if (parts.length === 1 && parts[0] !== lower) return isCommonPantryStaple(parts[0]);
+
   // 1. HARD EXCLUSIONS: Ingredients that should NEVER be considered pantry staples
   // Mjölk in all forms (mellanmjölk, kokosmjölk, havremjölk, etc.)
   if (lower.includes('mjölk')) return false;

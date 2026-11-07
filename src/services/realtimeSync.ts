@@ -11,7 +11,7 @@ import {
   normalizeIngredientNameForMatching,
   normalizeRecipeSource,
 } from '../utils/shoppingAggregator';
-import { resolveSavedAisle } from '../utils/ingredientParser';
+import { resolveSavedAisle, isCommonPantryStaple } from '../utils/ingredientParser';
 
 export type SyncMessageType =
   | { type: 'RECIPE_UPDATE'; payload: Recipe }
@@ -81,7 +81,10 @@ export function mapRowToRecipe(row: any): Recipe {
     rating: row.rating ?? 5,
     isFavorite: Boolean(row.is_favorite),
     notes: row.notes || '',
-    ingredients: Array.isArray(row.ingredients) ? row.ingredients : [],
+    // Whether something is a staple is worked out again, so a change in the rules reaches old recipes
+    ingredients: Array.isArray(row.ingredients)
+      ? row.ingredients.map((ing: any) => ({ ...ing, isPantryStaple: isCommonPantryStaple(ing?.name || '') }))
+      : [],
     instructions: Array.isArray(row.instructions) ? row.instructions : [],
     prepTimeMinutes: 0,
     cookTimeMinutes: Number(row.cook_time_minutes) > 0 ? Number(row.cook_time_minutes) : (Number(row.prep_time_minutes) || 30),
@@ -465,7 +468,7 @@ export function mapRowToShoppingItem(row: any): ShoppingItem {
     amount: row.amount ? Number(row.amount) : null,
     unit: row.unit || '',
     aisle: getAisleOverride(row.name) ?? resolveSavedAisle(row.name, row.aisle),
-    isPantryStaple: Boolean(row.is_pantry_staple),
+    isPantryStaple: isCommonPantryStaple(row.name || ''),
     checked: Boolean(row.checked),
     recipeSource,
     comment,

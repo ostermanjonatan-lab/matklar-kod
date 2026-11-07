@@ -246,7 +246,8 @@ export const RecipeProvider: React.FC<{ children: ReactNode }> = ({ children }) 
           parsed.map((item) => ({
             ...item,
             aisle: resolveSavedAisle(item.name, item.aisle),
-            isPantryStaple: typeof item.isPantryStaple === 'boolean' ? item.isPantryStaple : isCommonPantryStaple(item.name),
+            // Worked out again, so a change in which things are staples reaches lists already saved
+            isPantryStaple: isCommonPantryStaple(item.name),
           }))
         );
         return mergedList;

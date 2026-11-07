@@ -199,7 +199,7 @@ export const CoverShoppingList: React.FC = () => {
     // The outer screen has its cameras along the bottom, so the end of the list stays clear of them
     <div className="min-h-[100dvh] bg-[#FCFAF5] font-sans pb-20 overflow-x-clip">
       {/* What is left, always in sight: the same green bar as at the top of the app */}
-      <header className="green-header sticky top-0 z-10 bg-[#284235]/85 backdrop-blur-xl backdrop-saturate-150 px-4 py-2.5 flex items-baseline justify-between gap-3">
+      <header className="green-header sticky top-0 z-10 bg-[#284235]/75 backdrop-blur-md backdrop-saturate-150 px-4 py-2.5 flex items-baseline justify-between gap-3">
         <h1 className="text-[26px] font-semibold text-white tabular-nums">
           {shoppingList.length === 0 ? 'Inköpslista' : leftCount === 0 ? 'Allt är köpt' : `${leftCount} kvar`}
         </h1>

@@ -382,7 +382,7 @@ export const ShoppingListView: React.FC = () => {
       )}
 
       {/* Header (Sticky top-0 on mobile, static below DesktopNav on desktop) */}
-      <div className="green-header relative sticky top-0 md:static z-20 md:z-auto bg-[#284235]/85 backdrop-blur-xl backdrop-saturate-150 md:bg-[#FCFAF5]/95 md:backdrop-blur-md md:border-b md:border-[#EBE7DF] px-4 md:px-6 py-2.5 md:py-0 shadow-xs w-full">
+      <div className="green-header relative sticky top-0 md:static z-20 md:z-auto bg-[#284235]/75 backdrop-blur-md backdrop-saturate-150 md:bg-[#FCFAF5]/95 md:backdrop-blur-md md:border-b md:border-[#EBE7DF] px-4 md:px-6 py-2.5 md:py-0 shadow-xs w-full">
         <div className="w-full max-w-md md:max-w-5xl lg:max-w-7xl mx-auto">
           {/* DESKTOP HEADER (MD+) */}
           <div className="hidden md:flex items-center justify-between gap-4 h-16">

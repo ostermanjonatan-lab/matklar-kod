@@ -463,7 +463,7 @@ export const MealPlanView: React.FC = () => {
       )}
 
       {/* HEADER & THUMBNAIL STRIP (Sticky top-0 on mobile, static on desktop) */}
-      <div className="green-header sticky top-0 md:static z-20 md:z-auto bg-[#284235]/85 backdrop-blur-xl backdrop-saturate-150 md:bg-[#FCFAF5]/95 md:backdrop-blur-md md:border-b md:border-[#EBE7DF] px-3.5 md:px-6 pt-3 pb-3 shadow-xs">
+      <div className="green-header sticky top-0 md:static z-20 md:z-auto bg-[#284235]/75 backdrop-blur-md backdrop-saturate-150 md:bg-[#FCFAF5]/95 md:backdrop-blur-md md:border-b md:border-[#EBE7DF] px-3.5 md:px-6 pt-3 pb-3 shadow-xs">
         <div className="w-full max-w-md md:max-w-5xl lg:max-w-7xl mx-auto">
           {/* Row 1: Week with arrows, and Day / Week view */}
           <h1 className="sr-only">Planerare</h1>

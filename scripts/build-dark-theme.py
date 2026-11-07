@@ -194,7 +194,7 @@ def main() -> None:
         '.dark nav svg path[stroke] { stroke: #3A352E; }\n'
         '.dark .shadow-xs, .dark .shadow-2xs, .dark .shadow-sm { --tw-shadow: 0 0 #0000 !important; }\n'
         '/* The green headers on a phone: a deeper green than the buttons */\n'
-        '@media (max-width: 767.98px) { html.dark .green-header { background-color: rgba(31,51,40,0.85) !important; } }\n'
+        '@media (max-width: 767.98px) { html.dark .green-header { background-color: rgba(31,51,40,0.72) !important; } }\n'
         '/* A selected tab (white on a grey track in the light theme) is lighter than its track */\n'
         '.dark .bg-stone-100 > .bg-white, .dark .bg-\\[\\#F0ECE1\\] > .bg-white, .dark .bg-stone-100 > * > .bg-white { background-color: #474038 !important; }\n'
     )

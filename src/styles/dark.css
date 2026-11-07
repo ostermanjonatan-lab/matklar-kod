@@ -5,7 +5,7 @@ html.dark, html.dark body { background-color: #1B1916 !important; color: #DCD4C7
 .dark nav svg path[stroke] { stroke: #3A352E; }
 .dark .shadow-xs, .dark .shadow-2xs, .dark .shadow-sm { --tw-shadow: 0 0 #0000 !important; }
 /* The green headers on a phone: a deeper green than the buttons */
-@media (max-width: 767.98px) { html.dark .green-header { background-color: rgba(31,51,40,0.85) !important; } }
+@media (max-width: 767.98px) { html.dark .green-header { background-color: rgba(31,51,40,0.72) !important; } }
 /* A selected tab (white on a grey track in the light theme) is lighter than its track */
 .dark .bg-stone-100 > .bg-white, .dark .bg-\[\#F0ECE1\] > .bg-white, .dark .bg-stone-100 > * > .bg-white { background-color: #474038 !important; }
 .dark .accent-\[\#284235\] { accent-color: #5E9478 !important; }
@@ -17,7 +17,7 @@ html.dark, html.dark body { background-color: #1B1916 !important; color: #DCD4C7
 .dark .active\:bg-stone-50:active { background-color: #201D1A !important; }
 .dark .bg-\[\#284235\] { background-color: #3F7458 !important; }
 .dark .bg-\[\#284235\]\/10 { background-color: rgba(63,116,88,0.10) !important; }
-.dark .bg-\[\#284235\]\/85 { background-color: rgba(63,116,88,0.85) !important; }
+.dark .bg-\[\#284235\]\/75 { background-color: rgba(63,116,88,0.75) !important; }
 .dark .bg-\[\#284235\]\/90 { background-color: rgba(63,116,88,0.90) !important; }
 .dark .bg-\[\#EBE7DF\] { background-color: #3A352E !important; }
 .dark .bg-\[\#F0ECE1\] { background-color: #25221E !important; }
