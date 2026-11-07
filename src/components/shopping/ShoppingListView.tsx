@@ -4,6 +4,7 @@ import { ParsedItemPreview } from './ParsedItemPreview';
 import { ConfirmSheet } from '../layout/ConfirmSheet';
 import type { ShoppingItem } from '../../types/recipe';
 import { useRecipes } from '../../context/RecipeContext';
+import { EditShoppingItemSheet } from './EditShoppingItemSheet';
 import { useModalBackHandler } from '../../hooks/useModalBackHandler';
 import { AlltidHemmaView } from './AlltidHemmaView';
 import { takeOpenStoreOrderFlag } from './storeOrderLink';
@@ -28,6 +29,7 @@ import {
   CupSoda,
   Package,
   MessageSquare,
+  Pencil,
   X,
   ChevronDown,
   ChevronsUpDown,
@@ -63,6 +65,7 @@ export const ShoppingListView: React.FC = () => {
     updateShoppingItemComment,
     updateShoppingItemAisle,
     rememberShoppingAisle,
+    updateShoppingItem,
   } = useRecipes();
 
   // Sub-tab: 'list' (Inköpslista) | 'pantry' (Alltid ha hemma)
@@ -144,6 +147,10 @@ export const ShoppingListView: React.FC = () => {
   // Item whose action menu (comment, category, remove) is open
   const [itemMenu, setItemMenu] = useState<ShoppingItem | null>(null);
   useModalBackHandler(Boolean(itemMenu), () => setItemMenu(null), 'shopping-item-menu');
+
+  // Item being changed (name, amount, unit)
+  const [itemToEdit, setItemToEdit] = useState<ShoppingItem | null>(null);
+  useModalBackHandler(Boolean(itemToEdit), () => setItemToEdit(null), 'edit-shopping-item');
 
   const [itemToMove, setItemToMove] = useState<ShoppingItem | null>(null);
   useModalBackHandler(Boolean(itemToMove), () => setItemToMove(null), 'change-shopping-aisle');
@@ -1147,7 +1154,20 @@ export const ShoppingListView: React.FC = () => {
               onClick={() => {
                 const item = itemMenu;
                 setItemMenu(null);
-                handleOpenEditComment(item);
+                // After the menu has closed, so the back button history stays in order
+                setTimeout(() => setItemToEdit(item), 120);
+              }}
+              className="w-full min-h-[48px] px-3 flex items-center gap-3 text-sm text-stone-800 rounded-2xl active:bg-stone-100 touch-manipulation"
+            >
+              <Pencil className="w-4 h-4 text-stone-500" />
+              Ändra vara och mängd
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                const item = itemMenu;
+                setItemMenu(null);
+                setTimeout(() => handleOpenEditComment(item), 120);
               }}
               className="w-full min-h-[48px] px-3 flex items-center gap-3 text-sm text-stone-800 rounded-2xl active:bg-stone-100 touch-manipulation"
             >
@@ -1159,7 +1179,7 @@ export const ShoppingListView: React.FC = () => {
               onClick={() => {
                 const item = itemMenu;
                 setItemMenu(null);
-                setItemToMove(item);
+                setTimeout(() => setItemToMove(item), 120);
               }}
               className="w-full min-h-[48px] px-3 flex items-center gap-3 text-sm text-stone-800 rounded-2xl active:bg-stone-100 touch-manipulation"
             >
@@ -1172,7 +1192,7 @@ export const ShoppingListView: React.FC = () => {
               onClick={() => {
                 const item = itemMenu;
                 setItemMenu(null);
-                setItemToDelete(item);
+                setTimeout(() => setItemToDelete(item), 120);
               }}
               className="w-full min-h-[48px] px-3 flex items-center gap-3 text-sm text-rose-700 rounded-2xl active:bg-rose-50 touch-manipulation"
             >
@@ -1181,6 +1201,14 @@ export const ShoppingListView: React.FC = () => {
             </button>
           </div>
         </div>
+      )}
+
+      {itemToEdit && (
+        <EditShoppingItemSheet
+          item={itemToEdit}
+          onSave={(changes) => updateShoppingItem(itemToEdit.id, changes)}
+          onClose={() => setItemToEdit(null)}
+        />
       )}
 
       {/* CHANGE AISLE MODAL */}

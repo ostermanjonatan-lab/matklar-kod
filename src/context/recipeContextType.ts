@@ -68,6 +68,8 @@ export interface RecipeContextType {
     comment?: string;
   }) => void;
   updateShoppingItemComment: (id: string, comment: string) => void;
+  /** Changes the name, amount or unit of an item in the shopping list */
+  updateShoppingItem: (id: string, changes: Pick<ShoppingItem, 'name' | 'amount' | 'unit'>) => void;
   updateShoppingItemAisle: (id: string, aisle: string) => void;
   rememberShoppingAisle: (name: string, aisle: string) => void;
   setHouseholdName: (name: string) => void;

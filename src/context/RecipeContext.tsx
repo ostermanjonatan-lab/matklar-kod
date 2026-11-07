@@ -1115,6 +1115,25 @@ export const RecipeProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     }
   }, [isLiveSupabase, household?.id]);
 
+  // Changes the name, amount or unit of an item in the shopping list
+  const updateShoppingItem = useCallback(
+    (id: string, changes: Pick<ShoppingItem, 'name' | 'amount' | 'unit'>) => {
+      const current = shoppingListRef.current;
+      const target = current.find((item) => item.id === id);
+      if (!target) return;
+      const updatedItem: ShoppingItem = { ...target, ...changes };
+      const updatedList = current.map((item) => (item.id === id ? updatedItem : item));
+      shoppingListRef.current = updatedList;
+      setShoppingList(updatedList);
+      recentLocalShoppingUpdatesRef.current.set(id, Date.now());
+      broadcastLocalChange({ type: 'SHOPPING_UPDATE', payload: updatedList });
+      if (isLiveSupabase && household?.id) {
+        pushShoppingItemsToSupabase([updatedItem], household.id);
+      }
+    },
+    [isLiveSupabase, household?.id]
+  );
+
   const rememberShoppingAisle = useCallback((name: string, aisle: string) => {
     setAisleOverride(name, aisle);
     if (isLiveSupabase && household?.id) {
@@ -2072,6 +2091,7 @@ export const RecipeProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         clearCheckedShoppingItems,
         addCustomShoppingItem,
         updateShoppingItemComment,
+        updateShoppingItem,
         updateShoppingItemAisle,
         rememberShoppingAisle,
         setHouseholdName,
