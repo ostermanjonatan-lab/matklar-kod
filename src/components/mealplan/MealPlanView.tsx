@@ -1050,7 +1050,8 @@ export const MealPlanView: React.FC = () => {
 
             {/* ===================== LUNCH ===================== */}
             <div className="px-1 space-y-2">
-              <div className="flex items-center justify-between min-h-[28px]">
+              {/* As high as the bin, so the row does not grow when a lunch is chosen */}
+              <div className="flex items-center justify-between min-h-[36px]">
                 <div className="text-stone-900 font-semibold text-sm">Lunch</div>
 
                 {(lunchRecipe || activeDayData.customLunch?.trim()) && (
@@ -1184,13 +1185,26 @@ export const MealPlanView: React.FC = () => {
                   </div>
                 </div>
               ) : (
-                <button
-                  type="button"
-                  onClick={() => openPickerModal(activeDayName, 'lunch')}
-                  className="text-sm font-semibold text-[#284235] flex items-center gap-1.5 py-2 touch-manipulation min-h-[40px]"
-                >
-                  Lägg till lunch
-                </button>
+                /* No lunch: the same shape as a chosen lunch, with a lunchbox where the photo goes */
+                <div className="flex items-center justify-between gap-3 py-1">
+                  <button
+                    type="button"
+                    onClick={() => openPickerModal(activeDayName, 'lunch')}
+                    className="flex items-center gap-3 min-w-0 flex-1 text-left touch-manipulation"
+                  >
+                    <span className="w-12 h-12 rounded-xl bg-stone-100 flex items-center justify-center shrink-0" aria-hidden="true">
+                      <LunchboxIcon className="w-6 h-6 text-stone-300" />
+                    </span>
+                    <span className="text-sm text-stone-500">Ingen lunch vald</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => openPickerModal(activeDayName, 'lunch')}
+                    className="shrink-0 whitespace-nowrap py-2 px-3.5 rounded-2xl bg-[#284235] hover:bg-black text-xs font-bold text-white transition-all active:scale-95 touch-manipulation"
+                  >
+                    Välj lunch
+                  </button>
+                </div>
               )}
             </div>
             </div>
