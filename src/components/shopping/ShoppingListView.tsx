@@ -6,6 +6,7 @@ import type { ShoppingItem } from '../../types/recipe';
 import { useRecipes } from '../../context/RecipeContext';
 import { EditShoppingItemSheet } from './EditShoppingItemSheet';
 import { SwipeToDelete } from './SwipeToDelete';
+import { AisleIcon } from './AisleIcon';
 import { useModalBackHandler } from '../../hooks/useModalBackHandler';
 import { AlltidHemmaView } from './AlltidHemmaView';
 import { takeOpenStoreOrderFlag } from './storeOrderLink';
@@ -18,17 +19,7 @@ import {
   CheckCircle2,
   Circle,
   Share2,
-  Carrot,
-  Milk,
-  Beef,
-  Fish,
-  Wheat,
-  Droplet,
   ShoppingCart,
-  Croissant,
-  Snowflake,
-  CupSoda,
-  Package,
   MessageSquare,
   Pencil,
   X,
@@ -188,22 +179,9 @@ export const ShoppingListView: React.FC = () => {
   // Copy toast
   const [copyToast, setCopyToast] = useState<boolean>(false);
 
-  // Aisle icons: thin, grey and the same size, so they support the name without taking over
-  const AISLE_ICONS: Record<string, typeof Carrot> = {
-    'Frukt & Grönt': Carrot,
-    'Mejeri': Milk,
-    'Kött & Chark': Beef,
-    'Fisk & Skaldjur': Fish,
-    'Skafferi': Wheat,
-    'Kryddor & Olja': Droplet,
-    'Bröd & Bageri': Croissant,
-    'Fryst': Snowflake,
-    'Drycker': CupSoda,
-  };
-  const renderAisleIcon = (aisle: string, className: string = 'w-4 h-4 text-stone-500') => {
-    const Icon = AISLE_ICONS[aisle] || Package;
-    return <Icon className={className} strokeWidth={1.75} aria-hidden="true" />;
-  };
+  const renderAisleIcon = (aisle: string, className: string = 'w-4 h-4 text-stone-500') => (
+    <AisleIcon aisle={aisle} className={className} />
+  );
 
   // Live parsed preview for shopping list manual item input
   const parsedManualPreview = useMemo(() => {
