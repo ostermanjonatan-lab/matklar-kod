@@ -2,6 +2,7 @@ import React, { useState, useLayoutEffect, useRef } from 'react';
 import { RecipeProvider, useRecipes } from './context/RecipeContext';
 import { TimerProvider } from './context/TimerContext';
 import { BottomDock } from './components/layout/BottomDock';
+import { CoverShoppingList, useCoverScreen } from './components/shopping/CoverShoppingList';
 import { UpdateNotice } from './components/layout/UpdateNotice';
 import { BottomNav } from './components/layout/BottomNav';
 import { DesktopNav } from './components/layout/DesktopNav';
@@ -18,6 +19,8 @@ import { OpenedRecipeSheet } from './components/share/OpenedRecipeSheet';
 import { useModalBackHandler } from './hooks/useModalBackHandler';
 
 const AppContent: React.FC = () => {
+  // On the small outer screen of a folding phone only the shopping list is shown
+  const isCover = useCoverScreen();
   const { activeTab, selectedRecipe, closeRecipeDetail, recipes } = useRecipes();
   // A minimized recipe stays open in the background, so ticked steps and portions are kept
   const [minimizedId, setMinimizedId] = useState<string | null>(null);
@@ -61,6 +64,8 @@ const AppContent: React.FC = () => {
       clearTimeout(timerId);
     };
   }, [activeTab]);
+
+  if (isCover) return <CoverShoppingList />;
 
   return (
     <div className="min-h-screen w-full bg-[#FCFAF5] flex flex-col justify-between selection:bg-emerald-200 overflow-x-hidden font-sans text-stone-900">
