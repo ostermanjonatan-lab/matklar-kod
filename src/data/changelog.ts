@@ -11,6 +11,13 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.0.141',
+    date: '2026-11-07',
+    items: [
+      'Bottenmenyn är ljusgrön längst ner och vit upptill, och plusknappen har ingen vit ring.',
+    ],
+  },
+  {
     version: '1.0.140',
     date: '2026-11-07',
     items: [
