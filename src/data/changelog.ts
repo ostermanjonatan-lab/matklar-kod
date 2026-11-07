@@ -11,6 +11,13 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.0.157',
+    date: '2026-11-07',
+    items: [
+      'Utan kategorier i inköpslistan visar alla varor i en lista. Ordningen på avdelningarna ändras under butiksknappen.',
+    ],
+  },
+  {
     version: '1.0.156',
     date: '2026-11-07',
     items: [
