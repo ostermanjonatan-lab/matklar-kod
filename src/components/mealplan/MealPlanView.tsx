@@ -321,6 +321,63 @@ export const MealPlanView: React.FC = () => {
     setMealPlanForDay(dayName, mealType, null, '');
   };
 
+  // Slumpa veckan: every empty dinner from today on gets a random main course, without repeats
+  const [weekToast, setWeekToast] = useState<{ message: string; days: MealPlanDay['dayName'][] } | null>(null);
+  const weekToastTimer = useRef<number | undefined>(undefined);
+  const showWeekToast = (message: string, days: MealPlanDay['dayName'][] = []) => {
+    window.clearTimeout(weekToastTimer.current);
+    setWeekToast({ message, days });
+    weekToastTimer.current = window.setTimeout(() => setWeekToast(null), days.length ? 6000 : 3000);
+  };
+  useEffect(() => () => window.clearTimeout(weekToastTimer.current), []);
+
+  const hasDinner = (dayName: MealPlanDay['dayName']) => {
+    const d = mealPlan.find((x) => x.dayName === dayName);
+    return Boolean((d?.dinnerRecipeId && recipes.some((r) => r.id === d.dinnerRecipeId)) || d?.customDinner?.trim());
+  };
+
+  const randomizeWeek = () => {
+    if (weekDates[6] < today) {
+      showWeekToast(`Vecka ${weekNumber} har redan varit`);
+      return;
+    }
+    const emptyDays = DAYS_OF_WEEK.filter((name, i) => weekDates[i] >= today && !hasDinner(name));
+    if (emptyDays.length === 0) {
+      showWeekToast('Alla dagar har redan en middag');
+      return;
+    }
+    const mains = recipes.filter((r) => (r.category || '').toLowerCase() === 'middag');
+    if (mains.length === 0) {
+      showWeekToast('Det finns inga varmrätter att slumpa bland');
+      return;
+    }
+    const shuffle = <T,>(list: T[]) => {
+      const a = [...list];
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    };
+    const planned = new Set(mealPlan.flatMap((d) => [d.dinnerRecipeId, d.lunchRecipeId]).filter(Boolean));
+    // Recipes not in the week come first. With few recipes, the rest are used again.
+    let pool = shuffle(mains.filter((r) => !planned.has(r.id)));
+    for (const day of emptyDays) {
+      if (pool.length === 0) pool = shuffle(mains);
+      setMealPlanForDay(day, 'dinner', pool.shift()!.id);
+    }
+    showWeekToast(
+      emptyDays.length === 1 ? '1 middag slumpad' : `${emptyDays.length} middagar slumpade`,
+      emptyDays
+    );
+  };
+
+  const undoRandomWeek = () => {
+    weekToast?.days.forEach((day) => setMealPlanForDay(day, 'dinner', null, ''));
+    window.clearTimeout(weekToastTimer.current);
+    setWeekToast(null);
+  };
+
   const handleConfirmClearWeek = () => {
     clearMealPlan();
     setShowClearWeekModal(false);
@@ -355,6 +412,12 @@ export const MealPlanView: React.FC = () => {
     <div className="min-h-screen bg-[#FCFAF5] pb-28 w-full max-w-full overflow-x-hidden font-sans">
       {/* Toast Notification */}
       {generatedToast && <Toast message={generatedToast} />}
+      {weekToast && (
+        <Toast
+          message={weekToast.message}
+          actions={weekToast.days.length ? [{ label: 'Ångra', onClick: undoRandomWeek }] : undefined}
+        />
+      )}
 
       {/* HEADER & THUMBNAIL STRIP (Sticky top-0 on mobile, static on desktop) */}
       <div className="sticky top-0 md:static z-20 md:z-auto bg-[#FCFAF5]/95 backdrop-blur-md border-b border-[#EBE7DF] px-3.5 md:px-6 pt-3 pb-3 shadow-xs">
@@ -399,6 +462,15 @@ export const MealPlanView: React.FC = () => {
             </div>
 
             <div className="flex items-center gap-1.5 shrink-0">
+              {weekDates[6] >= today && (
+                <button
+                  type="button"
+                  onClick={randomizeWeek}
+                  className="hidden md:block px-3 min-h-[38px] text-xs font-semibold text-[#284235] hover:text-stone-900 touch-manipulation"
+                >
+                  Slumpa veckan
+                </button>
+              )}
               {/* Desktop Create Shopping List Button */}
               <button
                 type="button"
@@ -1143,17 +1215,26 @@ export const MealPlanView: React.FC = () => {
           </button>
         </div>
 
-        {totalPlannedMeals > 0 && (
-          <div className="flex justify-center">
+        <div className="flex justify-center gap-2">
+          {weekDates[6] >= today && (
+            <button
+              type="button"
+              onClick={randomizeWeek}
+              className="text-xs font-semibold text-[#284235] hover:text-stone-900 py-2 px-3 touch-manipulation min-h-[40px]"
+            >
+              Slumpa veckan
+            </button>
+          )}
+          {totalPlannedMeals > 0 && (
             <button
               type="button"
               onClick={() => setShowClearWeekModal(true)}
-              className="text-xs font-semibold text-stone-500 hover:text-rose-700 flex items-center gap-1.5 py-2 px-3 touch-manipulation min-h-[40px]"
+              className="text-xs font-semibold text-stone-500 hover:text-rose-700 py-2 px-3 touch-manipulation min-h-[40px]"
             >
               Töm vecka {weekNumber}
             </button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       {/* =================================================================== */}

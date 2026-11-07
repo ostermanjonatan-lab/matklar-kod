@@ -341,6 +341,62 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
     setTimeout(() => setShoppingToast(null), 3000);
   };
 
+  // The photo with the name and the cart. Full width at the top on a phone; on a wide screen it
+  // sits in the left column above the ingredients, with the steps beside it.
+  const renderCover = (className: string) => (
+    <div className={`relative w-full overflow-hidden shrink-0 ${className}`}>
+      <FadeImage src={recipe.coverImageUrl} alt={recipe.title} className="absolute inset-0 w-full h-full object-cover" />
+      <div className="absolute inset-0 bg-gradient-to-t from-stone-950/85 via-black/30 to-black/20" />
+
+      <div className="absolute bottom-4 left-4 right-16 text-white z-10">
+        <h1 className="font-serif text-2xl sm:text-3xl font-bold text-white leading-tight drop-shadow-md">
+          {formatRecipeTitle(recipe.title)}
+        </h1>
+      </div>
+
+      {/* Quick Add to Shopping List Button (Bottom Right of Image) */}
+      <button
+        type="button"
+        onTouchStart={handleShoppingTouchStart}
+        onTouchMove={handleShoppingTouchMove}
+        onTouchEnd={handleShoppingTouchEnd}
+        onClick={handleImageShoppingClick}
+        className={`absolute bottom-3.5 right-3.5 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-150 active:scale-125 shadow-md touch-manipulation z-20 cursor-pointer ${
+          addedToCart
+            ? 'bg-emerald-600 text-white'
+            : isInShoppingList
+            ? 'bg-white/95 text-emerald-700 hover:text-emerald-800'
+            : 'bg-white/95 text-stone-700 hover:text-[#284235] hover:bg-white'
+        }`}
+        aria-label={
+          addedToCart
+            ? 'Receptet tillagt i inköpslistan'
+            : isInShoppingList
+            ? 'Receptet finns i inköpslistan (klicka för att lägga till igen)'
+            : 'Lägg till receptet i inköpslistan'
+        }
+        title={
+          isInShoppingList
+            ? 'Finns i inköpslistan (klicka för att lägga till igen)'
+            : 'Lägg till i inköpslistan'
+        }
+      >
+        {addedToCart ? (
+          <Check className="w-4 h-4 text-white stroke-[2.5]" />
+        ) : (
+          <ShoppingCart
+            className={`w-4 h-4 transition-colors ${
+              isInShoppingList ? 'text-emerald-600 stroke-[2.2]' : ''
+            }`}
+          />
+        )}
+        {isInShoppingList && !addedToCart && (
+          <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-white" />
+        )}
+      </button>
+    </div>
+  );
+
   return (
     <div
       hidden={hidden}
@@ -462,60 +518,16 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
 
         {/* Scrollable Single-Column Body */}
         <div ref={scrollContainerRef} className="overflow-y-auto flex-1 overscroll-contain">
-          {/* Cover Image Banner */}
-          <div className="relative aspect-16/10 lg:aspect-auto lg:h-56 w-full overflow-hidden shrink-0">
-            <FadeImage src={recipe.coverImageUrl} alt={recipe.title} className="absolute inset-0 w-full h-full object-cover" />
-            <div className="absolute inset-0 bg-gradient-to-t from-stone-950/85 via-black/30 to-black/20" />
-
-            <div className="absolute bottom-4 left-4 right-16 text-white z-10">
-              <h1 className="font-serif text-2xl sm:text-3xl font-bold text-white leading-tight drop-shadow-md">
-                {formatRecipeTitle(recipe.title)}
-              </h1>
-            </div>
-
-            {/* Quick Add to Shopping List Button (Bottom Right of Image) */}
-            <button
-              type="button"
-              onTouchStart={handleShoppingTouchStart}
-              onTouchMove={handleShoppingTouchMove}
-              onTouchEnd={handleShoppingTouchEnd}
-              onClick={handleImageShoppingClick}
-              className={`absolute bottom-3.5 right-3.5 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-150 active:scale-125 shadow-md touch-manipulation z-20 cursor-pointer ${
-                addedToCart
-                  ? 'bg-emerald-600 text-white'
-                  : isInShoppingList
-                  ? 'bg-white/95 text-emerald-700 hover:text-emerald-800'
-                  : 'bg-white/95 text-stone-700 hover:text-[#284235] hover:bg-white'
-              }`}
-              aria-label={
-                addedToCart
-                  ? 'Receptet tillagt i inköpslistan'
-                  : isInShoppingList
-                  ? 'Receptet finns i inköpslistan (klicka för att lägga till igen)'
-                  : 'Lägg till receptet i inköpslistan'
-              }
-              title={
-                isInShoppingList
-                  ? 'Finns i inköpslistan (klicka för att lägga till igen)'
-                  : 'Lägg till i inköpslistan'
-              }
-            >
-              {addedToCart ? (
-                <Check className="w-4 h-4 text-white stroke-[2.5]" />
-              ) : (
-                <ShoppingCart
-                  className={`w-4 h-4 transition-colors ${
-                    isInShoppingList ? 'text-emerald-600 stroke-[2.2]' : ''
-                  }`}
-                />
-              )}
-              {isInShoppingList && !addedToCart && (
-                <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-white" />
-              )}
-            </button>
-          </div>
+          {/* Cover image: full width on a phone */}
+          {renderCover('aspect-16/10 lg:hidden')}
 
           <div className="p-4 sm:p-5 space-y-4 sm:space-y-5">
+            {/* Ingredients and instructions, side by side on wide screens */}
+            <div className="space-y-4 sm:space-y-5 lg:space-y-0 lg:grid lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:gap-6 lg:items-start">
+            <div className="space-y-4 sm:space-y-5">
+            {/* Cover image: in the left column on a wide screen */}
+            {renderCover('hidden lg:block aspect-[4/3] rounded-2xl')}
+
             {/* Cooking time */}
             <div className="flex items-center gap-2 text-sm text-stone-600">
               <Clock className="w-4 h-4 text-stone-500" />
@@ -528,9 +540,6 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
               )}
             </div>
 
-            {/* Ingredients and instructions, side by side on wide screens */}
-            <div className="space-y-4 sm:space-y-5 lg:space-y-0 lg:grid lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:gap-6 lg:items-start">
-            <div className="space-y-4 sm:space-y-5 lg:sticky lg:top-4">
             {/* Ingredients Section */}
             <div className="space-y-4 pt-1 lg:pt-0">
               <div className="flex items-center justify-between mb-2">
