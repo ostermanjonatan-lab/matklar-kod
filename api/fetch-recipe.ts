@@ -17,6 +17,13 @@ export default async function handler(req: any, res: any) {
     });
   }
 
+  // Only MatKlar itself may use this. A browser says where a request comes from: a page on
+  // another site is refused. (A script outside a browser can still pretend, so this stops
+  // other websites from borrowing the function, not every possible misuse.)
+  if (!isFromThisSite(req)) {
+    return sendError(res, 403, 'Bara MatKlar kan hämta recept här');
+  }
+
   // Only ordinary web pages. Addresses inside a network (localhost, 10.x, 192.168.x and the like)
   // are refused, so the function cannot be used to reach the server's own surroundings.
   // Redirects are checked the same way in fetchPublic.
@@ -200,3 +207,28 @@ async function fetchPublic(url: string, init: RequestInit): Promise<Response> {
   }
   throw new Error('Sidan skickade vidare för många gånger');
 }
+
+function header(req: any, name: string): string | null {
+  const h = req?.headers;
+  if (!h) return null;
+  if (typeof h.get === 'function') return h.get(name);
+  const v = h[name] ?? h[name.toLowerCase()];
+  return Array.isArray(v) ? v[0] : v ?? null;
+}
+
+/** True unless the browser reports that the request comes from another site. */
+function isFromThisSite(req: any): boolean {
+  const site = header(req, 'sec-fetch-site');
+  if (site && site !== 'same-origin' && site !== 'none') return false;
+  const host = header(req, 'x-forwarded-host') || header(req, 'host');
+  const from = header(req, 'origin') || header(req, 'referer');
+  if (from && host) {
+    try {
+      if (new URL(from).host !== host) return false;
+    } catch {
+      return false;
+    }
+  }
+  return true;
+}
+

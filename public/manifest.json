@@ -1,7 +1,7 @@
-﻿{
-  "name": "Matklar – Recept & Veckoplan",
-  "short_name": "Matklar",
-  "description": "Matklar – Smart mobilanpassad receptsamling, veckoplanering och inköpslista för hela hushållet.",
+{
+  "name": "MatKlar",
+  "short_name": "MatKlar",
+  "description": "Recept, veckoplan och inköpslista för hushållet.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
@@ -9,19 +9,35 @@
   "background_color": "#FCFAF5",
   "theme_color": "#284235",
   "lang": "sv",
-  "categories": ["food", "lifestyle", "utilities"],
+  "categories": [
+    "food",
+    "lifestyle",
+    "utilities"
+  ],
   "icons": [
     {
-      "src": "./icon.svg",
-      "sizes": "192x192 512x512",
-      "type": "image/svg+xml",
+      "src": "./icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "./icon.svg",
-      "sizes": "192x192 512x512",
-      "type": "image/svg+xml",
+      "src": "./icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
       "purpose": "maskable"
+    },
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
     }
   ],
   "shortcuts": [
@@ -30,21 +46,39 @@
       "short_name": "Recept",
       "description": "Öppna receptsamlingen",
       "url": "./?tab=recipes",
-      "icons": [{ "src": "./icon.svg", "sizes": "192x192" }]
+      "icons": [
+        {
+          "src": "./icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
     },
     {
       "name": "Veckoplan",
       "short_name": "Vecka",
       "description": "Öppna veckomenyn",
       "url": "./?tab=mealplan",
-      "icons": [{ "src": "./icon.svg", "sizes": "192x192" }]
+      "icons": [
+        {
+          "src": "./icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
     },
     {
       "name": "Inköpslista",
       "short_name": "Inköp",
       "description": "Öppna inköpslistan",
       "url": "./?tab=shopping",
-      "icons": [{ "src": "./icon.svg", "sizes": "192x192" }]
+      "icons": [
+        {
+          "src": "./icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
     }
   ]
 }

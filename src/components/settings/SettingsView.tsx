@@ -6,6 +6,7 @@ import { HouseholdOnboarding } from '../auth/HouseholdOnboarding';
 import { SupabaseConfigModal } from './SupabaseConfigModal';
 import { useModalBackHandler } from '../../hooks/useModalBackHandler';
 import { APP_VERSION } from '../../version';
+import { PrivacySheet } from './PrivacySheet';
 import { getThemeChoice, setThemeChoice, type ThemeChoice } from '../../utils/theme';
 import { OPEN_STORE_ORDER_KEY } from '../shopping/storeOrderLink';
 import { saveRecipeBackup, readRecipeBackup } from '../../utils/recipeBackup';
@@ -90,6 +91,8 @@ export const SettingsView: React.FC = () => {
   useModalBackHandler(showShareModal, () => setShowShareModal(false), 'share-modal');
   useModalBackHandler(showHouseholdModal, () => setShowHouseholdModal(false), 'household-auth-modal');
   useModalBackHandler(showSupabaseModal, () => setShowSupabaseModal(false), 'supabase-modal');
+  const [showPrivacy, setShowPrivacy] = useState(false);
+  useModalBackHandler(showPrivacy, () => setShowPrivacy(false), 'privacy-sheet');
 
   const [showAdvanced, setShowAdvanced] = useState<boolean>(false);
   const [confirming, setConfirming] = useState<'newCode' | 'clearRecipes' | 'reset' | null>(null);
@@ -432,6 +435,13 @@ export const SettingsView: React.FC = () => {
             <input type="file" accept="application/json,.json" className="hidden" onChange={handleReadBackup} />
           </label>
         </div>
+
+        {/* What is saved and where */}
+        <h2 className={sectionHeading}>Om appen</h2>
+        <div className="divide-y divide-[#EBE7DF] border-y border-[#EBE7DF]">
+          <Row label="Personuppgifter" onClick={() => setShowPrivacy(true)} />
+        </div>
+        {showPrivacy && <PrivacySheet onClose={() => setShowPrivacy(false)} />}
 
         {/* Advanced: database, clearing and demo data */}
         <button

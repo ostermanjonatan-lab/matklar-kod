@@ -28,8 +28,8 @@ const COLORS = {
   line: '#E7E2D9',
   green: '#284235',
 };
-const SERIF = 'Fraunces, Georgia, serif';
-const SANS = '"Plus Jakarta Sans", system-ui, -apple-system, sans-serif';
+const SERIF = '"Fraunces Variable", Georgia, serif';
+const SANS = '"Plus Jakarta Sans Variable", system-ui, -apple-system, sans-serif';
 
 /** Splits text into lines that fit the width. Very long words are cut. */
 function wrap(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
@@ -240,10 +240,10 @@ export async function createRecipeImage(recipe: Recipe, servings: number): Promi
   // The fonts must be loaded before anything is measured
   try {
     await Promise.all([
-      document.fonts.load(`700 68px Fraunces`),
-      document.fonts.load(`400 32px "Plus Jakarta Sans"`),
-      document.fonts.load(`700 32px "Plus Jakarta Sans"`),
-      document.fonts.load(`500 32px "Plus Jakarta Sans"`),
+      document.fonts.load(`700 68px "Fraunces Variable"`),
+      document.fonts.load(`400 32px "Plus Jakarta Sans Variable"`),
+      document.fonts.load(`700 32px "Plus Jakarta Sans Variable"`),
+      document.fonts.load(`500 32px "Plus Jakarta Sans Variable"`),
     ]);
   } catch {
     // Fall back to the system fonts
