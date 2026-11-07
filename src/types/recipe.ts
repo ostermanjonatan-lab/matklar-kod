@@ -1,3 +1,4 @@
+import { detectMeatKinds, OLD_MEAT_SUBCATEGORY } from '../utils/meatKinds';
 export type RecipeSourceType = 'manual' | 'url' | 'pdf' | 'recipe_image';
 
 export type RecipeCategory = 'Middag' | 'Förrätt' | 'Efterrätt' | 'Såser' | 'Dryck' | 'Frukost' | 'Mellanmål' | string;
@@ -145,6 +146,15 @@ export function getRecipeSubcategories(recipe?: Partial<Recipe> | null): string[
       } else {
         if (!result.includes('Fisk')) result.push('Fisk');
         if (!result.includes('Skaldjur')) result.push('Skaldjur');
+      }
+    } else if (s === OLD_MEAT_SUBCATEGORY) {
+      // Split into Nöt, Fläsk, Lamm and Vilt. Beef when nothing tells.
+      const kinds = detectMeatKinds(
+        `${recipe.title || ''} ${recipe.description || ''}`,
+        (recipe.ingredients || []).map((i) => i.name || '')
+      );
+      for (const kind of kinds.some((k) => k !== 'Färs') ? kinds : ['Nöt', ...kinds]) {
+        if (!result.includes(kind)) result.push(kind);
       }
     } else if (s === 'Vegetariskt & Veganskt') {
       const isVegan = /vegansk|veganskt|vegan|växtbaserad/i.test(text);

@@ -1,4 +1,5 @@
 import type { RecipeCategory, Ingredient } from '../types/recipe';
+import { detectMeatKinds } from './meatKinds';
 
 /**
  * Automatically maps a raw category string or recipe title to one of the 5 main Matklar categories.
@@ -220,9 +221,6 @@ export function detectSubcategories(
       if (/räk|räkor|kräft|kräftor|hummer|mussl|musslor|ostron|bläckfisk|skaldjur|scampi|gambas|krabb|havskräft|skagen/i.test(mText)) {
         matches.push('Skaldjur');
       }
-      if (/(^|[^a-zåäö])färs([^a-zåäök]|$)|köttfärs|blandfärs|nötfärs|fläskfärs|köttbullar|biff|oxfilé|ryggbiff|entrecôte|fläskfilé|karré|revbensspjäll|falukorv|korv|lamm|högrev|skinka|bacon/i.test(mText)) {
-        matches.push('Kött & Färs');
-      }
       if (/wok|ramen|sushi|pad thai|tikka|teriyaki|satay|dumplings|bao|curry|asiatisk|kimchi|tandoori/i.test(mText)) {
         matches.push('Asiatiskt');
       }
@@ -245,6 +243,10 @@ export function detectSubcategories(
         matches.push('Sallad');
       }
       if (matches.length > 0) break;
+    }
+    // The kind of meat, from the name or else the ingredients, whatever else the dish is
+    for (const kind of detectMeatKinds([title, description, keywords].join(' '), ingredients.map((i) => i.name || ''))) {
+      if (!matches.includes(kind)) matches.push(kind);
     }
     if (matches.length === 0) {
       matches.push('Husmanskost');
