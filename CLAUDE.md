@@ -5,7 +5,7 @@ Svensk app för recept, veckoplan och inköpslista. React, TypeScript och Vite, 
 ## Arbetssätt
 
 - Svara på svenska. Användaren testar på telefon, så beskriv ändringar i vardagliga ord.
-- Höj versionen vid varje ändring, både i `src/version.ts` och `package.json`. Ändringar som användaren märker skrivs också in i `src/data/changelog.ts`, som visas under Nyheter.
+- Versionen höjs bara när ändringar läggs ut på `main`, en gång per utläggning och inte vid varje ändring på grenen. Höj den då i `src/version.ts` och `package.json`, och samla det användaren märker under den versionen i `src/data/changelog.ts`, som visas under Nyheter. Om grenen redan har en högre version än `main` som inte är utlagd används den.
 - Typkontroll: `npx tsc -p tsconfig.app.json --noEmit`.
 - Tolkningen av inklistrad recepttext kontrolleras mot 18 recepttexter med `npx tsx scripts/check-recipe-parser.ts`. Kör den när `parseRawRecipeText` ändras, och lägg till nya texter i `scripts/recipe-parser-cases.ts` när ett recept tolkas fel.
 - Hämtning av recept från webblänk kontrolleras mot 9 testsidor med `npx tsx scripts/check-web-scraper.mts`. Kör den när `src/services/webRecipeScraper.ts` ändras. Sidorna finns i `scripts/web-recipe-pages.ts`.
