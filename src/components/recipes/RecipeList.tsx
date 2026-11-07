@@ -639,7 +639,7 @@ export const RecipeList: React.FC = () => {
             <div className="flex items-center gap-5 flex-1 min-w-0" role="tablist" aria-label="Kategorier">
               {renderTab('Favoriter')}
               {renderTab(categories[0])}
-              <span className="w-px h-4 bg-white/30 md:bg-[#E2DCD1] shrink-0 -mx-1" aria-hidden="true" />
+              <span className="w-px h-4 bg-[#FFFFFF]/30 md:bg-[#E2DCD1] shrink-0 -mx-1" aria-hidden="true" />
               <div
                 className="flex items-center gap-5 overflow-x-auto no-scrollbar flex-1 min-w-0 -ml-4 pl-5 pr-6"
                 style={{

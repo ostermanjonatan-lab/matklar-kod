@@ -53,7 +53,6 @@ html.dark, html.dark body { background-color: #1B1916 !important; color: #DCD4C7
 .dark .bg-stone-900\/60 { background-color: rgba(58,53,47,0.60) !important; }
 .dark .bg-stone-900\/95 { background-color: rgba(58,53,47,0.95) !important; }
 .dark .bg-white { background-color: #25221E !important; }
-.dark .bg-white\/30 { background-color: rgba(37,34,30,0.30) !important; }
 .dark .bg-white\/35 { background-color: rgba(37,34,30,0.35) !important; }
 .dark .bg-white\/80 { background-color: rgba(37,34,30,0.80) !important; }
 .dark .bg-white\/95 { background-color: rgba(37,34,30,0.95) !important; }
