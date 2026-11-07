@@ -18,6 +18,7 @@ import {
   ArrowUpDown,
   Check,
   ChevronDown,
+  Heart,
 } from 'lucide-react';
 
 
@@ -551,7 +552,7 @@ export const RecipeList: React.FC = () => {
 
           {/* Category & Filter Row (Horizontal Scroll on mobile, unified bar on desktop) */}
           <div className="flex items-center justify-between gap-3">
-            {/* Light text tabs: Alla, Favoriter, then the categories. The row fades out at the
+            {/* Light text tabs: a heart for the favourites, Alla, then the categories. The row fades out at the
                 right edge so it is clear that it can be swiped. */}
             <div
               className="flex items-center gap-5 overflow-x-auto no-scrollbar flex-1 min-w-0 pr-6"
@@ -562,7 +563,7 @@ export const RecipeList: React.FC = () => {
                 maskImage: 'linear-gradient(to right, #000 calc(100% - 28px), transparent)',
               }}
             >
-              {[categories[0], 'Favoriter', ...categories.slice(1)].map((cat) => {
+              {['Favoriter', ...categories].map((cat) => {
                 const isFavorites = cat === 'Favoriter';
                 const isSelected = isFavorites ? onlyFavorites : !onlyFavorites && selectedCategory === cat;
                 return (
@@ -571,6 +572,7 @@ export const RecipeList: React.FC = () => {
                     type="button"
                     role="tab"
                     aria-selected={isSelected}
+                    aria-label={isFavorites ? 'Favoriter' : undefined}
                     onClick={() => {
                       if (isFavorites) {
                         setOnlyFavorites(true);
@@ -584,7 +586,14 @@ export const RecipeList: React.FC = () => {
                       isSelected ? 'text-stone-900 font-semibold' : 'text-stone-500 hover:text-stone-800'
                     }`}
                   >
-                    {isFavorites ? 'Favoriter' : categoryLabel(cat)}
+                    {isFavorites ? (
+                      <Heart
+                        className={`w-5 h-5 ${isSelected ? 'fill-rose-500 text-rose-500' : ''}`}
+                        aria-hidden="true"
+                      />
+                    ) : (
+                      categoryLabel(cat)
+                    )}
                     {isSelected && (
                       <span className="absolute left-0 right-0 bottom-1 h-[2px] rounded-full bg-[#284235]" aria-hidden="true" />
                     )}
