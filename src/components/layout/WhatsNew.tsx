@@ -38,6 +38,7 @@ export const WhatsNew: React.FC = () => {
       {show && (
         <Toast
           message={`MatKlar är uppdaterad till version ${APP_VERSION}`}
+          onDismiss={() => setShow(false)}
           actions={[
             {
               label: 'Visa nyheter',

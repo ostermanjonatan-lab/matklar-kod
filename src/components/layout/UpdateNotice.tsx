@@ -48,6 +48,7 @@ export const UpdateNotice: React.FC = () => {
   return (
     <Toast
       message="Det finns en ny version"
+      onDismiss={() => setNewVersion(false)}
       actions={[
         { label: 'Ladda om', onClick: () => window.location.reload() },
         { label: 'Senare', onClick: () => setNewVersion(false) },
