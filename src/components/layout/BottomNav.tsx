@@ -141,7 +141,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ onAddRecipeClick, onAddSho
             which is how much higher the arc is at their place, so the row follows the curve. */}
         <div
           aria-hidden="true"
-          className="absolute inset-0 pointer-events-none bg-gradient-to-b from-white/70 to-[#CFE1D5]/90 backdrop-blur-xl backdrop-saturate-150"
+          className="absolute inset-0 pointer-events-none bg-gradient-to-b from-white/70 to-[#A9C8B4]/95 backdrop-blur-xl backdrop-saturate-150"
           style={{
             WebkitMaskImage: `${NAV_ARC_MASK}, linear-gradient(#000, #000)`,
             maskImage: `${NAV_ARC_MASK}, linear-gradient(#000, #000)`,
@@ -169,7 +169,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ onAddRecipeClick, onAddSho
             className={`flex flex-col items-center justify-center flex-1 py-1 px-1 rounded-2xl transition-all active:scale-95 touch-manipulation min-h-[52px] ${
               activeTab === 'recipes' && !selectedRecipe
                 ? 'text-[#284235] font-bold'
-                : 'text-stone-400 hover:text-stone-800'
+                : 'text-stone-500 hover:text-stone-800'
             }`}
             aria-label="Recept"
           >
@@ -188,7 +188,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ onAddRecipeClick, onAddSho
             className={`-translate-y-1.5 flex flex-col items-center justify-center flex-1 py-1 px-1 rounded-2xl transition-all active:scale-95 touch-manipulation min-h-[52px] ${
               activeTab === 'mealplan' && !selectedRecipe
                 ? 'text-[#284235] font-bold'
-                : 'text-stone-400 hover:text-stone-800'
+                : 'text-stone-500 hover:text-stone-800'
             }`}
             aria-label="Veckoplan"
           >
@@ -229,7 +229,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ onAddRecipeClick, onAddSho
             className={`-translate-y-1.5 relative flex flex-col items-center justify-center flex-1 py-1 px-1 rounded-2xl transition-all active:scale-95 touch-manipulation min-h-[52px] ${
               activeTab === 'shopping' && !selectedRecipe
                 ? 'text-[#284235] font-bold'
-                : 'text-stone-400 hover:text-stone-800'
+                : 'text-stone-500 hover:text-stone-800'
             }`}
             aria-label="Inköp"
           >
@@ -255,7 +255,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ onAddRecipeClick, onAddSho
             className={`flex flex-col items-center justify-center flex-1 py-1 px-1 rounded-2xl transition-all active:scale-95 touch-manipulation min-h-[52px] ${
               activeTab === 'settings' && !selectedRecipe
                 ? 'text-[#284235] font-bold'
-                : 'text-stone-400 hover:text-stone-800'
+                : 'text-stone-500 hover:text-stone-800'
             }`}
             aria-label="Inställningar"
           >
