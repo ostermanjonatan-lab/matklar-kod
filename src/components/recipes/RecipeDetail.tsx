@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { FadeImage } from '../layout/FadeImage';
 import { Toast } from '../layout/Toast';
+import { PhotoViewer } from '../layout/PhotoViewer';
 import { ConfirmSheet } from '../layout/ConfirmSheet';
 import { DifficultyDots } from './DifficultyPicker';
 import { DIFFICULTY_LABELS } from '../../utils/recipeDifficulty';
@@ -214,6 +215,9 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
   useModalBackHandler(showMealPlanPicker, () => setShowMealPlanPicker(false), 'meal-plan-picker');
   useModalBackHandler(showDeleteConfirm, () => setShowDeleteConfirm(false), 'delete-confirm');
   useModalBackHandler(showShareSheet, () => setShowShareSheet(false), 'share-recipe');
+  // The photo in full screen, opened by tapping it
+  const [showPhoto, setShowPhoto] = useState(false);
+  useModalBackHandler(showPhoto, () => setShowPhoto(false), 'recipe-photo');
 
   const handleDeleteRecipe = () => {
     deleteRecipe(recipe.id);
@@ -347,7 +351,10 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
   // The photo with the name and the cart. Full width at the top on a phone; on a wide screen it
   // sits in the left column above the ingredients, with the steps beside it.
   const renderCover = (className: string) => (
-    <div className={`relative w-full overflow-hidden shrink-0 ${className}`}>
+    <div
+      className={`relative w-full overflow-hidden shrink-0 ${recipe.coverImageUrl ? 'cursor-zoom-in' : ''} ${className}`}
+      onClick={() => recipe.coverImageUrl && setShowPhoto(true)}
+    >
       <FadeImage src={recipe.coverImageUrl} alt={recipe.title} className="absolute inset-0 w-full h-full object-cover" />
       <div className="absolute inset-0 bg-gradient-to-t from-stone-950/85 via-black/30 to-black/20" />
 
@@ -831,6 +838,10 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
           </div>
         </div>
       </div>
+
+      {showPhoto && recipe.coverImageUrl && (
+        <PhotoViewer src={recipe.coverImageUrl} alt={formatRecipeTitle(recipe.title)} onClose={() => setShowPhoto(false)} />
+      )}
 
       {/* Ask whether pantry staples should be included */}
       {showPantryChoice && (
