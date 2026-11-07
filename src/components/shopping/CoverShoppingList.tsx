@@ -1,5 +1,9 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { Check, Circle, CheckCircle2 } from 'lucide-react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Check, Circle, CheckCircle2, Pencil, Trash2 } from 'lucide-react';
+import { Toast } from '../layout/Toast';
+import { SwipeToDelete } from './SwipeToDelete';
+import { EditShoppingItemSheet } from './EditShoppingItemSheet';
+import { useModalBackHandler } from '../../hooks/useModalBackHandler';
 import { AisleIcon } from './AisleIcon';
 import type { ShoppingItem } from '../../types/recipe';
 import { useRecipes } from '../../context/RecipeContext';
@@ -43,7 +47,56 @@ function amountOf(item: ShoppingItem): string {
  * top, the aisles with their icons, rings to tick off. The screen is kept awake while it is open.
  */
 export const CoverShoppingList: React.FC = () => {
-  const { shoppingList, toggleShoppingItem } = useRecipes();
+  const { shoppingList, toggleShoppingItem, deleteShoppingItem, restoreShoppingList, updateShoppingItem } = useRecipes();
+
+  // Removed by a swipe or from the menu: Ångra for a few seconds, as in the ordinary list
+  const [removed, setRemoved] = useState<{ item: ShoppingItem; index: number } | null>(null);
+  const removedTimer = useRef<number | undefined>(undefined);
+  useEffect(() => () => window.clearTimeout(removedTimer.current), []);
+  const remove = (item: ShoppingItem) => {
+    setRemoved({ item, index: shoppingList.findIndex((i) => i.id === item.id) });
+    deleteShoppingItem(item.id);
+    window.clearTimeout(removedTimer.current);
+    removedTimer.current = window.setTimeout(() => setRemoved(null), 5000);
+  };
+  const undoRemove = () => {
+    if (!removed) return;
+    const list = shoppingList.filter((i) => i.id !== removed.item.id);
+    list.splice(Math.min(Math.max(removed.index, 0), list.length), 0, removed.item);
+    restoreShoppingList(list);
+    window.clearTimeout(removedTimer.current);
+    setRemoved(null);
+  };
+
+  // Hold a row to open its menu, as in the ordinary list
+  const [menuItem, setMenuItem] = useState<ShoppingItem | null>(null);
+  const [editItem, setEditItem] = useState<ShoppingItem | null>(null);
+  useModalBackHandler(Boolean(menuItem), () => setMenuItem(null), 'cover-item-menu');
+  useModalBackHandler(Boolean(editItem), () => setEditItem(null), 'cover-edit-item');
+  const pressTimer = useRef<number | null>(null);
+  const pressStart = useRef<{ x: number; y: number } | null>(null);
+  const pressFired = useRef(false);
+  const cancelPress = () => {
+    if (pressTimer.current !== null) window.clearTimeout(pressTimer.current);
+    pressTimer.current = null;
+    pressStart.current = null;
+  };
+  const startPress = (item: ShoppingItem, e: React.PointerEvent) => {
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    cancelPress();
+    pressFired.current = false;
+    pressStart.current = { x: e.clientX, y: e.clientY };
+    pressTimer.current = window.setTimeout(() => {
+      pressTimer.current = null;
+      pressFired.current = true;
+      if (navigator.vibrate) navigator.vibrate(10);
+      setMenuItem(item);
+    }, 500);
+  };
+  const movePress = (e: React.PointerEvent) => {
+    const st = pressStart.current;
+    if (st && (Math.abs(e.clientX - st.x) > 8 || Math.abs(e.clientY - st.y) > 8)) cancelPress();
+  };
 
   const { aisleOrder, storeName } = useMemo(() => {
     const layouts = loadStoreLayouts();
@@ -97,10 +150,27 @@ export const CoverShoppingList: React.FC = () => {
     const amount = amountOf(item);
     return (
       <li key={item.id}>
+        <SwipeToDelete onRemove={() => remove(item)}>
         <button
           type="button"
-          onClick={() => toggleShoppingItem(item.id)}
-          className="w-full flex items-center gap-3.5 py-3 text-left touch-manipulation"
+          onClick={() => {
+            if (pressFired.current) {
+              pressFired.current = false;
+              return;
+            }
+            toggleShoppingItem(item.id);
+          }}
+          onPointerDown={(e) => startPress(item, e)}
+          onPointerMove={movePress}
+          onPointerUp={cancelPress}
+          onPointerCancel={cancelPress}
+          onPointerLeave={cancelPress}
+          onContextMenu={(e) => {
+            e.preventDefault();
+            cancelPress();
+            setMenuItem(item);
+          }}
+          className="w-full flex items-center gap-3.5 py-3 text-left touch-manipulation select-none [-webkit-touch-callout:none]"
           aria-pressed={item.checked}
         >
           {struck ? (
@@ -120,6 +190,7 @@ export const CoverShoppingList: React.FC = () => {
             <span className={`text-[20px] tabular-nums shrink-0 ${struck ? 'text-stone-400 line-through' : 'text-stone-600'}`}>{amount}</span>
           )}
         </button>
+        </SwipeToDelete>
       </li>
     );
   };
@@ -161,6 +232,64 @@ export const CoverShoppingList: React.FC = () => {
           </>
         )}
       </div>
+
+      {menuItem && (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 animate-fade-in"
+          role="dialog"
+          aria-label={capitalizeFirst(menuItem.name)}
+          onClick={() => setMenuItem(null)}
+        >
+          <div
+            className="bg-white w-full rounded-t-3xl p-2 pb-16 shadow-xl animate-scale-up"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="px-3 pt-2 pb-2 text-lg font-semibold text-stone-900 border-b border-[#EBE7DF]">
+              {capitalizeFirst(menuItem.name)}
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                const item = menuItem;
+                setMenuItem(null);
+                setTimeout(() => setEditItem(item), 120);
+              }}
+              className="w-full min-h-[56px] px-3 flex items-center gap-3 text-lg text-stone-800 rounded-2xl active:bg-stone-100 touch-manipulation"
+            >
+              <Pencil className="w-5 h-5 text-stone-500" />
+              Ändra vara och mängd
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                const item = menuItem;
+                setMenuItem(null);
+                remove(item);
+              }}
+              className="w-full min-h-[56px] px-3 flex items-center gap-3 text-lg text-rose-700 rounded-2xl active:bg-rose-50 touch-manipulation"
+            >
+              <Trash2 className="w-5 h-5" />
+              Ta bort från listan
+            </button>
+          </div>
+        </div>
+      )}
+
+      {editItem && (
+        <EditShoppingItemSheet
+          item={editItem}
+          onSave={(changes) => updateShoppingItem(editItem.id, changes)}
+          onClose={() => setEditItem(null)}
+        />
+      )}
+
+      {removed && (
+        <Toast
+          message={`${capitalizeFirst(formatIngredientName(removed.item.name, removed.item.amount, removed.item.unit))} är borttagen`}
+          actions={[{ label: 'Ångra', onClick: undoRemove }]}
+          onDismiss={() => setRemoved(null)}
+        />
+      )}
     </div>
   );
 };
