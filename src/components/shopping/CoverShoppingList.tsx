@@ -89,7 +89,7 @@ export const CoverShoppingList: React.FC = () => {
 
   return (
     // The outer screen has its cameras along the bottom, so the end of the list stays clear of them
-    <div className="min-h-[100dvh] bg-[#FCFAF5] font-sans px-4 pt-3 pb-20 overflow-x-hidden">
+    <div className="min-h-[100dvh] bg-[#FCFAF5] font-sans px-4 pt-3 pb-20 overflow-x-clip">
       <header className="flex items-baseline justify-between gap-3 pb-1">
         <h1 className="font-serif font-bold text-[26px] text-stone-900">Inköpslista</h1>
         <span className="text-lg text-stone-500 tabular-nums">

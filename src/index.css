@@ -26,7 +26,9 @@
   #root {
     width: 100%;
     max-width: 100vw;
-    overflow-x: hidden;
+    /* clip, not hidden: hidden would make #root a scroll box of its own, and then the sticky
+       headers (search in the recipe list, the week in the meal plan) would scroll away */
+    overflow-x: clip;
     min-height: 100%;
   }
 

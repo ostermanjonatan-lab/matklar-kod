@@ -491,7 +491,7 @@ export const RecipeList: React.FC = () => {
     SORT_OPTIONS.find((s) => s.id === sortBy)?.shortLabel || 'Standard';
 
   return (
-    <div className="min-h-screen bg-[#FCFAF5] pb-28 w-full max-w-full overflow-x-hidden">
+    <div className="min-h-screen bg-[#FCFAF5] pb-28 w-full max-w-full overflow-x-clip">
       {/* Toast Notification when sharing a recipe from card */}
       {shareToastRecipe && <Toast message={`${shareToastRecipe} är kopierat som text`} />}
 

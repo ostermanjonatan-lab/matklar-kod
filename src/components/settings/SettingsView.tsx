@@ -182,7 +182,7 @@ export const SettingsView: React.FC = () => {
   const members = household?.members?.filter((m) => !m.status || m.status === 'approved') || [];
 
   return (
-    <div className="min-h-screen bg-[#FCFAF5] pb-32 md:pb-16 w-full max-w-full overflow-x-hidden font-sans">
+    <div className="min-h-screen bg-[#FCFAF5] pb-32 md:pb-16 w-full max-w-full overflow-x-clip font-sans">
       {/* Toast Notification */}
       {toastMessage && <Toast message={toastMessage} />}
 

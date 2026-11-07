@@ -69,7 +69,7 @@ const AppContent: React.FC = () => {
   if (isCover) return <CoverShoppingList />;
 
   return (
-    <div className="min-h-screen w-full bg-[#FCFAF5] flex flex-col justify-between selection:bg-emerald-200 overflow-x-hidden font-sans text-stone-900">
+    <div className="min-h-screen w-full bg-[#FCFAF5] flex flex-col justify-between selection:bg-emerald-200 overflow-x-clip font-sans text-stone-900">
       {/* Desktop & iPad Top Navigation Bar (Hidden on Mobile) */}
       <DesktopNav
         onAddRecipeClick={() => setShowAddModal(true)}
@@ -77,7 +77,7 @@ const AppContent: React.FC = () => {
       />
 
       {/* Adaptive Container: max-w-md on mobile, max-w-5xl on tablet, max-w-7xl on desktop */}
-      <main className="w-full max-w-md md:max-w-5xl lg:max-w-7xl mx-auto min-h-screen bg-[#FCFAF5] shadow-2xl md:shadow-none flex flex-col relative min-w-0 overflow-x-hidden flex-1">
+      <main className="w-full max-w-md md:max-w-5xl lg:max-w-7xl mx-auto min-h-screen bg-[#FCFAF5] shadow-2xl md:shadow-none flex flex-col relative min-w-0 overflow-x-clip flex-1">
         {/* PWA Install Prompt Banner */}
         <PwaInstallPrompt />
 

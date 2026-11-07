@@ -446,7 +446,7 @@ export const MealPlanView: React.FC = () => {
 
 
   return (
-    <div className="min-h-screen bg-[#FCFAF5] pb-28 w-full max-w-full overflow-x-hidden font-sans">
+    <div className="min-h-screen bg-[#FCFAF5] pb-28 w-full max-w-full overflow-x-clip font-sans">
       {/* Toast Notification */}
       {generatedToast && <Toast message={generatedToast} />}
       {removedDinner && (

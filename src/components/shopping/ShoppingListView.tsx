@@ -392,7 +392,7 @@ export const ShoppingListView: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#FCFAF5] pb-32 md:pb-16 w-full max-w-full overflow-x-hidden font-sans">
+    <div className="min-h-screen bg-[#FCFAF5] pb-32 md:pb-16 w-full max-w-full overflow-x-clip font-sans">
       {/* Toast Notification */}
       {copyToast && <Toast message="Inköpslistan är kopierad" />}
       {removedItem && (
