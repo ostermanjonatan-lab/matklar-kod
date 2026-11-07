@@ -7,6 +7,9 @@ import { SupabaseConfigModal } from './SupabaseConfigModal';
 import { useModalBackHandler } from '../../hooks/useModalBackHandler';
 import { APP_VERSION } from '../../version';
 import { PrivacySheet } from './PrivacySheet';
+import { TermsSheet } from './TermsSheet';
+import { ChangelogSheet } from './ChangelogSheet';
+import { eraseThisDevice } from '../../utils/eraseAll';
 import { getThemeChoice, setThemeChoice, type ThemeChoice } from '../../utils/theme';
 import { OPEN_STORE_ORDER_KEY } from '../shopping/storeOrderLink';
 import { saveRecipeBackup, readRecipeBackup } from '../../utils/recipeBackup';
@@ -79,6 +82,7 @@ export const SettingsView: React.FC = () => {
     addRecipe,
     customSubcategories,
     addCustomSubcategory,
+    leaveHousehold,
   } = useRecipes();
 
   const [theme, setTheme] = useState<ThemeChoice>(getThemeChoice);
@@ -93,9 +97,14 @@ export const SettingsView: React.FC = () => {
   useModalBackHandler(showSupabaseModal, () => setShowSupabaseModal(false), 'supabase-modal');
   const [showPrivacy, setShowPrivacy] = useState(false);
   useModalBackHandler(showPrivacy, () => setShowPrivacy(false), 'privacy-sheet');
+  const [showTerms, setShowTerms] = useState(false);
+  useModalBackHandler(showTerms, () => setShowTerms(false), 'terms-sheet');
+  const [showChangelog, setShowChangelog] = useState(false);
+  useModalBackHandler(showChangelog, () => setShowChangelog(false), 'changelog-sheet');
+  const [erasing, setErasing] = useState(false);
 
   const [showAdvanced, setShowAdvanced] = useState<boolean>(false);
-  const [confirming, setConfirming] = useState<'newCode' | 'clearRecipes' | 'reset' | null>(null);
+  const [confirming, setConfirming] = useState<'newCode' | 'clearRecipes' | 'reset' | 'eraseAll' | null>(null);
   const [copiedCode, setCopiedCode] = useState<boolean>(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -439,9 +448,13 @@ export const SettingsView: React.FC = () => {
         {/* What is saved and where */}
         <h2 className={sectionHeading}>Om appen</h2>
         <div className="divide-y divide-[#EBE7DF] border-y border-[#EBE7DF]">
+          <Row label="Nyheter" onClick={() => setShowChangelog(true)} />
           <Row label="Personuppgifter" onClick={() => setShowPrivacy(true)} />
+          <Row label="Användarvillkor" onClick={() => setShowTerms(true)} />
         </div>
         {showPrivacy && <PrivacySheet onClose={() => setShowPrivacy(false)} />}
+        {showTerms && <TermsSheet onClose={() => setShowTerms(false)} />}
+        {showChangelog && <ChangelogSheet onClose={() => setShowChangelog(false)} />}
 
         {/* Advanced: database, clearing and demo data */}
         <button
@@ -503,6 +516,36 @@ export const SettingsView: React.FC = () => {
                     resetToMockData();
                     setConfirming(null);
                     showToast('Demorecepten är återställda');
+                  }}
+                />
+              )}
+            </div>
+
+            {/* Everything about you: the household (or you in it) in the database, then this phone */}
+            <div>
+              <Row
+                label="Radera allt"
+                danger
+                onClick={() => setConfirming(confirming === 'eraseAll' ? null : 'eraseAll')}
+              />
+              {confirming === 'eraseAll' && (
+                <Confirm
+                  text={
+                    household && isLiveSupabase
+                      ? isHouseholdAdmin
+                        ? `${household.name} tas bort ur databasen med alla recept, veckoplaner och inköpslistan, för alla medlemmar. Sedan raderas allt på den här telefonen. Det går inte att ångra.`
+                        : `Du tas bort ur ${household.name} i databasen, och allt på den här telefonen raderas. Hushållets recept finns kvar hos de andra. Det går inte att ångra.`
+                      : 'Recept, veckoplan, inköpslista och inställningar raderas från den här telefonen. Det går inte att ångra.'
+                  }
+                  confirmLabel={erasing ? 'Raderar' : 'Radera allt'}
+                  onCancel={() => setConfirming(null)}
+                  onConfirm={async () => {
+                    if (erasing) return;
+                    setErasing(true);
+                    if (household) await leaveHousehold(household.id);
+                    // Let the app finish saving what leaving changed, so it can be erased too
+                    await new Promise((r) => setTimeout(r, 300));
+                    await eraseThisDevice();
                   }}
                 />
               )}

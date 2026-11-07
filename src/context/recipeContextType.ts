@@ -74,7 +74,7 @@ export interface RecipeContextType {
   createHousehold: (name: string, creatorName?: string, creatorRole?: string, includeStarterRecipes?: boolean) => void;
   joinHouseholdByCode: (code: string, memberName?: string, memberRole?: string) => Promise<boolean>;
   switchHousehold: (householdId: string) => void;
-  deleteHousehold: (householdId: string) => void;
+  deleteHousehold: (householdId: string) => Promise<void>;
   leaveHousehold: (householdId?: string) => Promise<boolean>;
   regenerateHouseholdCode: (householdId?: string) => string;
   addMemberToHousehold: (member: { displayName: string; roleTitle?: string }) => void;

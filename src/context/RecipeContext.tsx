@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { isErasing } from '../utils/eraseAll';
 import type { ReactNode } from 'react';
 import type { Recipe, MealPlanDay, ShoppingItem, TabType, UserProfile, Household, PantryItem, HouseholdJoinRequest, PendingJoinState } from '../types/recipe';
 import { NON_FOOD_SUBCATEGORIES } from '../types/recipe';
@@ -455,7 +456,7 @@ export const RecipeProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   // Flush any pending recipe saves immediately before window unload/refresh
   useEffect(() => {
     const handleBeforeUnload = () => {
-      if (pendingRecipesSaveRef.current) {
+      if (pendingRecipesSaveRef.current && !isErasing()) {
         try {
           localStorage.setItem(RECIPES_STORAGE_KEY, JSON.stringify(pendingRecipesSaveRef.current));
         } catch (e) {
@@ -1328,7 +1329,7 @@ export const RecipeProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     return true;
   }, [household, isHouseholdAdmin, currentUser.id, households, isLiveSupabase]);
 
-  const deleteHousehold = useCallback((householdId: string) => {
+  const deleteHousehold = useCallback(async (householdId: string): Promise<void> => {
     setHouseholds((prev) => {
       const remaining = prev.filter((h) => h.id !== householdId);
       try {
@@ -1353,12 +1354,18 @@ export const RecipeProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       return prevId;
     });
 
-    if (isLiveSupabase) {
-      const client = getSupabase();
-      if (client) {
-        client.from('households').delete().eq('id', householdId);
-        client.from('profiles').delete().eq('household_id', householdId);
-      }
+    // The members' names first: removing the household only unlinks them (ON DELETE SET NULL).
+    // Recipes, plans, the shopping list and the rest go with the household (ON DELETE CASCADE).
+    if (!isLiveSupabase) return;
+    const client = getSupabase();
+    if (!client) return;
+    try {
+      const { error: profilesError } = await client.from('profiles').delete().eq('household_id', householdId);
+      if (profilesError) console.error('Failed to delete members from Supabase:', profilesError);
+      const { error } = await client.from('households').delete().eq('id', householdId);
+      if (error) console.error('Failed to delete household from Supabase:', error);
+    } catch (err) {
+      console.error('Failed to delete household from Supabase:', err);
     }
   }, [households, isLiveSupabase]);
 
@@ -1374,14 +1381,7 @@ export const RecipeProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 
     // If admin leaves, delete household
     if (isTargetAdmin) {
-      deleteHousehold(targetHhId);
-      if (isLiveSupabase) {
-        const client = getSupabase();
-        if (client) {
-          await client.from('households').delete().eq('id', targetHhId);
-          await client.from('profiles').delete().eq('household_id', targetHhId);
-        }
-      }
+      await deleteHousehold(targetHhId);
       return true;
     }
 

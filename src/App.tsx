@@ -4,6 +4,7 @@ import { TimerProvider } from './context/TimerContext';
 import { BottomDock } from './components/layout/BottomDock';
 import { CoverShoppingList, useCoverScreen } from './components/shopping/CoverShoppingList';
 import { UpdateNotice } from './components/layout/UpdateNotice';
+import { WhatsNew } from './components/layout/WhatsNew';
 import { BottomNav } from './components/layout/BottomNav';
 import { DesktopNav } from './components/layout/DesktopNav';
 import { PwaInstallPrompt } from './components/layout/PwaInstallPrompt';
@@ -88,6 +89,9 @@ const AppContent: React.FC = () => {
 
         {/* Tells when a newer version has been published */}
         <UpdateNotice />
+
+        {/* After an update: what is new */}
+        <WhatsNew />
 
         {/* Main Tab Views (Stay mounted underneath when modal opens) */}
         {activeTab === 'recipes' && <RecipeList />}
