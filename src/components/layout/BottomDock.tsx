@@ -14,7 +14,8 @@ interface BottomDockProps {
 
 /**
  * The box above the bottom menu: a minimized recipe and the kitchen timer. Its bottom edge
- * follows the menu's arc.
+ * follows the menu's arc. On a wide screen there is no bottom menu, so it is a plain box in the
+ * lower right corner.
  */
 export const BottomDock: React.FC<BottomDockProps> = ({ minimized, onCloseMinimized }) => {
   const { timer } = useTimer();
@@ -24,7 +25,7 @@ export const BottomDock: React.FC<BottomDockProps> = ({ minimized, onCloseMinimi
   if (!visible) return null;
 
   return (
-    <div className="fixed left-4 right-4 max-w-md mx-auto bottom-[calc(95px+env(safe-area-inset-bottom,0px))] z-30">
+    <div className="fixed left-4 right-4 max-w-md mx-auto bottom-[calc(95px+env(safe-area-inset-bottom,0px))] md:left-auto md:right-6 md:bottom-6 md:w-96 md:mx-0 z-30">
       {/* The shadow is a blurred copy of the shape behind the box. A shadow filter or an animation
           on a layer around the box would turn off the see-through blur. */}
       {shape.path && (
@@ -36,11 +37,11 @@ export const BottomDock: React.FC<BottomDockProps> = ({ minimized, onCloseMinimi
       )}
       <div
         ref={shape.ref}
-        className="relative rounded-2xl overflow-hidden bg-white/80 backdrop-blur-xl backdrop-saturate-150 animate-slide-up"
+        className="relative rounded-2xl overflow-hidden md:shadow-[0_8px_24px_rgba(28,25,23,0.15)] md:border md:border-stone-900/10 bg-white/80 backdrop-blur-xl backdrop-saturate-150 animate-slide-up"
         style={shape.path ? { clipPath: `path('${shape.path}')` } : undefined}
       >
         {minimized && (
-          <div className={`flex items-center gap-1 pl-2 pr-1.5 pt-2 ${timer ? 'pb-2 border-b border-stone-900/10' : 'pb-5'}`}>
+          <div className={`flex items-center gap-1 pl-2 pr-1.5 pt-2 ${timer ? 'pb-2 border-b border-stone-900/10' : 'pb-5 md:pb-2'}`}>
             <button
               type="button"
               onClick={() => openRecipeDetail(minimized)}

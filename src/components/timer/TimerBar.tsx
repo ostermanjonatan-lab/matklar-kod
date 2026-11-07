@@ -1,4 +1,4 @@
-import React, { useLayoutEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { X, Pause, Play, RotateCcw } from 'lucide-react';
 import { useTimer } from '../../context/TimerContext';
 import { useRecipes } from '../../context/RecipeContext';
@@ -16,12 +16,26 @@ function formatTimerDisplay(totalSecs: number): string {
  * Above the menu a box's bottom edge follows the menu's arc, which rises about 12 px towards
  * the middle across the width of the box. The shape is drawn for the box's measured size.
  */
+/** The bottom menu is only shown below this width (md:hidden), so only there is the box curved. */
+const MENU_QUERY = '(max-width: 767.98px)';
+
 export function useCurvedShape(active: boolean) {
   const ref = useRef<HTMLDivElement | null>(null);
   const [path, setPath] = useState<string | null>(null);
+  const [hasMenu, setHasMenu] = useState(() => typeof window === 'undefined' || window.matchMedia?.(MENU_QUERY).matches !== false);
+  useEffect(() => {
+    const mq = window.matchMedia?.(MENU_QUERY);
+    if (!mq) return;
+    const onChange = () => setHasMenu(mq.matches);
+    mq.addEventListener?.('change', onChange);
+    return () => mq.removeEventListener?.('change', onChange);
+  }, []);
   useLayoutEffect(() => {
     const el = ref.current;
-    if (!active || !el) return;
+    if (!active || !hasMenu || !el) {
+      setPath(null);
+      return;
+    }
     const update = () => {
       const w = el.offsetWidth;
       const h = el.offsetHeight;
@@ -36,7 +50,7 @@ export function useCurvedShape(active: boolean) {
     const observer = new ResizeObserver(update);
     observer.observe(el);
     return () => observer.disconnect();
-  }, [active]);
+  }, [active, hasMenu]);
   return { ref, path };
 }
 
@@ -65,7 +79,7 @@ export const TimerRow: React.FC<{ inDock: boolean }> = ({ inDock }) => {
   return (
     <div className={done ? 'bg-[#284235]/90 text-white' : 'text-stone-900'} role="timer">
       {inDock && progress}
-      <div className={`flex items-center gap-2 pl-4 pr-1.5 pt-2 ${inDock ? 'pb-5' : 'pb-2'}`}>
+      <div className={`flex items-center gap-2 pl-4 pr-1.5 pt-2 ${inDock ? 'pb-5 md:pb-2.5' : 'pb-2'}`}>
         <button
           type="button"
           onClick={() => recipe && openRecipeDetail(recipe)}
