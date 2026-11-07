@@ -7,6 +7,7 @@ import { flushSync } from 'react-dom';
 import type { MealPlanDay } from '../../types/recipe';
 import { useRecipes } from '../../context/RecipeContext';
 import { useModalBackHandler } from '../../hooks/useModalBackHandler';
+import { useStoredState } from '../../hooks/useStoredState';
 import {
   Plus,
   Trash2,
@@ -215,7 +216,8 @@ export const MealPlanView: React.FC = () => {
   }, [today]);
 
   // View Mode: 'split' (Master-Detail Split View on desktop / Story Card on mobile) vs 'overview' (compact list)
-  const [viewMode, setViewMode] = useState<'split' | 'overview'>('split');
+  // Day or week, remembered on this phone
+  const [viewMode, setViewMode] = useStoredState<'split' | 'overview'>('matklar_plan_view', 'split', (v) => v === 'split' || v === 'overview');
 
   // Recipe Picker modal
   const [pickerState, setPickerState] = useState<{
@@ -232,7 +234,7 @@ export const MealPlanView: React.FC = () => {
 
   // Generate shopping list modal
   const [showGenerateModal, setShowGenerateModal] = useState<boolean>(false);
-  const [skipPantryStaples, setSkipPantryStaples] = useState<boolean>(true);
+  const [skipPantryStaples, setSkipPantryStaples] = useStoredState<boolean>('matklar_plan_skip_staples', true);
   const [generatedToast, setGeneratedToast] = useState<string | null>(null);
 
   // Synchronize meal plan modals with Android back button

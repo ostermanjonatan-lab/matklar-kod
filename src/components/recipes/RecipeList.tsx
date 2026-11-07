@@ -11,6 +11,7 @@ import { PantryChoiceDialog, hasPantryStaples } from './PantryChoiceDialog';
 import { RecipeFilterModal } from './RecipeFilterModal';
 import { STANDARD_CATEGORIES } from '../../data/categories';
 import { useModalBackHandler } from '../../hooks/useModalBackHandler';
+import { useStoredState } from '../../hooks/useStoredState';
 import {
   Search,
   SlidersHorizontal,
@@ -67,7 +68,8 @@ export const RecipeList: React.FC = () => {
 
   const deferredSearchQuery = useDeferredValue(searchQuery);
 
-  const [selectedCategory, setSelectedCategory] = useState<string>('Alla');
+  // Category, filters and sorting are remembered on this phone, also when the app is closed
+  const [selectedCategory, setSelectedCategory] = useStoredState<string>('matklar_recipes_category', 'Alla');
   // Big cards with the photo, or low rows with a small photo. Remembered on this phone.
   const [compact, setCompact] = useState<boolean>(() => {
     try {
@@ -86,11 +88,25 @@ export const RecipeList: React.FC = () => {
       return !c;
     });
   };
-  const [selectedSubcategories, setSelectedSubcategories] = useState<string[]>([]);
-  const [maxCookingTime, setMaxCookingTime] = useState<number | null>(null);
-  const [difficultyFilter, setDifficultyFilter] = useState<RecipeDifficulty[]>([]);
-  const [onlyFavorites, setOnlyFavorites] = useState<boolean>(false);
-  const [sortBy, setSortBy] = useState<SortOption>('default');
+  const [selectedSubcategories, setSelectedSubcategories] = useStoredState<string[]>(
+    'matklar_recipes_subcategories',
+    [],
+    (v) => Array.isArray(v) && v.every((s) => typeof s === 'string')
+  );
+  const [maxCookingTime, setMaxCookingTime] = useStoredState<number | null>(
+    'matklar_recipes_max_time',
+    null,
+    (v) => v === null || (typeof v === 'number' && v > 0)
+  );
+  const [difficultyFilter, setDifficultyFilter] = useStoredState<RecipeDifficulty[]>(
+    'matklar_recipes_difficulty',
+    [],
+    (v) => Array.isArray(v) && v.every((d) => d === 1 || d === 2 || d === 3)
+  );
+  const [onlyFavorites, setOnlyFavorites] = useStoredState<boolean>('matklar_recipes_favorites', false);
+  const [sortBy, setSortBy] = useStoredState<SortOption>('matklar_recipes_sort', 'default', (v) =>
+    SORT_OPTIONS.some((o) => o.id === v)
+  );
   const [showSortSheet, setShowSortSheet] = useState<boolean>(false);
   const [showFilterModal, setShowFilterModal] = useState<boolean>(false);
 
@@ -237,6 +253,11 @@ export const RecipeList: React.FC = () => {
     const custom = Array.from(cats).filter((c) => !STANDARD_CATEGORIES.includes(c));
     return ['Alla', ...ordered, ...custom];
   }, [recipes]);
+
+  // A remembered category that no recipe has any more (all were removed) falls back to Alla
+  useEffect(() => {
+    if (recipes.length > 0 && !categories.includes(selectedCategory)) setSelectedCategory('Alla');
+  }, [recipes.length, categories, selectedCategory, setSelectedCategory]);
 
 
   const toggleSubcategory = (subcat: string) => {
