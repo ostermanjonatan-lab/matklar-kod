@@ -11,6 +11,15 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.0.148',
+    date: '2026-11-07',
+    items: [
+      'Svep en vara åt vänster i inköpslistan för att ta bort den. Ångra lägger tillbaka den.',
+      'Alla knappar går att träffa på minst 44 × 44 pixlar, även de som ser mindre ut.',
+      'Mindre bilder i listvyn för recept, så att namnen får mer plats.',
+    ],
+  },
+  {
     version: '1.0.147',
     date: '2026-11-07',
     items: [
