@@ -1261,16 +1261,18 @@ export const MealPlanView: React.FC = () => {
                     )}
                   </div>
 
-                  {/* Day, dinner and one line with time, portions and lunch, with room for two lines of
-                      name on every day: a long name is shown whole and all days stay equally high. The
-                      text starts at the top; a short name leaves the room at the bottom. */}
+                  {/* Day, dinner and one line with time, portions and lunch. The name always has room
+                      for two lines, so a long name is shown whole, all days stay equally high and the
+                      line with time and lunch stays in the same place on every day. */}
                   <div className="flex-1 min-w-0 min-h-[72px] flex flex-col justify-start">
                     <div className={`text-xs ${isToday ? 'font-bold text-[#284235]' : 'text-stone-500'}`}>
                       {day} {formatDayMonth(weekDates[idx])}{isToday ? ', i dag' : ''}
                     </div>
 
-                    <div className={`text-sm leading-5 line-clamp-2 ${hasDinnerHere ? 'font-semibold text-stone-900' : 'font-semibold text-[#284235]'}`}>
-                      {dRecipe ? formatRecipeTitle(dRecipe.title) : hasCustomDinner ? dayData?.customDinner : 'Välj middag'}
+                    <div className="h-10">
+                      <div className={`text-sm leading-5 line-clamp-2 ${hasDinnerHere ? 'font-semibold text-stone-900' : 'font-semibold text-[#284235]'}`}>
+                        {dRecipe ? formatRecipeTitle(dRecipe.title) : hasCustomDinner ? dayData?.customDinner : 'Välj middag'}
+                      </div>
                     </div>
 
                     {(hasDinnerHere || hasLunchHere) && (
