@@ -11,6 +11,14 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.0.147',
+    date: '2026-11-07',
+    items: [
+      'Lunch utan vald rätt visar en matlåda och Ingen lunch vald, med samma form som när en lunch är vald.',
+      'Rättens namn får plats på två rader i veckovyn och på lunchraden, så långa namn syns hela.',
+    ],
+  },
+  {
     version: '1.0.146',
     date: '2026-11-07',
     items: [
