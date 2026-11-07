@@ -11,6 +11,15 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.0.144',
+    date: '2026-11-07',
+    items: [
+      'Appen kommer ihåg kategori, filter, sortering och Dag eller Vecka i veckoplanen, även när den stängs.',
+      'Hjärtat och Alla står still när kategorierna skrollas i sidled.',
+      'Butik, Fäll ihop och Ordna står på samma rad i inköpslistan.',
+    ],
+  },
+  {
     version: '1.0.143',
     date: '2026-11-07',
     items: [
