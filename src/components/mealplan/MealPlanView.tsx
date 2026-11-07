@@ -1147,15 +1147,26 @@ export const MealPlanView: React.FC = () => {
               const hasCustomLunch = Boolean(dayData?.customLunch?.trim());
               const isToday = idx === todayIndex;
 
+              const hasDinnerHere = Boolean(dRecipe || hasCustomDinner);
+              const hasLunchHere = Boolean(lRecipe || hasCustomLunch);
               return (
+                // An empty day opens the dinner picker straight away and stays in the week. A planned
+                // day opens the day, and lunch can be added from the row.
+                <div
+                  key={day}
+                  className="flex items-center gap-2 md:bg-white md:rounded-2xl md:border md:border-[#EBE7DF] md:p-3 md:shadow-xs md:hover:border-emerald-700/50 transition-colors"
+                >
                 <button
                   type="button"
-                  key={day}
                   onClick={() => {
+                    if (!hasDinnerHere) {
+                      openPickerModal(day, 'dinner');
+                      return;
+                    }
                     setSelectedDayIndex(idx);
                     setViewMode('split');
                   }}
-                  className="w-full text-left py-3 flex items-center gap-3 cursor-pointer touch-manipulation active:bg-stone-100/60 md:bg-white md:rounded-2xl md:border md:border-[#EBE7DF] md:p-3 md:shadow-xs md:hover:border-emerald-700/50 transition-colors"
+                  className="flex-1 min-w-0 text-left py-3 md:py-0 flex items-center gap-3 cursor-pointer touch-manipulation active:bg-stone-100/60"
                 >
                   {/* Thumbnail */}
                   <div className="relative w-12 h-12 rounded-xl overflow-hidden bg-stone-100 shrink-0">
@@ -1178,8 +1189,8 @@ export const MealPlanView: React.FC = () => {
                       {day} {formatDayMonth(weekDates[idx])}{isToday ? ', i dag' : ''}
                     </div>
 
-                    <div className={`text-sm truncate ${dRecipe || hasCustomDinner ? 'font-semibold text-stone-900' : 'text-stone-400'}`}>
-                      {dRecipe ? formatRecipeTitle(dRecipe.title) : hasCustomDinner ? dayData?.customDinner : 'Ingen middag'}
+                    <div className={`text-sm truncate ${hasDinnerHere ? 'font-semibold text-stone-900' : 'font-semibold text-[#284235]'}`}>
+                      {dRecipe ? formatRecipeTitle(dRecipe.title) : hasCustomDinner ? dayData?.customDinner : 'Välj middag'}
                     </div>
 
                     {(dRecipe || hasCustomDinner) && (
@@ -1196,8 +1207,18 @@ export const MealPlanView: React.FC = () => {
                     )}
                   </div>
 
-                  <ChevronRight className="w-4 h-4 text-stone-300 shrink-0" />
+                  {hasDinnerHere && hasLunchHere && <ChevronRight className="w-4 h-4 text-stone-300 shrink-0" />}
                 </button>
+                {hasDinnerHere && !hasLunchHere && (
+                  <button
+                    type="button"
+                    onClick={() => openPickerModal(day, 'lunch')}
+                    className="shrink-0 min-h-[44px] px-1 text-xs font-semibold text-[#284235] hover:text-stone-900 touch-manipulation"
+                  >
+                    Lägg till lunch
+                  </button>
+                )}
+                </div>
               );
             })}
           </div>
