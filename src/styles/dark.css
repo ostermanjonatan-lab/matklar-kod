@@ -86,7 +86,6 @@ html.dark, html.dark body { background-color: #1B1916 !important; color: #DCD4C7
 .dark .group:hover .group-hover\:text-emerald-900 { color: #A6E0C2 !important; }
 .dark .group:hover .group-hover\:text-stone-400 { color: #6C665D !important; }
 .dark .hover\:bg-\[\#1C3026\]:hover { background-color: #34624A !important; }
-.dark .hover\:bg-\[\#284235\]\/15:hover { background-color: rgba(63,116,88,0.15) !important; }
 .dark .hover\:bg-\[\#FCFAF5\]:hover { background-color: #1B1916 !important; }
 .dark .hover\:bg-black:hover { background-color: #34624A !important; }
 .dark .hover\:bg-black\/70:hover { background-color: rgba(52,98,74,0.70) !important; }

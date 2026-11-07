@@ -656,17 +656,18 @@ export const ShoppingListView: React.FC = () => {
                 )}
 
                 {/* Store Profile & Category Tools Bar */}
-                <div className="flex flex-wrap items-center justify-between gap-2 pt-2.5 mt-2 border-t border-[#EBE7DF]/80 text-xs w-full">
+                {/* One row: the store to the left, Fäll ihop and Ordna as plain text to the right */}
+                <div className="flex items-center justify-between gap-3 pt-2.5 mt-2 border-t border-[#EBE7DF]/80 text-xs w-full">
                   {/* Active Store Button with Dropdown */}
-                  <div className="relative">
+                  <div className="relative min-w-0">
                     <button
                       type="button"
                       onClick={() => setShowStoreDropdown((prev) => !prev)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-stone-100 hover:bg-stone-200/80 text-stone-800 font-semibold text-xs transition-colors touch-manipulation min-h-[32px] border border-stone-200/70"
+                      className="flex items-center gap-1.5 max-w-full px-3 py-1.5 rounded-xl bg-stone-100 hover:bg-stone-200/80 text-stone-800 font-semibold text-xs transition-colors touch-manipulation min-h-[32px] border border-stone-200/70"
                       title="Välj eller hantera butik"
                     >
-                      <Store className="w-3.5 h-3.5 text-[#284235]" />
-                      <span className="max-w-[130px] truncate">{activeStore.name}</span>
+                      <Store className="w-3.5 h-3.5 text-[#284235] shrink-0" />
+                      <span className="min-w-0 truncate">{activeStore.name}</span>
                       <ChevronDown className="w-3 h-3 text-stone-500" />
                     </button>
 
@@ -714,26 +715,23 @@ export const ShoppingListView: React.FC = () => {
                   </div>
 
                   {/* Action buttons: Collapse/Expand All & Reorder Modal */}
-                  <div className="flex items-center gap-1.5 shrink-0">
+                  <div className="flex items-center gap-4 shrink-0">
                     <button
                       type="button"
                       onClick={handleToggleAllCollapse}
-                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-white hover:bg-stone-50 text-stone-600 border border-[#EBE7DF] text-xs font-medium transition-colors touch-manipulation min-h-[32px]"
+                      className="text-xs font-semibold text-stone-600 hover:text-stone-900 whitespace-nowrap touch-manipulation min-h-[40px]"
                       title={areAllCollapsed ? 'Fäll ut alla kategorier' : 'Fäll ihop alla kategorier'}
                     >
-                      <ChevronsUpDown className="w-3.5 h-3.5 text-stone-500" />
-                      <span className="hidden sm:inline">{areAllCollapsed ? 'Fäll ut alla' : 'Fäll ihop alla'}</span>
-                      <span className="sm:hidden">{areAllCollapsed ? 'Fäll ut' : 'Fäll ihop'}</span>
+                      {areAllCollapsed ? 'Fäll ut' : 'Fäll ihop'}
                     </button>
 
                     <button
                       type="button"
                       onClick={() => setShowReorderModal(true)}
-                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-[#284235]/10 hover:bg-[#284235]/15 text-[#284235] text-xs font-semibold transition-colors touch-manipulation min-h-[32px]"
+                      className="text-xs font-semibold text-[#284235] hover:text-stone-900 whitespace-nowrap touch-manipulation min-h-[40px]"
                       title="Ändra ordning på butikens avdelningar"
                     >
-                      <ArrowUpDown className="w-3.5 h-3.5" />
-                      <span>Ordna</span>
+                      Ordna
                     </button>
                   </div>
                 </div>
