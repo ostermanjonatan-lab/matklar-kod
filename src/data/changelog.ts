@@ -11,6 +11,13 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.0.154',
+    date: '2026-11-07',
+    items: [
+      'Inköpslistan på den yttre skärmen fungerar som den vanliga: avbockade varor står kvar överstrukna i sin avdelning, svep åt vänster tar bort en vara, och ett långt tryck öppnar en meny för att ändra eller ta bort.',
+    ],
+  },
+  {
     version: '1.0.153',
     date: '2026-11-07',
     items: [
