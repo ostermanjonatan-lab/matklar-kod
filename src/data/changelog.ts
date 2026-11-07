@@ -11,6 +11,14 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.0.143',
+    date: '2026-11-07',
+    items: [
+      'Tryck på bilden i ett recept för att se den i helskärm. Dubbeltryck eller nyp för att zooma.',
+      'Dagarna i veckovyn är lika höga med och utan middag, så inget hoppar när du väljer.',
+    ],
+  },
+  {
     version: '1.0.142',
     date: '2026-11-07',
     items: [
