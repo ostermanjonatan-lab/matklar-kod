@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Circle, CheckCircle2 } from 'lucide-react';
-import { Toast } from '../layout/Toast';
 import { AisleIcon } from './AisleIcon';
 import type { ShoppingItem } from '../../types/recipe';
 import { useRecipes } from '../../context/RecipeContext';
@@ -74,17 +73,23 @@ export const CoverShoppingList: React.FC = () => {
     };
   }, []);
 
-  // A ticked item stays a moment, struck through, before it leaves the list, and can be undone
+  // A ticked item stays a moment, struck through, before it leaves the list. A tap on it while it
+  // is still there ticks it back.
   const [leaving, setLeaving] = useState<Set<string>>(new Set());
-  const [lastTicked, setLastTicked] = useState<ShoppingItem | null>(null);
   const timers = useRef<number[]>([]);
   useEffect(() => () => timers.current.forEach((t) => window.clearTimeout(t)), []);
 
   const tick = (item: ShoppingItem) => {
     toggleShoppingItem(item.id);
-    if (item.checked) return;
+    if (item.checked) {
+      setLeaving((prev) => {
+        const next = new Set(prev);
+        next.delete(item.id);
+        return next;
+      });
+      return;
+    }
     setLeaving((prev) => new Set(prev).add(item.id));
-    setLastTicked(item);
     timers.current.push(
       window.setTimeout(() => {
         setLeaving((prev) => {
@@ -92,20 +97,8 @@ export const CoverShoppingList: React.FC = () => {
           next.delete(item.id);
           return next;
         });
-      }, 1000)
+      }, 1500)
     );
-    timers.current.push(window.setTimeout(() => setLastTicked((cur) => (cur?.id === item.id ? null : cur)), 4000));
-  };
-
-  const undo = () => {
-    if (!lastTicked) return;
-    toggleShoppingItem(lastTicked.id);
-    setLeaving((prev) => {
-      const next = new Set(prev);
-      next.delete(lastTicked.id);
-      return next;
-    });
-    setLastTicked(null);
   };
 
   const left = shoppingList.filter((i) => !i.checked || leaving.has(i.id));
@@ -208,14 +201,6 @@ export const CoverShoppingList: React.FC = () => {
           </>
         )}
       </div>
-
-      {lastTicked && (
-        <Toast
-          message={`${capitalizeFirst(formatIngredientName(lastTicked.name, lastTicked.amount, lastTicked.unit))} avbockad`}
-          actions={[{ label: 'Ångra', onClick: undo }]}
-          onDismiss={() => setLastTicked(null)}
-        />
-      )}
     </div>
   );
 };
