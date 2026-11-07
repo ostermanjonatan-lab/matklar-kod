@@ -37,6 +37,7 @@ DARK = {
     'bg:[#F3EFE6]': SURFACE,
     'bg:[#F0EDE6]': SURFACE,
     'bg:[#EBE7DF]': LINE,
+    'bg:[#E2DCD1]': LINE,
     'bg:stone-50': SUNKEN,
     'bg:stone-100': RAISED,
     'bg:stone-200': RAISED2,

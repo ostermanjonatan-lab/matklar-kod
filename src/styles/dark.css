@@ -16,6 +16,7 @@ html.dark, html.dark body { background-color: #1B1916 !important; color: #DCD4C7
 .dark .bg-\[\#284235\] { background-color: #3F7458 !important; }
 .dark .bg-\[\#284235\]\/10 { background-color: rgba(63,116,88,0.10) !important; }
 .dark .bg-\[\#284235\]\/90 { background-color: rgba(63,116,88,0.90) !important; }
+.dark .bg-\[\#E2DCD1\] { background-color: #3A352E !important; }
 .dark .bg-\[\#EBE7DF\] { background-color: #3A352E !important; }
 .dark .bg-\[\#F0ECE1\] { background-color: #25221E !important; }
 .dark .bg-\[\#F0EDE6\] { background-color: #25221E !important; }

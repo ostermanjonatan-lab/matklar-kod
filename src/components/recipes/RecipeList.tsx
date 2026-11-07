@@ -254,6 +254,42 @@ export const RecipeList: React.FC = () => {
     return ['Alla', ...ordered, ...custom];
   }, [recipes]);
 
+  // One tab in the row of categories. "Favoriter" is shown as a heart.
+  const renderTab = (cat: string) => {
+    const isFavorites = cat === 'Favoriter';
+    const isSelected = isFavorites ? onlyFavorites : !onlyFavorites && selectedCategory === cat;
+    return (
+      <button
+        key={cat}
+        type="button"
+        role="tab"
+        aria-selected={isSelected}
+        aria-label={isFavorites ? 'Favoriter' : undefined}
+        onClick={() => {
+          if (isFavorites) {
+            setOnlyFavorites(true);
+            setSelectedCategory('Alla');
+          } else {
+            setOnlyFavorites(false);
+            setSelectedCategory(cat);
+          }
+        }}
+        className={`relative shrink-0 whitespace-nowrap min-h-[40px] text-[15px] touch-manipulation cursor-pointer ${
+          isSelected ? 'text-stone-900 font-semibold' : 'text-stone-500 hover:text-stone-800'
+        }`}
+      >
+        {isFavorites ? (
+          <Heart className={`w-5 h-5 ${isSelected ? 'fill-rose-500 text-rose-500' : ''}`} aria-hidden="true" />
+        ) : (
+          categoryLabel(cat)
+        )}
+        {isSelected && (
+          <span className="absolute left-0 right-0 bottom-1 h-[2px] rounded-full bg-[#284235]" aria-hidden="true" />
+        )}
+      </button>
+    );
+  };
+
   // A remembered category that no recipe has any more (all were removed) falls back to Alla
   useEffect(() => {
     if (recipes.length > 0 && !categories.includes(selectedCategory)) setSelectedCategory('Alla');
@@ -597,54 +633,21 @@ export const RecipeList: React.FC = () => {
 
           {/* Category & Filter Row (Horizontal Scroll on mobile, unified bar on desktop) */}
           <div className="flex items-center justify-between gap-3">
-            {/* Light text tabs: a heart for the favourites, Alla, then the categories. The row fades out at the
-                right edge so it is clear that it can be swiped. */}
-            <div
-              className="flex items-center gap-5 overflow-x-auto no-scrollbar flex-1 min-w-0 pr-6"
-              role="tablist"
-              aria-label="Kategorier"
-              style={{
-                WebkitMaskImage: 'linear-gradient(to right, #000 calc(100% - 28px), transparent)',
-                maskImage: 'linear-gradient(to right, #000 calc(100% - 28px), transparent)',
-              }}
-            >
-              {['Favoriter', ...categories].map((cat) => {
-                const isFavorites = cat === 'Favoriter';
-                const isSelected = isFavorites ? onlyFavorites : !onlyFavorites && selectedCategory === cat;
-                return (
-                  <button
-                    key={cat}
-                    type="button"
-                    role="tab"
-                    aria-selected={isSelected}
-                    aria-label={isFavorites ? 'Favoriter' : undefined}
-                    onClick={() => {
-                      if (isFavorites) {
-                        setOnlyFavorites(true);
-                        setSelectedCategory('Alla');
-                      } else {
-                        setOnlyFavorites(false);
-                        setSelectedCategory(cat);
-                      }
-                    }}
-                    className={`relative shrink-0 whitespace-nowrap min-h-[40px] text-[15px] touch-manipulation cursor-pointer ${
-                      isSelected ? 'text-stone-900 font-semibold' : 'text-stone-500 hover:text-stone-800'
-                    }`}
-                  >
-                    {isFavorites ? (
-                      <Heart
-                        className={`w-5 h-5 ${isSelected ? 'fill-rose-500 text-rose-500' : ''}`}
-                        aria-hidden="true"
-                      />
-                    ) : (
-                      categoryLabel(cat)
-                    )}
-                    {isSelected && (
-                      <span className="absolute left-0 right-0 bottom-1 h-[2px] rounded-full bg-[#284235]" aria-hidden="true" />
-                    )}
-                  </button>
-                );
-              })}
+            {/* Light text tabs: a heart for the favourites and Alla stay put, the categories after
+                them scroll sideways and fade out at both edges so it is clear they can be swiped. */}
+            <div className="flex items-center gap-5 flex-1 min-w-0" role="tablist" aria-label="Kategorier">
+              {renderTab('Favoriter')}
+              {renderTab(categories[0])}
+              <span className="w-px h-4 bg-[#E2DCD1] shrink-0 -mx-1" aria-hidden="true" />
+              <div
+                className="flex items-center gap-5 overflow-x-auto no-scrollbar flex-1 min-w-0 -ml-4 pl-5 pr-6"
+                style={{
+                  WebkitMaskImage: 'linear-gradient(to right, transparent 4px, #000 20px, #000 calc(100% - 28px), transparent)',
+                  maskImage: 'linear-gradient(to right, transparent 4px, #000 20px, #000 calc(100% - 28px), transparent)',
+                }}
+              >
+                {categories.slice(1).map(renderTab)}
+              </div>
             </div>
 
             {/* Desktop Filter & Sort Controls (Visible on md:) */}
