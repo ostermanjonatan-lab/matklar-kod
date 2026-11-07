@@ -36,6 +36,7 @@ import {
   pushMealPlanToSupabase,
   pushShoppingItemsToSupabase,
   updateShoppingItemCheckedInSupabase,
+  broadcastShoppingChecked,
   updateShoppingItemCommentInSupabase,
   updateShoppingItemAisleInSupabase,
   pushAisleOverrideToSupabase,
@@ -260,6 +261,9 @@ export const RecipeProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       return [];
     }
   });
+  // The list as it is right now, also between renders (see toggleShoppingItem)
+  const shoppingListRef = useRef(shoppingList);
+  shoppingListRef.current = shoppingList;
 
   const [pantryItems, setPantryItems] = useState<PantryItem[]>(() => {
     try {
@@ -933,23 +937,18 @@ export const RecipeProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   }, [isLiveSupabase, household?.id]);
 
   const toggleShoppingItem = useCallback((id: string) => {
-    let nextChecked = false;
-    let updatedList: ShoppingItem[] = [];
-    let toggledItem: ShoppingItem | undefined;
-
-    setShoppingList((prev) => {
-      const target = prev.find((item) => item.id === id);
-      if (!target) return prev;
-      toggledItem = target;
-      nextChecked = !target.checked;
-      updatedList = prev.map((item) =>
-        item.id === id ? { ...item, checked: nextChecked } : item
-      );
-      return updatedList;
-    });
+    // Worked out from the list as it is now, so the tick can be sent at once. (Inside a state
+    // update React may run it later, and then nothing would be known here yet.)
+    const current = shoppingListRef.current;
+    const toggledItem = current.find((item) => item.id === id);
+    if (!toggledItem) return;
+    const nextChecked = !toggledItem.checked;
+    const updatedList = current.map((item) => (item.id === id ? { ...item, checked: nextChecked } : item));
+    shoppingListRef.current = updatedList;
+    setShoppingList((prev) => prev.map((item) => (item.id === id ? { ...item, checked: nextChecked } : item)));
 
     // If an item was just checked off as bought, sync with pantry staples
-    if (nextChecked && toggledItem) {
+    if (nextChecked) {
       const targetKey = normalizeIngredientKey(toggledItem.name, toggledItem.unit);
       setPantryItems((prev) => {
         let hasChange = false;
@@ -979,6 +978,8 @@ export const RecipeProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     broadcastLocalChange({ type: 'SHOPPING_UPDATE', payload: updatedList });
 
     if (isLiveSupabase && household?.id) {
+      // Straight to the others in the household, then to the database
+      broadcastShoppingChecked(household.id, id, nextChecked);
       const existingTimer = pendingShoppingCheckedTimeoutsRef.current.get(id);
       if (existingTimer) {
         clearTimeout(existingTimer);

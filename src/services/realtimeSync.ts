@@ -631,20 +631,44 @@ export async function fetchHouseholdDataFromSupabase(householdId: string): Promi
 /**
  * Subscribe to live Supabase Realtime Postgres Changes for the active household
  */
+/** The open channel for each household, so a tick can be sent straight to the others */
+const householdChannels = new Map<string, ReturnType<NonNullable<ReturnType<typeof getSupabase>>['channel']>>();
+
+/**
+ * Tells the others in the household at once that an item was ticked or unticked. The database
+ * also reports the change, but this arrives faster and still works if the database's own
+ * notices are not set up or have stopped.
+ */
+export function broadcastShoppingChecked(householdId: string, id: string, checked: boolean) {
+  const channel = householdChannels.get(householdId);
+  if (!channel) return;
+  channel
+    .send({ type: 'broadcast', event: 'shopping_checked', payload: { id, checked } })
+    .catch(() => {
+      // The database update still reaches them
+    });
+}
+
 export function subscribeToSupabaseRealtime(
   householdId: string,
   callbacks: {
     onRecipeChange?: (payload: any) => void;
     onMealPlanChange?: (payload: any) => void;
     onShoppingChange?: (payload: any) => void;
+    /** Another phone ticked or unticked an item */
+    onShoppingChecked?: (id: string, checked: boolean) => void;
     onJoinRequestChange?: (payload: any) => void;
     onProfileChange?: (payload: any) => void;
     onHouseholdChange?: (payload: any) => void;
+    /** The connection came back after being lost: changes may have been missed */
+    onReconnect?: () => void;
   }
 ) {
   const supabase = getSupabase();
   if (!supabase || !householdId) return () => {};
 
+  let wasConnected = false;
+  let lost = false;
   const channel = supabase
     .channel(`household-${householdId}`)
     .on(
@@ -732,9 +756,25 @@ export function subscribeToSupabaseRealtime(
       callbacks.onProfileChange?.(payload);
       callbacks.onJoinRequestChange?.(payload);
     })
-    .subscribe();
+    .on('broadcast', { event: 'shopping_checked' }, (message) => {
+      const data = message?.payload;
+      if (data && typeof data.id === 'string' && typeof data.checked === 'boolean') {
+        callbacks.onShoppingChecked?.(data.id, data.checked);
+      }
+    })
+    .subscribe((status) => {
+      if (status === 'SUBSCRIBED') {
+        if (wasConnected && lost) callbacks.onReconnect?.();
+        wasConnected = true;
+        lost = false;
+      } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+        lost = true;
+      }
+    });
+  householdChannels.set(householdId, channel);
 
   return () => {
+    if (householdChannels.get(householdId) === channel) householdChannels.delete(householdId);
     supabase.removeChannel(channel);
   };
 }

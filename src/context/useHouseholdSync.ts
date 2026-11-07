@@ -232,8 +232,36 @@ export function useHouseholdSync(deps: HouseholdSyncDeps): void {
       setHouseholdLoaded(true);
     }
 
+    // Fetches the shopping list again after the connection was lost, keeping what this phone
+    // changed in the last seconds (it may not have reached the database yet)
+    const refreshShoppingList = () => {
+      if (!household?.id) return;
+      fetchHouseholdDataFromSupabase(household.id).then((data) => {
+        if (data.shoppingItems === undefined) return;
+        setShoppingList((prev) => {
+          const now = Date.now();
+          const recent = (id: string) => now - (recentLocalShoppingUpdatesRef.current.get(id) ?? 0) < 5000;
+          const keptLocal = prev.filter((i) => recent(i.id));
+          const fromServer = data.shoppingItems!.filter((i) => !recent(i.id));
+          return [...fromServer, ...keptLocal];
+        });
+      });
+    };
+
     const unsubscribeSupabase = (household && household.id)
       ? subscribeToSupabaseRealtime(household.id, {
+          onShoppingChecked: (id, checked) => {
+            setLastSyncTimestamp(Date.now());
+            setShoppingList((prev) =>
+              prev.some((i) => i.id === id && i.checked !== checked)
+                ? prev.map((i) => (i.id === id ? { ...i, checked } : i))
+                : prev
+            );
+          },
+          onReconnect: () => {
+            setLastSyncTimestamp(Date.now());
+            refreshShoppingList();
+          },
           onRecipeChange: (payload) => {
             setLastSyncTimestamp(Date.now());
             if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
@@ -381,8 +409,22 @@ export function useHouseholdSync(deps: HouseholdSyncDeps): void {
         })
       : () => {};
 
+    // A phone that was put away misses what happened meanwhile: fetch the list when it is
+    // opened again
+    let hiddenAt = 0;
+    const onVisibility = () => {
+      if (document.visibilityState === 'hidden') {
+        hiddenAt = Date.now();
+      } else if (hiddenAt && Date.now() - hiddenAt > 5000 && isLiveSupabase) {
+        hiddenAt = 0;
+        refreshShoppingList();
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+
     const pendingTimeouts = pendingShoppingCheckedTimeoutsRef.current;
     return () => {
+      document.removeEventListener('visibilitychange', onVisibility);
       unsubscribeLocal();
       unsubscribeSupabase();
       pendingTimeouts.forEach((t) => clearTimeout(t));
