@@ -11,6 +11,14 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.0.146',
+    date: '2026-11-07',
+    items: [
+      'Meddelandena överst, som Ångra och Det finns en ny version, går att svepa bort uppåt eller åt sidan.',
+      'En dag utan middag har samma form som en med middag, så knapparna inte flyttar sig när du väljer.',
+    ],
+  },
+  {
     version: '1.0.145',
     date: '2026-11-07',
     items: [
