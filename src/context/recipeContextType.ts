@@ -3,6 +3,8 @@ import type { Recipe, MealPlanDay, ShoppingItem, TabType, UserProfile, Household
 
 export interface RecipeContextType {
   recipes: Recipe[];
+  /** True while a phone in a household waits for the household's recipes the first time. */
+  isLoadingHousehold: boolean;
   selectedRecipe: Recipe | null;
   activeTab: TabType;
   /** The seven days of the week shown in the meal plan (planWeekStart). */

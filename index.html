@@ -29,13 +29,37 @@
 
     <!-- Microsoft & Android Native PWA -->
     <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="application-name" content="Matklar" />
+    <meta name="application-name" content="MatKlar" />
     <meta name="msapplication-TileColor" content="#284235" />
 
+    <style>
+      /* Shown from the first moment until the app has started (React replaces it). It has the
+         shape of the recipe list: search, tabs, the count and two cards. */
+      .boot { max-width: 28rem; margin: 0 auto; padding: 1rem; }
+      .boot .row { display: flex; gap: 0.5rem; align-items: center; }
+      .boot .sk { background: #ECE7DE; border-radius: 1rem; }
+      html.dark body { background: #1B1916; }
+      html.dark .boot .sk { background: #2A2622; }
+      .boot .tabs { display: flex; gap: 1.25rem; margin: 1.1rem 0 1.25rem; }
+      .boot .tab { height: 0.75rem; width: 3.25rem; border-radius: 0.5rem; }
+      .boot .card { aspect-ratio: 16 / 11; margin-top: 1rem; }
+      @media (prefers-reduced-motion: no-preference) {
+        .boot .sk { animation: boot-pulse 1.4s ease-in-out infinite; }
+      }
+      @keyframes boot-pulse { 50% { opacity: 0.55; } }
+    </style>
     <title>MatKlar</title>
   </head>
   <body class="bg-[#FCFAF5] text-[#1A1816] antialiased select-none font-sans">
-    <div id="root"></div>
+    <div id="root">
+      <div class="boot" aria-hidden="true">
+        <div class="row"><div class="sk" style="flex:1;height:3rem"></div><div class="sk" style="width:3rem;height:3rem"></div></div>
+        <div class="tabs"><div class="sk tab"></div><div class="sk tab" style="width:4.5rem"></div><div class="sk tab" style="width:4rem"></div><div class="sk tab"></div></div>
+        <div class="sk" style="height:0.6rem;width:4rem;border-radius:0.4rem"></div>
+        <div class="sk card"></div>
+        <div class="sk card"></div>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

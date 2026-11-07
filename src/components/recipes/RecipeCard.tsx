@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { FadeImage } from '../layout/FadeImage';
 import { categoryLabel } from '../../data/categories';
 import { DIFFICULTY_LABELS } from '../../utils/recipeDifficulty';
 import type { Recipe } from '../../types/recipe';
@@ -89,19 +90,14 @@ export const RecipeCard = React.memo<RecipeCardProps>(
       <div
         onClick={handleCardClick}
         style={{ contentVisibility: 'auto', containIntrinsicSize: '300px' }}
-        className="group relative aspect-[16/11] md:aspect-[4/5] w-full rounded-2xl overflow-hidden cursor-pointer active:scale-[0.985] transition-transform bg-stone-900"
+        className="group relative aspect-[16/11] md:aspect-[4/5] w-full rounded-2xl overflow-hidden cursor-pointer active:scale-[0.985] transition-transform"
       >
         {/* Cover Image */}
-        <img
+        <FadeImage
           src={recipe.coverImageUrl}
           alt={recipe.title}
           loading="lazy"
-          onError={(e) => {
-            const el = e.currentTarget;
-            el.onerror = null;
-            el.src = 'https://images.unsplash.com/photo-1498837167922-ddd27525d352?auto=format&fit=crop&w=1200&q=80';
-          }}
-          className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+          className="absolute inset-0 w-full h-full object-cover group-hover:scale-105"
         />
 
         {/* Mjuk botten-gradient så att bilden förblir ljus och aptitretande */}

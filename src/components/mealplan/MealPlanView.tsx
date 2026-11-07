@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
+import { FadeImage } from '../layout/FadeImage';
 import { categoryLabel } from '../../data/categories';
 import { Toast } from '../layout/Toast';
 import { ConfirmSheet } from '../layout/ConfirmSheet';
@@ -493,17 +494,7 @@ export const MealPlanView: React.FC = () => {
                         }`}
                       >
                         {recipe ? (
-                          <img
-                            src={recipe.coverImageUrl}
-                            alt={recipe.title}
-                            onError={(e) => {
-                              const el = e.currentTarget;
-                              el.onerror = null;
-                              el.src =
-                                'https://images.unsplash.com/photo-1498837167922-ddd27525d352?auto=format&fit=crop&w=1200&q=80';
-                            }}
-                            className="w-full h-full object-cover"
-                          />
+                          <FadeImage src={recipe.coverImageUrl} alt={recipe.title} className="absolute inset-0 w-full h-full object-cover" />
                         ) : hasCustomDinner ? (
                           <div
                             className="w-full h-full bg-amber-100 flex items-center justify-center text-amber-900"
@@ -642,18 +633,9 @@ export const MealPlanView: React.FC = () => {
                   {/* Hero Cover Image Banner */}
                   <div
                     onClick={() => openRecipeDetail(dinnerRecipe)}
-                    className="relative aspect-16/10 rounded-t-3xl overflow-hidden bg-stone-900 cursor-pointer group touch-manipulation"
+                    className="relative aspect-16/10 rounded-t-3xl overflow-hidden cursor-pointer group touch-manipulation"
                   >
-                    <img
-                      src={dinnerRecipe.coverImageUrl}
-                      alt={dinnerRecipe.title}
-                      onError={(e) => {
-                        const el = e.currentTarget;
-                        el.onerror = null;
-                        el.src = 'https://images.unsplash.com/photo-1498837167922-ddd27525d352?auto=format&fit=crop&w=1200&q=80';
-                      }}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
+                    <FadeImage src={dinnerRecipe.coverImageUrl} alt={dinnerRecipe.title} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105" />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/35 via-45% to-black/20" />
 
                     {/* Top Floating Badges & Action Buttons */}
@@ -954,16 +936,9 @@ export const MealPlanView: React.FC = () => {
                     onClick={() => openRecipeDetail(lunchRecipe)}
                     className="flex items-center gap-3 min-w-0 flex-1 cursor-pointer group touch-manipulation"
                   >
-                    <img
-                      src={lunchRecipe.coverImageUrl}
-                      alt={lunchRecipe.title}
-                      onError={(e) => {
-                        const el = e.currentTarget;
-                        el.onerror = null;
-                        el.src = 'https://images.unsplash.com/photo-1498837167922-ddd27525d352?auto=format&fit=crop&w=1200&q=80';
-                      }}
-                      className="w-12 h-12 rounded-xl object-cover shrink-0 shadow-2xs group-hover:scale-105 transition-transform"
-                    />
+                    <span className="relative w-12 h-12 rounded-xl overflow-hidden shrink-0 block">
+                      <FadeImage src={lunchRecipe.coverImageUrl} alt={lunchRecipe.title} className="absolute inset-0 w-full h-full object-cover" />
+                    </span>
                     <div className="min-w-0 flex-1">
                       <h4 className="font-serif font-bold text-sm text-stone-900 truncate group-hover:text-emerald-900 transition-colors">
                         {formatRecipeTitle(lunchRecipe.title)}
@@ -1113,16 +1088,7 @@ export const MealPlanView: React.FC = () => {
                   {/* Thumbnail */}
                   <div className="relative w-12 h-12 rounded-xl overflow-hidden bg-stone-100 shrink-0">
                     {dRecipe ? (
-                      <img
-                        src={dRecipe.coverImageUrl}
-                        alt=""
-                        onError={(e) => {
-                          const el = e.currentTarget;
-                          el.onerror = null;
-                          el.src = 'https://images.unsplash.com/photo-1498837167922-ddd27525d352?auto=format&fit=crop&w=1200&q=80';
-                        }}
-                        className="w-full h-full object-cover"
-                      />
+                      <FadeImage src={dRecipe.coverImageUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
                     ) : hasCustomDinner ? (
                       <div className="w-full h-full bg-amber-100 flex items-center justify-center">
                         <Utensils className="w-5 h-5 text-amber-800" />

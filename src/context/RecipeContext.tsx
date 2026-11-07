@@ -289,6 +289,8 @@ export const RecipeProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [lastSyncTimestamp, setLastSyncTimestamp] = useState<number>(() => Date.now());
+  // False until the household's data has been fetched once (only matters on a phone that has none yet)
+  const [householdLoaded, setHouseholdLoaded] = useState<boolean>(false);
 
   const [joinRequests, setJoinRequests] = useState<HouseholdJoinRequest[]>([]);
   const [pendingJoin, setPendingJoin] = useState<PendingJoinState | null>(() => {
@@ -550,6 +552,7 @@ export const RecipeProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     pendingShoppingCheckedTimeoutsRef,
     recentLocalShoppingUpdatesRef,
     household,
+    setHouseholdLoaded,
   });
 
   const setActiveTab = useCallback((newTab: TabType) => {
@@ -2023,6 +2026,7 @@ export const RecipeProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     <RecipeContext.Provider
       value={{
         recipes,
+        isLoadingHousehold: isLiveSupabase && Boolean(household) && !householdLoaded && recipes.length === 0,
         selectedRecipe,
         activeTab,
         mealPlan: weekMealPlan,

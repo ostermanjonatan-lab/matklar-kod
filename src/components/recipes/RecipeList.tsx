@@ -45,6 +45,7 @@ const BATCH_INCREMENT = 18;
 
 export const RecipeList: React.FC = () => {
   const {
+    isLoadingHousehold,
     recipes,
     openRecipeDetail,
     toggleFavorite,
@@ -647,7 +648,9 @@ export const RecipeList: React.FC = () => {
         {/* Number of recipes. "Träffar" only after a search or filter */}
         <div className="flex items-center justify-between px-1 gap-2 min-h-[24px]">
           <span className="text-xs text-stone-500 whitespace-nowrap">
-            {isNarrowed
+            {isLoadingHousehold
+              ? 'Hämtar recepten'
+              : isNarrowed
               ? `${sortedAndFilteredRecipes.length} ${sortedAndFilteredRecipes.length === 1 ? 'träff' : 'träffar'}`
               : `${sortedAndFilteredRecipes.length} recept`}
             {onlyFavorites && ' bland favoriter'}
@@ -676,7 +679,16 @@ export const RecipeList: React.FC = () => {
         </div>
 
         {/* Recipe Cards List / Grid (1 col on mobile, 2 cols on tablet, 3-4 cols on desktop) */}
-        {sortedAndFilteredRecipes.length > 0 ? (
+        {isLoadingHousehold ? (
+          /* The household's recipes are on their way: the shape of the cards while they load */
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6" aria-label="Hämtar recepten" role="status">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="relative aspect-[16/11] md:aspect-[4/5] w-full rounded-2xl overflow-hidden">
+                <span className="skeleton absolute inset-0 block" />
+              </div>
+            ))}
+          </div>
+        ) : sortedAndFilteredRecipes.length > 0 ? (
           <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
               {visibleRecipes.map((recipe) => (

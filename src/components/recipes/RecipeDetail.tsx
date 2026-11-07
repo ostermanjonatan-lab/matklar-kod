@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { FadeImage } from '../layout/FadeImage';
 import { Toast } from '../layout/Toast';
 import { ConfirmSheet } from '../layout/ConfirmSheet';
 import { DifficultyDots } from './DifficultyPicker';
@@ -462,17 +463,8 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
         {/* Scrollable Single-Column Body */}
         <div ref={scrollContainerRef} className="overflow-y-auto flex-1 overscroll-contain">
           {/* Cover Image Banner */}
-          <div className="relative aspect-16/10 lg:aspect-auto lg:h-56 w-full bg-stone-900 overflow-hidden shadow-sm shrink-0">
-            <img
-              src={recipe.coverImageUrl}
-              alt={recipe.title}
-              onError={(e) => {
-                const el = e.currentTarget;
-                el.onerror = null;
-                el.src = 'https://images.unsplash.com/photo-1498837167922-ddd27525d352?auto=format&fit=crop&w=1200&q=80';
-              }}
-              className="w-full h-full object-cover"
-            />
+          <div className="relative aspect-16/10 lg:aspect-auto lg:h-56 w-full overflow-hidden shrink-0">
+            <FadeImage src={recipe.coverImageUrl} alt={recipe.title} className="absolute inset-0 w-full h-full object-cover" />
             <div className="absolute inset-0 bg-gradient-to-t from-stone-950/85 via-black/30 to-black/20" />
 
             <div className="absolute bottom-4 left-4 right-16 text-white z-10">

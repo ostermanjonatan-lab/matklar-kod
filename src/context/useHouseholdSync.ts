@@ -31,6 +31,8 @@ export interface HouseholdSyncDeps {
   pendingShoppingCheckedTimeoutsRef: MutableRefObject<Map<string, ReturnType<typeof setTimeout>>>;
   recentLocalShoppingUpdatesRef: MutableRefObject<Map<string, number>>;
   household: Household | null;
+  /** Set when the first fetch of the household's data from Supabase is done. */
+  setHouseholdLoaded: Dispatch<SetStateAction<boolean>>;
 }
 
 /**
@@ -65,6 +67,7 @@ export function useHouseholdSync(deps: HouseholdSyncDeps): void {
     pendingShoppingCheckedTimeoutsRef,
     recentLocalShoppingUpdatesRef,
     household,
+    setHouseholdLoaded,
   } = deps;
 
   // Realtime Sync Subscription
@@ -224,7 +227,9 @@ export function useHouseholdSync(deps: HouseholdSyncDeps): void {
         if (data.shoppingItems !== undefined && data.shoppingItems.length > 0) {
           setShoppingList(data.shoppingItems);
         }
-      });
+      }).finally(() => setHouseholdLoaded(true));
+    } else {
+      setHouseholdLoaded(true);
     }
 
     const unsubscribeSupabase = (household && household.id)
