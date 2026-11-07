@@ -372,6 +372,40 @@ export const MealPlanView: React.FC = () => {
     );
   };
 
+  // The bin on a day in the week view: removes the dinner, with Ångra
+  const [removedDinner, setRemovedDinner] = useState<{
+    day: MealPlanDay['dayName'];
+    recipeId: string | null;
+    custom: string;
+  } | null>(null);
+  const removedTimer = useRef<number | undefined>(undefined);
+  useEffect(() => () => window.clearTimeout(removedTimer.current), []);
+  const removeDinner = (day: MealPlanDay['dayName']) => {
+    const d = mealPlan.find((x) => x.dayName === day);
+    setRemovedDinner({ day, recipeId: d?.dinnerRecipeId || null, custom: d?.customDinner || '' });
+    handleClearMeal(day, 'dinner');
+    window.clearTimeout(removedTimer.current);
+    removedTimer.current = window.setTimeout(() => setRemovedDinner(null), 5000);
+  };
+  const undoRemoveDinner = () => {
+    if (!removedDinner) return;
+    const { day, recipeId, custom } = removedDinner;
+    if (recipeId) setMealPlanForDay(day, 'dinner', recipeId);
+    else if (custom) setMealPlanForDay(day, 'dinner', null, custom);
+    window.clearTimeout(removedTimer.current);
+    setRemovedDinner(null);
+  };
+
+  // A day tapped in the week view: an empty day opens the dinner picker and stays in the week
+  const openDayFromWeek = (idx: number, day: MealPlanDay['dayName'], planned: boolean) => {
+    if (!planned) {
+      openPickerModal(day, 'dinner');
+      return;
+    }
+    setSelectedDayIndex(idx);
+    setViewMode('split');
+  };
+
   const undoRandomWeek = () => {
     weekToast?.days.forEach((day) => setMealPlanForDay(day, 'dinner', null, ''));
     window.clearTimeout(weekToastTimer.current);
@@ -412,6 +446,12 @@ export const MealPlanView: React.FC = () => {
     <div className="min-h-screen bg-[#FCFAF5] pb-28 w-full max-w-full overflow-x-hidden font-sans">
       {/* Toast Notification */}
       {generatedToast && <Toast message={generatedToast} />}
+      {removedDinner && (
+        <Toast
+          message={`Middagen på ${removedDinner.day.toLowerCase()} är borttagen`}
+          actions={[{ label: 'Ångra', onClick: undoRemoveDinner }]}
+        />
+      )}
       {weekToast && (
         <Toast
           message={weekToast.message}
@@ -1151,20 +1191,20 @@ export const MealPlanView: React.FC = () => {
               const hasLunchHere = Boolean(lRecipe || hasCustomLunch);
               return (
                 // An empty day opens the dinner picker straight away and stays in the week. A planned
-                // day opens the day, and lunch can be added from the row.
+                // day opens the day; lunch can be added and the dinner removed from the row.
                 <div
                   key={day}
                   className="flex items-center gap-2 md:bg-white md:rounded-2xl md:border md:border-[#EBE7DF] md:p-3 md:shadow-xs md:hover:border-emerald-700/50 transition-colors"
                 >
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (!hasDinnerHere) {
-                      openPickerModal(day, 'dinner');
-                      return;
+                <div
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => openDayFromWeek(idx, day, hasDinnerHere)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      openDayFromWeek(idx, day, hasDinnerHere);
                     }
-                    setSelectedDayIndex(idx);
-                    setViewMode('split');
                   }}
                   className="flex-1 min-w-0 text-left py-3 md:py-0 flex items-center gap-3 cursor-pointer touch-manipulation active:bg-stone-100/60"
                 >
@@ -1200,22 +1240,35 @@ export const MealPlanView: React.FC = () => {
                       </div>
                     )}
 
-                    {(lRecipe || hasCustomLunch) && (
+                    {hasLunchHere ? (
                       <div className="text-xs text-stone-500 truncate">
                         Lunch: {lRecipe ? formatRecipeTitle(lRecipe.title) : dayData?.customLunch}
                       </div>
+                    ) : (
+                      hasDinnerHere && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openPickerModal(day, 'lunch');
+                          }}
+                          className="text-xs font-semibold text-[#284235] hover:text-stone-900 py-1 -my-0.5 touch-manipulation"
+                        >
+                          Lägg till lunch
+                        </button>
+                      )
                     )}
                   </div>
 
-                  {hasDinnerHere && hasLunchHere && <ChevronRight className="w-4 h-4 text-stone-300 shrink-0" />}
-                </button>
-                {hasDinnerHere && !hasLunchHere && (
+                </div>
+                {hasDinnerHere && (
                   <button
                     type="button"
-                    onClick={() => openPickerModal(day, 'lunch')}
-                    className="shrink-0 min-h-[44px] px-1 text-xs font-semibold text-[#284235] hover:text-stone-900 touch-manipulation"
+                    onClick={() => removeDinner(day)}
+                    className="shrink-0 w-10 h-11 -mr-2 flex items-center justify-center text-stone-400 hover:text-rose-700 touch-manipulation"
+                    aria-label={`Ta bort middagen på ${day.toLowerCase()}`}
                   >
-                    Lägg till lunch
+                    <Trash2 className="w-4 h-4" />
                   </button>
                 )}
                 </div>
