@@ -5,6 +5,7 @@ import { ConfirmSheet } from '../layout/ConfirmSheet';
 import type { ShoppingItem } from '../../types/recipe';
 import { useRecipes } from '../../context/RecipeContext';
 import { EditShoppingItemSheet } from './EditShoppingItemSheet';
+import { SwipeToDelete } from './SwipeToDelete';
 import { useModalBackHandler } from '../../hooks/useModalBackHandler';
 import { AlltidHemmaView } from './AlltidHemmaView';
 import { takeOpenStoreOrderFlag } from './storeOrderLink';
@@ -66,6 +67,7 @@ export const ShoppingListView: React.FC = () => {
     updateShoppingItemAisle,
     rememberShoppingAisle,
     updateShoppingItem,
+    restoreShoppingList,
   } = useRecipes();
 
   // Sub-tab: 'list' (Inköpslista) | 'pantry' (Alltid ha hemma)
@@ -158,6 +160,25 @@ export const ShoppingListView: React.FC = () => {
   // Delete Confirmation State
   const [itemToDelete, setItemToDelete] = useState<ShoppingItem | 'all' | null>(null);
   useModalBackHandler(Boolean(itemToDelete), () => setItemToDelete(null), 'delete-shopping-item');
+
+  // Swiped away: removed at once, with Ångra for a few seconds
+  const [removedItem, setRemovedItem] = useState<{ item: ShoppingItem; index: number } | null>(null);
+  const removedTimerRef = useRef<number | undefined>(undefined);
+  const removeWithUndo = (item: ShoppingItem) => {
+    const index = shoppingList.findIndex((i) => i.id === item.id);
+    deleteShoppingItem(item.id);
+    setRemovedItem({ item, index });
+    window.clearTimeout(removedTimerRef.current);
+    removedTimerRef.current = window.setTimeout(() => setRemovedItem(null), 5000);
+  };
+  const undoRemove = () => {
+    if (!removedItem) return;
+    const list = shoppingList.filter((i) => i.id !== removedItem.item.id);
+    list.splice(Math.min(Math.max(removedItem.index, 0), list.length), 0, removedItem.item);
+    restoreShoppingList(list);
+    window.clearTimeout(removedTimerRef.current);
+    setRemovedItem(null);
+  };
 
   const handleOpenEditComment = (item: ShoppingItem) => {
     setEditingItem(item);
@@ -374,6 +395,13 @@ export const ShoppingListView: React.FC = () => {
     <div className="min-h-screen bg-[#FCFAF5] pb-32 md:pb-16 w-full max-w-full overflow-x-hidden font-sans">
       {/* Toast Notification */}
       {copyToast && <Toast message="Inköpslistan är kopierad" />}
+      {removedItem && (
+        <Toast
+          message={`${capitalizeFirst(stripPreparation(removedItem.item.name))} är borttagen`}
+          actions={[{ label: 'Ångra', onClick: undoRemove }]}
+          onDismiss={() => setRemovedItem(null)}
+        />
+      )}
 
       {/* Header (Sticky top-0 on mobile, static below DesktopNav on desktop) */}
       <div className="relative sticky top-0 md:static z-20 md:z-auto bg-[#FCFAF5]/95 backdrop-blur-md border-b border-[#EBE7DF] px-4 md:px-6 py-2.5 md:py-0 shadow-xs w-full">
@@ -930,8 +958,8 @@ export const ShoppingListView: React.FC = () => {
                     const displaySource = sourceParts.length > 0 ? Array.from(new Set(sourceParts)).join(' + ') : undefined;
 
                     return (
+                      <SwipeToDelete key={item.id} onRemove={() => removeWithUndo(item)}>
                       <div
-                        key={item.id}
                         onClick={() => {
                           if (longPressFiredRef.current) {
                             longPressFiredRef.current = false;
@@ -1026,6 +1054,7 @@ export const ShoppingListView: React.FC = () => {
                           <MoreVertical className="w-4 h-4" />
                         </button>
                       </div>
+                      </SwipeToDelete>
                     );
                   })}
                 </div>
