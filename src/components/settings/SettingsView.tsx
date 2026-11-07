@@ -500,8 +500,11 @@ export const SettingsView: React.FC = () => {
           </div>
         )}
 
-        {/* Version, so you can see that an update has arrived */}
-        <p className="text-xs text-stone-500 pt-6 pb-8">Version {APP_VERSION}</p>
+        {/* Version, so you can see that an update has arrived. The screen size helps when
+            something is shown differently on another screen, such as a folding phone's. */}
+        <p className="text-xs text-stone-500 pt-6 pb-8 tabular-nums">
+          Version {APP_VERSION} · skärm {window.innerWidth} × {window.innerHeight}
+        </p>
       </div>
     </div>
   );

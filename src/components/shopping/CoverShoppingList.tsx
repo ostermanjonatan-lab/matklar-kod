@@ -6,10 +6,13 @@ import { capitalizeFirst, formatIngredientName, formatShoppingAmount, formatUnit
 import { loadActiveStoreId, loadStoreLayouts, DEFAULT_AISLE_ORDER } from '../../utils/storeLayoutService';
 
 /**
- * A screen this small and square is the outer screen of a folding phone, such as the
- * Galaxy Z Flip 6 (about 360 × 375). Ordinary phones are always taller than 480.
+ * The outer screen of a folding phone, such as the Galaxy Z Flip 6, is a small, nearly square
+ * touch screen. Ordinary phones are long and narrow both upright and lying down, and computers
+ * have no touch screen, so neither is caught. The size limit is generous because Samsung scales
+ * the outer screen differently from the main screen.
  */
-const COVER_QUERY = '(max-width: 480px) and (max-height: 480px)';
+const COVER_QUERY =
+  '(pointer: coarse) and (max-width: 760px) and (max-height: 760px) and (min-aspect-ratio: 3/4) and (max-aspect-ratio: 4/3)';
 
 export function useCoverScreen(): boolean {
   const [cover, setCover] = useState(() => typeof window !== 'undefined' && window.matchMedia?.(COVER_QUERY).matches);
