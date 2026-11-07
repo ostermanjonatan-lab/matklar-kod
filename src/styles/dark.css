@@ -81,7 +81,7 @@ html.dark, html.dark body { background-color: #1B1916 !important; color: #DCD4C7
 .dark .focus\:border-\[\#284235\]:focus { border-color: #5E9478 !important; }
 .dark .focus\:ring-\[\#284235\]:focus { --tw-ring-color: #5E9478 !important; }
 .dark .focus\:ring-\[\#284235\]\/20:focus { --tw-ring-color: rgba(94,148,120,0.20) !important; }
-.dark .from-\[\#FCFAF5\]\/70 { --tw-gradient-from: rgba(27,25,22,0.70) !important; }
+.dark .from-white\/70 { --tw-gradient-from: rgba(27,25,22,0.70) !important; }
 .dark .group:hover .group-hover\:text-\[\#284235\] { color: #A3CDB4 !important; }
 .dark .group:hover .group-hover\:text-emerald-900 { color: #A6E0C2 !important; }
 .dark .group:hover .group-hover\:text-stone-400 { color: #6C665D !important; }
@@ -148,4 +148,4 @@ html.dark, html.dark body { background-color: #1B1916 !important; color: #DCD4C7
 .dark .text-stone-700 { color: #BBB3A6 !important; }
 .dark .text-stone-800 { color: #D0C8BB !important; }
 .dark .text-stone-900 { color: #DCD4C7 !important; }
-.dark .to-\[\#F1EBE0\]\/80 { --tw-gradient-to: rgba(33,30,26,0.80) !important; }
+.dark .to-\[\#CFE1D5\]\/90 { --tw-gradient-to: rgba(29,44,35,0.90) !important; }
