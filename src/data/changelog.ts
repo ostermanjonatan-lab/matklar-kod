@@ -11,6 +11,14 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.0.156',
+    date: '2026-11-07',
+    items: [
+      'En rad som Salt och limejuice räknas inte längre som basvara. Bara rader där allt är basvaror gör det.',
+      'De gröna topparna är mer genomskinliga när du skrollar.',
+    ],
+  },
+  {
     version: '1.0.155',
     date: '2026-11-07',
     items: [
