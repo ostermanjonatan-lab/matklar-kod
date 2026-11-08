@@ -5,10 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#284235" />
     <script>
-      // Dark or light before the app starts, so the page does not flash light (see src/utils/theme.ts)
+      // Light unless dark or System is chosen, set before the app starts so the page does not flash (see src/utils/theme.ts)
       try {
         var t = localStorage.getItem('matklar_theme');
-        if (t === 'dark' || (t !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        if (t === 'dark' || (t === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
           document.documentElement.classList.add('dark');
           document.querySelector('meta[name="theme-color"]').setAttribute('content', '#1B1916');
         }
