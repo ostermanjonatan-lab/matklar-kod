@@ -2,6 +2,7 @@
  * Pure helpers for the app's data: cleaning up saved recipes and building the meal plan week.
  * They hold no state, so they are kept apart from RecipeContext.
  */
+import { estimateDifficulty, isRecipeDifficulty } from '../utils/recipeDifficulty';
 import type { Recipe, MealPlanDay } from '../types/recipe';
 import { getRecipeSubcategories } from '../types/recipe';
 import { WEEKDAY_NAMES, dayNameForDate, getWeekDates, getWeekStart, isISODate } from '../utils/mealPlanDates';
@@ -121,5 +122,9 @@ export function sanitizeRecipe(recipe: Recipe): Recipe {
     ingredients: cleanIngredients,
     prepTimeMinutes: 0,
     cookTimeMinutes: cookingTime,
+    // No difficulty chosen: the app makes a guess, which can be changed when editing
+    difficulty: isRecipeDifficulty(recipe.difficulty)
+      ? recipe.difficulty
+      : estimateDifficulty({ ...recipe, ingredients: cleanIngredients, cookTimeMinutes: cookingTime }),
   };
 }

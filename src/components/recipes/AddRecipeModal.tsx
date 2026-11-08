@@ -1,4 +1,6 @@
 ﻿import React, { useState, useMemo } from 'react';
+import { estimateDifficulty } from '../../utils/recipeDifficulty';
+import { isCommonPantryStaple } from '../../utils/ingredientParser';
 import { Toast } from '../layout/Toast';
 import { isRecipeLink, readRecipeLink } from '../../utils/recipeLink';
 import type { Recipe, Instruction, Ingredient, RecipeCategory, RecipeSourceType, RecipeDifficulty } from '../../types/recipe';
@@ -111,7 +113,16 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = ({ onClose, closeGu
       setSubcategories(parsed.subcategory.split(',').map((s: string) => s.trim()).filter(Boolean));
     }
     if (parsed.servings) setServings(parsed.servings);
-    if (parsed.difficulty) setDifficulty(parsed.difficulty);
+    // The page or text says how hard it is, or else the app makes a guess that can be changed
+    setDifficulty(
+      parsed.difficulty ||
+        estimateDifficulty({
+          title: parsed.title,
+          ingredients: parsed.ingredients.map((i) => ({ name: i.name, isPantryStaple: isCommonPantryStaple(i.name) })),
+          instructions: parsed.instructions,
+          cookingTimeMinutes: parsed.cookingTimeMinutes,
+        })
+    );
     if (parsed.cookingTimeMinutes && parsed.cookingTimeMinutes > 0) {
       setCookingTimeMinutes(parsed.cookingTimeMinutes);
     }
@@ -295,7 +306,15 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = ({ onClose, closeGu
       if (scraped.title) setTitle(scraped.title);
       if (scraped.coverImageUrl) setCoverImageUrl(scraped.coverImageUrl);
       if (scraped.servings) setServings(scraped.servings);
-      if (scraped.difficulty) setDifficulty(scraped.difficulty);
+      setDifficulty(
+        scraped.difficulty ||
+          estimateDifficulty({
+            title: scraped.title,
+            ingredients: (scraped.ingredients || []).map((i) => ({ name: i.name, isPantryStaple: isCommonPantryStaple(i.name) })),
+            instructions: scraped.instructions,
+            cookTimeMinutes: Number(scraped.cookTimeMinutes) || Number(scraped.prepTimeMinutes) || 0,
+          })
+      );
       if (scraped.category) setCategory(scraped.category);
       if ((scraped as any).subcategories && (scraped as any).subcategories.length > 0) {
         setSubcategories((scraped as any).subcategories);

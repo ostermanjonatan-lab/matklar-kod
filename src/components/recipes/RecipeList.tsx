@@ -39,7 +39,7 @@ const SORT_OPTIONS: SortItem[] = [
   { id: 'time_asc', label: 'Kortast tid', shortLabel: 'Kortast tid' },
   { id: 'time_desc', label: 'Längst tid', shortLabel: 'Längst tid' },
   { id: 'difficulty_asc', label: 'Lättast först', shortLabel: 'Lättast först' },
-  { id: 'difficulty_desc', label: 'Svårast först', shortLabel: 'Svårast först' },
+  { id: 'difficulty_desc', label: 'Mest avancerade först', shortLabel: 'Avancerade först' },
   { id: 'name_asc', label: 'Namn A–Ö', shortLabel: 'Namn A–Ö' },
   { id: 'name_desc', label: 'Namn Ö–A', shortLabel: 'Namn Ö–A' },
 ];

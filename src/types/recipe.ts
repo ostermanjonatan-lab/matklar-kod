@@ -39,7 +39,7 @@ export interface Recipe {
   prepTimeMinutes?: number;
   cookTimeMinutes?: number;
   tags?: string[];
-  /** 1 = lätt, 2 = medel, 3 = svår. Missing when not set. */
+  /** 1 = lätt, 2 = medel, 3 = avancerad. Missing when not set. */
   difficulty?: RecipeDifficulty;
   createdAt?: string;
   updatedAt?: string;

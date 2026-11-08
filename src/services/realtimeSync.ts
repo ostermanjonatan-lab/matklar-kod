@@ -1,7 +1,7 @@
 import { getSupabase } from './supabaseClient';
 import type { Recipe, MealPlanDay, ShoppingItem, Household, UserProfile, PantryItem, HouseholdJoinRequest } from '../types/recipe';
 import { WEEKDAY_NAMES, getWeekDates, getWeekStart, isISODate } from '../utils/mealPlanDates';
-import { splitDifficultyTag, withDifficultyTag } from '../utils/recipeDifficulty';
+import { splitDifficultyTag, withDifficultyTag, estimateDifficulty } from '../utils/recipeDifficulty';
 import { getRecipeSubcategories } from '../types/recipe';
 import {
   getAisleOverride,
@@ -90,7 +90,16 @@ export function mapRowToRecipe(row: any): Recipe {
     cookTimeMinutes: Number(row.cook_time_minutes) > 0 ? Number(row.cook_time_minutes) : (Number(row.prep_time_minutes) || 30),
     // The difficulty is kept as a hidden tag, see utils/recipeDifficulty.ts
     tags: splitDifficultyTag(row.tags).tags,
-    difficulty: splitDifficultyTag(row.tags).difficulty,
+    difficulty:
+      splitDifficultyTag(row.tags).difficulty ??
+      estimateDifficulty({
+        title: row.title,
+        ingredients: Array.isArray(row.ingredients)
+          ? row.ingredients.map((ing: any) => ({ name: ing?.name || '', isPantryStaple: isCommonPantryStaple(ing?.name || '') }))
+          : [],
+        instructions: Array.isArray(row.instructions) ? row.instructions : [],
+        cookTimeMinutes: Number(row.cook_time_minutes) || 0,
+      }),
     createdAt: row.created_at || undefined,
     updatedAt: row.updated_at || undefined,
   };
