@@ -1925,11 +1925,11 @@ function parseMarkdownRecipe(markdown: string, sourceUrl: string): ScrapedRecipe
 /** "Svårighetsgrad: Enkel" or "Nivå: Medel" somewhere on the page. */
 function extractDifficultyFromDom(doc: Document): 1 | 2 | 3 | undefined {
   const text = (doc.body?.textContent || '').replace(/\s+/g, ' ');
-  const m = text.match(/(?:svårighetsgrad|svårighet|nivå)\s*:?\s*(lätt|enkel|enkelt|lättlagad|medel|medelsvår|svår|avancerad)/i);
+  const m = text.match(/(?:svårighetsgrad|svårighet|nivå)\s*:?\s*(lätt|enkel|enkelt|lättlagad|medel|medelsvår|normal|svår|avancerad)/i);
   if (!m) return undefined;
   const w = m[1].toLowerCase();
   if (/^(lätt|enkel|enkelt|lättlagad)/.test(w)) return 1;
-  if (/^(medel|medelsvår)/.test(w)) return 2;
+  if (/^(medel|medelsvår|normal)/.test(w)) return 2;
   return 3;
 }
 

@@ -2067,11 +2067,11 @@ function isTimeLine(line: string): boolean {
 function findDifficulty(line: string, alone: boolean): 1 | 2 | 3 | null {
   const m =
     line.match(/^(?:svårighetsgrad|svårighet|nivå)\s*:?\s*(\S+)/i) ||
-    (alone ? line.match(/^(lätt|enkel|enkelt|lättlagad|lättlagat|medel|medelsvår|svår|avancerad)$/i) : null);
+    (alone ? line.match(/^(lätt|enkel|enkelt|lättlagad|lättlagat|medel|medelsvår|normal|svår|avancerad)$/i) : null);
   if (!m) return null;
   const w = m[1].toLowerCase();
   if (/^(lätt|enkel|enkelt|lättlagad|lättlagat)/.test(w)) return 1;
-  if (/^(medel|medelsvår|mellan)/.test(w)) return 2;
+  if (/^(medel|medelsvår|mellan|normal)/.test(w)) return 2;
   if (/^(svår|avancerad)/.test(w)) return 3;
   return null;
 }

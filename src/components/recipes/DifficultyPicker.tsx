@@ -7,7 +7,7 @@ interface DifficultyPickerProps {
   onChange: (value: RecipeDifficulty | undefined) => void;
 }
 
-/** Lätt, Medel or Avancerad. Tapping the chosen one again clears it (and the app guesses again). */
+/** Lätt, Normal or Avancerad. Tapping the chosen one again clears it (and the app guesses again). */
 export const DifficultyPicker: React.FC<DifficultyPickerProps> = ({ value, onChange }) => (
   <div>
     <span className="font-bold text-stone-800 block mb-1">Svårighetsgrad</span>
@@ -54,7 +54,7 @@ interface DifficultyFilterProps {
 }
 
 /**
- * Filter on difficulty: Lätt, Medel and Avancerad can be turned on one by one.
+ * Filter on difficulty: Lätt, Normal and Avancerad can be turned on one by one.
  * Nothing chosen means all recipes, also those without a difficulty.
  */
 export const DifficultyFilter: React.FC<DifficultyFilterProps> = ({ selected, onChange, className = '' }) => (

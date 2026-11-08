@@ -11,7 +11,7 @@ import type { RecipeDifficulty } from '../types/recipe';
 
 export const DIFFICULTY_LABELS: Record<RecipeDifficulty, string> = {
   1: 'Lätt',
-  2: 'Medel',
+  2: 'Normal',
   3: 'Avancerad',
 };
 
@@ -63,7 +63,7 @@ const ADVANCED =
  * A first guess at the difficulty, from the number of ingredients and steps, the time, and
  * words that point either way. Lätt: a few ingredients, or ready-made food into the oven.
  * Avancerad: dough or stock from scratch, long processes, or very many ingredients.
- * Everything else is Medel. Staples like salt, pepper and oil are not counted.
+ * Everything else is Normal. Staples like salt, pepper and oil are not counted.
  */
 export function estimateDifficulty(recipe: DifficultyInput): RecipeDifficulty {
   const ingredients = (recipe.ingredients || []).filter((i) => (i?.name || '').trim());
