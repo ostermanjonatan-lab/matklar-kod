@@ -48,6 +48,10 @@ const SKIP_WORDS = new Set([
   'hel', 'hela', 'helt', 'extra', 'fint', 'grovt', 'nymalen', 'torkad', 'torkade', 'fryst', 'frysta', 'ekologisk',
 ]);
 
+// What may follow a name in the same word and still mean the ingredient
+const WORD_ENDING = /^(orna|erna|arna|ornas|ernas|arnas|ens|ets|en|et|na|ar|er|or|n|s|a|e)$/;
+const PART_OF = ['filé', 'bröst', 'lår', 'kött', 'skal', 'saft', 'juice', 'klyft', 'blad', 'kvist', 'bit', 'skiv', 'tärning'];
+
 const ENDINGS = ['orna', 'erna', 'arna', 'orna', 'en', 'et', 'na', 'or', 'er', 'ar', 'a', 'e', 'n', 's'];
 
 // Base nouns keep their full form where a shorter stem would also match a verb
@@ -147,6 +151,9 @@ export function findIngredientMentions(text: string, ingredients: Ingredient[]):
         if (key === 'salt' && rest === 'a') continue;
         // A describing word built on the name, e.g. "ostgratinerade", "smörstekt", is not the ingredient
         if (rest.length > 4 && /(ade|ad|at|stekt|kokt|bakad|bakade|rostad|rostade)$/.test(rest)) continue;
+        // Nor is another dish or thing named after it, e.g. "tomatsalsa", "lökringar". A word ending
+        // ("tomaterna") or a part of the same thing ("kycklingfilén", "avokadoköttet") still counts.
+        if (rest.length >= 4 && !WORD_ENDING.test(rest) && !PART_OF.some((p) => rest.startsWith(p))) continue;
         matches.push({ idx, start: m.index, end: m.index + key.length, wordEnd: m.index + key.length + rest.length });
       }
     }
@@ -174,9 +181,42 @@ export function findIngredientMentions(text: string, ingredients: Ingredient[]):
   for (const m of sorted) {
     const prev = result[result.length - 1];
     if (prev && m.start < prev.end) continue;
-    m.ingredients.sort((a, b) => a - b);
+    m.ingredients = narrowByNumber(lower.slice(m.start, m.end), dedupe(m.ingredients.sort((a, b) => a - b), ingredients), ingredients);
     result.push(m);
   }
   return result;
+}
+
+/** The same ingredient written twice (once for the salsa, once for the guacamole) counts once. */
+function dedupe(indexes: number[], ingredients: Ingredient[]): number[] {
+  const seen = new Set<string>();
+  return indexes.filter((idx) => {
+    const ing = ingredients[idx];
+    const key = `${(ing.name || '').trim().toLowerCase()}|${ing.amount}|${(ing.unit || '').trim().toLowerCase()}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+const PLURAL_WORD = /(orna|erna|arna|or|er|ar)$/;
+const SINGULAR_WORD = /(en|et|n)$/;
+
+/**
+ * When a word fits several ingredients, its number tells which: "tomaterna" is the 4 tomatoes,
+ * "tomaten" the one. Kept as it is when the word does not say, or when nothing would be left.
+ */
+function narrowByNumber(word: string, indexes: number[], ingredients: Ingredient[]): number[] {
+  if (indexes.length < 2) return indexes;
+  const isMany = (idx: number) => {
+    const ing = ingredients[idx];
+    if (typeof ing.amount === 'number') return ing.amount > 1;
+    const last = (ing.name || '').toLowerCase().split(/[,(]/)[0].trim().split(/\s+/).pop() || '';
+    return PLURAL_WORD.test(last);
+  };
+  let keep: number[] = [];
+  if (PLURAL_WORD.test(word)) keep = indexes.filter(isMany);
+  else if (SINGULAR_WORD.test(word)) keep = indexes.filter((i) => !isMany(i));
+  return keep.length > 0 ? keep : indexes;
 }
 
