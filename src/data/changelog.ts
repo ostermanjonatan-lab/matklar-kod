@@ -11,6 +11,14 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.0.159',
+    date: '2026-11-08',
+    items: [
+      'Appen gissar svårighetsgraden när ett recept läggs till, och för recept som saknar en. Den går att ändra.',
+      'Svårighetsgraderna heter Lätt, Normal och Avancerad.',
+    ],
+  },
+  {
     version: '1.0.158',
     date: '2026-11-08',
     items: [
