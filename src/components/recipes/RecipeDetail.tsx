@@ -527,7 +527,8 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
         )}
 
         {/* Scrollable Single-Column Body */}
-        <div ref={scrollContainerRef} className="overflow-y-auto flex-1 overscroll-contain lg:overflow-hidden lg:min-h-0 lg:flex lg:flex-col">
+        {/* Long words and web addresses without spaces break instead of running off the screen */}
+        <div ref={scrollContainerRef} className="overflow-y-auto overflow-x-hidden flex-1 overscroll-contain [overflow-wrap:anywhere] lg:overflow-hidden lg:min-h-0 lg:flex lg:flex-col">
           {/* Cover image: full width on a phone */}
           {renderCover('aspect-16/10 lg:hidden')}
 
@@ -829,7 +830,7 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
               rel="noopener noreferrer"
               className="text-sm text-stone-500 hover:text-stone-800 inline-flex items-center gap-1.5 py-2 min-h-[44px] touch-manipulation truncate max-w-full"
             >
-              <span>Receptet kommer från {new URL(recipe.sourceUrl).hostname.replace(/^www\./, '')}</span>
+              <span className="min-w-0 truncate">Receptet kommer från {new URL(recipe.sourceUrl).hostname.replace(/^www\./, '')}</span>
               <ExternalLink className="w-3.5 h-3.5 shrink-0" />
             </a>
           </div>

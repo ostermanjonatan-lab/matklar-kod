@@ -330,4 +330,15 @@ Gör så här
 bitar. Klyfta rödlöken.
 3. Lägg allt i en ugnsform, ringla över olja och strö över salt.
 4. Rosta i mitten av ugnen ca 35 minuter. Smula över fetaost och timjan.`,
+storlekar: `Tomatsallad med potatis
+4 portioner
+Ingredienser
+4 stora tomater
+3 större potatisar
+2 små rödlökar
+3 st. ägg
+1 dl olivolja
+Gör så här
+Koka potatis och ägg.
+Skiva tomater och lök och blanda med olja.`,
 };

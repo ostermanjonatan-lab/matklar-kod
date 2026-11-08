@@ -1017,14 +1017,15 @@ export function cleanOcrArtifacts(rawText: string, options: { ocr?: boolean } = 
   text = text
     // Separate fractions joined with units: e.g. "½dl" -> "½ dl"
     .replace(/([½¼¾⅓⅔⅛])\s*([a-zA-ZåäöÅÄÖ]+)/g, '$1 $2')
-    // Separate joined number and unit (e.g. "400g", "2st", "1msk", "2,5dl", "2burkar")
-    .replace(/(\d+(?:[,\.]\d+)?)[ \t]*(g|gram|kg|kilo|kilogram|hg|hekto|hektogram|dl|deciliter|cl|centiliter|ml|milliliter|liter|msk|matsked|matskedar|tsk|tesked|teskedar|krm|kryddmått|st|styck|stycken|kruka|krukor|burk|burkar|pkt|paket|skiva|skivor|klyfta|klyftor|blad|påse|påsar|förp|frp|förpackning|förpackningar|nypa|nypor|knippe|knippen|tärning|tärningar|kub|kuber|kopp|koppar|glas|näve|nävar|droppe|droppar|kanna|kannor|bit|bitar|tub|tuber|flaska|flaskor|rulle|rullar|bunt|buntar|stång|stänger|kvist|kvistar|kula|kulor|huvud|huvuden|ask|askar|stjälk|stjälkar|skopa|skopor|korg|korgar|kartong|kartonger|bägare|tråg)\b/gi, '$1 $2 ')
-    // Separate multi-letter unit and following food word (e.g. "1dlrött" -> "1 dl rött", "3mskolio" -> "3 msk olio")
-    .replace(/\b(\d+(?:[,\.]\d+)?)[ \t]*(dl|cl|ml|liter|msk|tsk|krm|st|kg|hg)[ \t]*([a-zA-ZåäöÅÄÖ]{3,})\b/gi, '$1 $2 $3')
-    // Separate joined number and word at word boundary (e.g. "2vitlöksklyftor" -> "2 vitlöksklyftor", "1gullök" -> "1 gullök")
-    .replace(/\b(\d+)([a-zA-ZåäöÅÄÖ]{3,})\b/g, '$1 $2')
     // Strip abbreviation periods after common Swedish units (e.g. "st." -> "st", "dl." -> "dl")
     .replace(/(?<![a-zA-ZåäöÅÄÖé])(st|pkt|frp|förp|burk|burkar|dl|cl|ml|l|g|kg|hg|msk|tsk|krm)\.(?=\s+[a-zåäö\d]|$)\s*/g, '$1 ')
+    // Separate joined number and unit (e.g. "400g", "2st", "1msk", "2,5dl", "2burkar"). The unit
+    // must end there: "3 större" is not "3 st örre" (\b would count ö as the end of a word).
+    .replace(/(\d+(?:[,\.]\d+)?)[ \t]*(g|gram|kg|kilo|kilogram|hg|hekto|hektogram|dl|deciliter|cl|centiliter|ml|milliliter|liter|msk|matsked|matskedar|tsk|tesked|teskedar|krm|kryddmått|st|styck|stycken|kruka|krukor|burk|burkar|pkt|paket|skiva|skivor|klyfta|klyftor|blad|påse|påsar|förp|frp|förpackning|förpackningar|nypa|nypor|knippe|knippen|tärning|tärningar|kub|kuber|kopp|koppar|glas|näve|nävar|droppe|droppar|kanna|kannor|bit|bitar|tub|tuber|flaska|flaskor|rulle|rullar|bunt|buntar|stång|stänger|kvist|kvistar|kula|kulor|huvud|huvuden|ask|askar|stjälk|stjälkar|skopa|skopor|korg|korgar|kartong|kartonger|bägare|tråg)(?![A-Za-zÅÄÖåäöéüÉÜ])/gi, '$1 $2 ')
+    // Separate multi-letter unit and following food word (e.g. "1dlrött" -> "1 dl rött", "3mskolio" -> "3 msk olio")
+    .replace(/\b(\d+(?:[,\.]\d+)?)(dl|cl|ml|liter|msk|tsk|krm|st|kg|hg)[ \t]*([a-zA-ZåäöÅÄÖ]{3,})\b/gi, '$1 $2 $3')
+    // Separate joined number and word at word boundary (e.g. "2vitlöksklyftor" -> "2 vitlöksklyftor", "1gullök" -> "1 gullök")
+    .replace(/\b(\d+)([a-zA-ZåäöÅÄÖ]{3,})\b/g, '$1 $2')
     // Normalize "2x mjölk" or "2 x mjölk" to "2 st mjölk"
     .replace(/^(\d+(?:[,\.]\d+)?)\s*[xX]\s+/i, '$1 st ')
     // Normalize inline multiple horizontal spaces (without replacing newlines)
@@ -2193,7 +2194,9 @@ export function parseRawRecipeText(text: string, options: { fromOcr?: boolean } 
     }
 
     // "4 portioner, 50 minuter": portions and time on one line
-    if (line.length <= 40 && /^(ca\.?\s*)?\d+\s*(portioner|portion|personer|pers\.?|bitar|st|stycken|bullar)\b/i.test(line)) {
+    // Only when the count is followed by nothing, a comma or the time: "3 st ägg" and "3 större
+    // potatisar" are ingredients.
+    if (line.length <= 40 && /^(ca\.?\s*)?\d+\s*(portioner|portion|personer|pers\.?|bitar|st|stycken|bullar)(?=\s*(?:[,·|–-]|$|\d|ca\b))/i.test(line)) {
       const n = findServings(line);
       if (n) servings = servings ?? n;
       if (/(min|tim|timme|timmar)/i.test(line)) {
