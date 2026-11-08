@@ -11,6 +11,13 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.0.162',
+    date: '2026-11-08',
+    items: [
+      'I Gör så här visar tomaterna mängden för flera tomater och tomaten mängden för en, när receptet har båda. Rätter som tomatsalsa räknas inte som ingrediensen.',
+    ],
+  },
+  {
     version: '1.0.161',
     date: '2026-11-08',
     items: [
