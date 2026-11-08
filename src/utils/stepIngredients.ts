@@ -208,6 +208,8 @@ const SINGULAR_WORD = /(en|et|n)$/;
  */
 function narrowByNumber(word: string, indexes: number[], ingredients: Ingredient[]): number[] {
   if (indexes.length < 2) return indexes;
+  // In "tomattärningar" the number belongs to the cubes, not the tomatoes: no guess, no amount
+  if (PART_OF.some((p) => word.includes(p) && !word.startsWith(p))) return [];
   const isMany = (idx: number) => {
     const ing = ingredients[idx];
     if (typeof ing.amount === 'number') return ing.amount > 1;
