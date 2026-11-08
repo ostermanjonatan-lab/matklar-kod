@@ -308,10 +308,11 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
         // A non-breaking space keeps "810 g" on one line
         const amount = `${formatAmount(scaled)}\u00a0${formatUnit(ing.unit, scaled)}`.trim();
         if (indexes.length === 1) return amount;
-        // Only the name itself: "stora tomater, gärna kvisttomater" -> "stora tomater"
+        // Only the name itself: "stora tomater, gärna kvisttomater" and "stora tomater gärna
+        // kvisttomater" -> "stora tomater"
         const name = formatIngredientName(ing.name, scaled, ing.unit)
           .replace(/\s*\([^)]*\)/g, '')
-          .split(/,|\s+eller\s+/)[0]
+          .split(/,|\s+eller\s+|\s+gärna\s+|\s+helst\s+|\s+alt\.?\s+/)[0]
           .trim()
           .toLowerCase();
         return `${amount} ${name}`;
