@@ -11,6 +11,13 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.0.158',
+    date: '2026-11-08',
+    items: [
+      'Ljust läge är standard. Mörkt eller System väljs under Utseende i Inställningar.',
+    ],
+  },
+  {
     version: '1.0.157',
     date: '2026-11-07',
     items: [
