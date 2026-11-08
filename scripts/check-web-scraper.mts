@@ -1,5 +1,5 @@
 /**
- * Checks how recipe web pages are read (parseHtmlRecipe) against 9 test pages: recipe data
+ * Checks how recipe web pages are read (parseHtmlRecipe) against 10 test pages: recipe data
  * for search engines (JSON-LD, also in @graph and with sections), microdata, a WordPress recipe
  * plugin and a page with only headings and lists.
  * Run: npx tsx scripts/check-web-scraper.mts
@@ -146,6 +146,18 @@ const EXPECTED: Record<string, Expected> = {
       "Smör"
     ],
     "steps": 4
+  },
+  "inlinenumbers": {
+    "title": "Potatisbullar med ost",
+    "servings": 4,
+    "cookTimeMinutes": 30,
+    "category": "Middag",
+    "ingredients": [
+      "Potatisbullar",
+      "Riven ost",
+      "Jalapeños"
+    ],
+    "steps": 3
   }
 };
 

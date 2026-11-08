@@ -35,8 +35,8 @@ export function detectCategory(rawText?: string): RecipeCategory {
     c.includes('godis') ||
     c.includes('godsaker') ||
     c.includes('paj') ||
-    // Buns, but not "köttbullar" or "fiskbullar"
-    (/bull(e|ar)/.test(c) && !/(kött|fisk|kyckling|fläsk|vego|lamm|kalkon)bull/.test(c)) ||
+    // Buns, but not "köttbullar", "fiskbullar" or "potatisbullar"
+    (/bull(e|ar)/.test(c) && !/(kött|fisk|kyckling|fläsk|vego|lamm|kalkon|potatis|färs|ost)bull/.test(c)) ||
     c.includes('våffl') ||
     c.includes('muffin') ||
     c.includes('scones') ||

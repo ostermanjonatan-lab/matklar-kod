@@ -70,4 +70,8 @@ nojsonld: { url: 'https://www.mittkok.se/recept/vafflor', html: wrap(`<title>Vå
   `<h1>Våfflor</h1>${filler}<h2>Ingredienser</h2><ul><li>3 dl vetemjöl</li><li>2 tsk bakpulver</li><li>4 dl mjölk</li><li>2 ägg</li><li>75 g smör</li></ul>
    <h2>Gör så här</h2><ol><li>Blanda mjöl och bakpulver.</li><li>Vispa ner mjölken och äggen.</li><li>Rör ner smält smör.</li><li>Grädda i varmt våffeljärn.</li></ol>
    <h3>Fler recept du kanske gillar</h3><ul><li>Pannkakor</li><li>Kanelbullar</li></ul>`) },
+inlinenumbers: { url: 'https://www.ica.se/recept/potatisbullar-med-ost/', html: wrap(`<title>Potatisbullar med ost | ICA</title>` + ld({ '@context': 'https://schema.org', '@type': 'Recipe', name: 'Potatisbullar med ost',
+    recipeYield: '4 portioner', totalTime: 'PT30M', recipeIngredient: ['810 g potatisbullar', '3 dl riven ost', '½ dl jalapeños'],
+    recipeInstructions: '1. Sätt ugnen på 225 grader. 2. Dela varje potatisbulle i 4. Lägg bitarna på en plåt. 3. Strö över ost och gratinera ca 10 minuter.' }),
+  `<h1>Potatisbullar med ost</h1>${filler}`) },
 };

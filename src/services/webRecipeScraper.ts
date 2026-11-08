@@ -493,17 +493,37 @@ function splitStepText(rawText: string): string[] {
   return finalClean ? [cleanLeadingStepNumber(finalClean)] : [];
 }
 
+/**
+ * Splits "1. Sätt ugnen på. 2. Dela varje potatisbulle i 4. Lägg bitarna ..." into steps. A
+ * number only starts a step when it comes first or after the end of a sentence, and is the
+ * next number in the row (1, 2, 3 ...). So the "4." in "dela i 4." stays in its sentence.
+ */
 function splitNumberedSteps(text: string): string[] {
-  const parts = text.split(/(?:^|\s+)(?=(?:\d{1,2}[.)]|[sS]teg\s+\d{1,2}[:.]?)\s+)/);
-  const result: string[] = [];
-
-  for (const part of parts) {
-    const cleaned = cleanHtmlText(part);
-    if (cleaned && cleaned.length > 3) {
-      result.push(cleaned);
+  const marker = /(^|[.!?:;)]\s+|\n\s*)(?:[sS]teg\s+)?(\d{1,2})(?:[.)]|:)?\s+(?=\S)/g;
+  const cuts: number[] = [];
+  let expected: number | null = null;
+  let m: RegExpExecArray | null;
+  while ((m = marker.exec(text))) {
+    const n = Number(m[2]);
+    const isStepWord = /steg\s+$/i.test(text.slice(m.index + m[1].length, m.index + m[0].length - m[2].length - 1)) || /^(?:[sS]teg)/.test(text.slice(m.index + m[1].length));
+    const hasMark = /[.):]\s+$/.test(m[0]) || isStepWord;
+    if (!hasMark) continue;
+    if (expected === null ? n === 1 || cuts.length === 0 && m.index === 0 : n === expected) {
+      cuts.push(m.index + m[1].length);
+      expected = n + 1;
     }
   }
-
+  if (cuts.length < 2) {
+    const whole = cleanHtmlText(text);
+    return whole ? [whole] : [];
+  }
+  const result: string[] = [];
+  const head = cleanHtmlText(text.slice(0, cuts[0]));
+  if (head && head.length > 3) result.push(head);
+  cuts.forEach((start, i) => {
+    const cleaned = cleanHtmlText(text.slice(start, cuts[i + 1] ?? text.length));
+    if (cleaned && cleaned.length > 3) result.push(cleaned);
+  });
   return result;
 }
 
