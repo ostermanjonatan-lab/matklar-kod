@@ -6,7 +6,8 @@ import type { Ingredient } from '../types/recipe';
  * "äggulorna" and "Gul lök" matches "löken".
  */
 
-const LETTER = 'a-zåäöéèüæø';
+// Letters a word is made of, also in borrowed words like "jalapeños" and "crème"
+const LETTER = 'a-zåäöéèêëüæøñçáàâíìîïóòôúùûœ';
 
 // Parts of compound names that the step text usually leaves out,
 // e.g. "kycklingfilé" is called "kycklingen" and "vitlöksklyftor" "vitlöken".
@@ -144,6 +145,8 @@ export function findIngredientMentions(text: string, ingredients: Ingredient[]):
         if (/^(vatten|vattn|bad|röra)/.test(rest)) continue;
         // "Salta" is the verb, not the salt
         if (key === 'salt' && rest === 'a') continue;
+        // A describing word built on the name, e.g. "ostgratinerade", "smörstekt", is not the ingredient
+        if (rest.length > 4 && /(ade|ad|at|stekt|kokt|bakad|bakade|rostad|rostade)$/.test(rest)) continue;
         matches.push({ idx, start: m.index, end: m.index + key.length, wordEnd: m.index + key.length + rest.length });
       }
     }

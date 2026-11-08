@@ -305,9 +305,15 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
       .map((idx) => {
         const ing = recipe.ingredients[idx];
         const scaled = scaleIngredientAmount(ing.amount, recipe.servings, servings);
-        const amount = `${formatAmount(scaled)} ${formatUnit(ing.unit, scaled)}`.trim();
+        // A non-breaking space keeps "810 g" on one line
+        const amount = `${formatAmount(scaled)}\u00a0${formatUnit(ing.unit, scaled)}`.trim();
         if (indexes.length === 1) return amount;
-        const name = formatIngredientName(ing.name, scaled, ing.unit).replace(/\s*\([^)]*\)/g, '').trim().toLowerCase();
+        // Only the name itself: "stora tomater, gärna kvisttomater" -> "stora tomater"
+        const name = formatIngredientName(ing.name, scaled, ing.unit)
+          .replace(/\s*\([^)]*\)/g, '')
+          .split(/,|\s+eller\s+/)[0]
+          .trim()
+          .toLowerCase();
         return `${amount} ${name}`;
       })
       .join(' · ');
@@ -687,7 +693,7 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
                               <span key={`${inst.stepNumber}-${m.start}`} className={isStepDone ? '' : 'font-bold text-[#284235]'}>
                                 {inst.text.slice(m.start, m.end)}
                                 {mentionAmount(m.ingredients) && (
-                                  <span className="whitespace-nowrap"> ({mentionAmount(m.ingredients)})</span>
+                                  <span> ({mentionAmount(m.ingredients)})</span>
                                 )}
                               </span>
                             );
