@@ -11,6 +11,14 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.0.160',
+    date: '2026-11-08',
+    items: [
+      '4 stora tomater, 3 större potatisar och 3 st ägg tolkas rätt när du lägger till ett recept.',
+      'Långa ord och webbadresser i ett öppnat recept bryts i stället för att hamna utanför skärmen.',
+    ],
+  },
+  {
     version: '1.0.159',
     date: '2026-11-08',
     items: [
