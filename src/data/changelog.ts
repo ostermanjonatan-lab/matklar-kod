@@ -11,6 +11,14 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.0.161',
+    date: '2026-11-08',
+    items: [
+      'Mängderna i Gör så här bryts i stället för att gå utanför skärmen, och visar bara ingrediensens namn utan till exempel gärna kvisttomater.',
+      'Ord som jalapeños delas inte längre av mängden.',
+    ],
+  },
+  {
     version: '1.0.160',
     date: '2026-11-08',
     items: [
