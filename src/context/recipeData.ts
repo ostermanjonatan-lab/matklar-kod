@@ -2,6 +2,7 @@
  * Pure helpers for the app's data: cleaning up saved recipes and building the meal plan week.
  * They hold no state, so they are kept apart from RecipeContext.
  */
+import { cleanLeadingStepNumber } from '../utils/formatters';
 import { estimateDifficulty, isRecipeDifficulty } from '../utils/recipeDifficulty';
 import type { Recipe, MealPlanDay } from '../types/recipe';
 import { getRecipeSubcategories } from '../types/recipe';
@@ -120,6 +121,9 @@ export function sanitizeRecipe(recipe: Recipe): Recipe {
     subcategories: clean,
     subcategory: clean.join(', '),
     ingredients: cleanIngredients,
+    // Steps saved with their own number ("1. Förbered ..." behind an invisible character) are
+    // shown with the app's number only
+    instructions: (recipe.instructions || []).map((inst) => ({ ...inst, text: cleanLeadingStepNumber(inst.text) })),
     prepTimeMinutes: 0,
     cookTimeMinutes: cookingTime,
     // No difficulty chosen: the app makes a guess, which can be changed when editing

@@ -1094,7 +1094,7 @@ export const MealPlanView: React.FC = () => {
                       <FadeImage src={lunchRecipe.coverImageUrl} alt={lunchRecipe.title} className="absolute inset-0 w-full h-full object-cover" />
                     </span>
                     <div className="min-w-0 flex-1">
-                      <h4 className="font-serif font-bold text-sm leading-5 text-stone-900 line-clamp-2 group-hover:text-emerald-900 transition-colors">
+                      <h4 className="font-serif font-bold text-sm leading-5 text-stone-900 truncate group-hover:text-emerald-900 transition-colors">
                         {formatRecipeTitle(lunchRecipe.title)}
                       </h4>
                       <p className="text-[11px] text-stone-500">
@@ -1156,7 +1156,7 @@ export const MealPlanView: React.FC = () => {
                   >
                     <LunchboxIcon className="w-5 h-5 text-stone-400 shrink-0" />
                     <div className="min-w-0 flex-1">
-                      <h4 className="font-serif font-bold text-base leading-5 text-stone-900 line-clamp-2">
+                      <h4 className="font-serif font-bold text-base leading-5 text-stone-900 truncate">
                         {parseLeftoverLunch(activeDayData.customLunch)?.title ?? activeDayData.customLunch}
                       </h4>
                       {parseLeftoverLunch(activeDayData.customLunch) && (
@@ -1279,16 +1279,15 @@ export const MealPlanView: React.FC = () => {
                     )}
                   </div>
 
-                  {/* Day, dinner and one line with time, portions and lunch. The name always has room
-                      for two lines, so a long name is shown whole, all days stay equally high and the
-                      line with time and lunch stays in the same place on every day. */}
-                  <div className="flex-1 min-w-0 min-h-[72px] flex flex-col justify-start">
+                  {/* Day, dinner (one line) and one line with time, portions and lunch, the same
+                      height on every day so the line with time and lunch stays in the same place. */}
+                  <div className="flex-1 min-w-0 min-h-[52px] flex flex-col justify-start">
                     <div className={`text-xs ${isToday ? 'font-bold text-[#284235]' : 'text-stone-500'}`}>
                       {day} {formatDayMonth(weekDates[idx])}{isToday ? ', i dag' : ''}
                     </div>
 
-                    <div className="h-10">
-                      <div className={`text-sm leading-5 line-clamp-2 ${hasDinnerHere ? 'font-semibold text-stone-900' : 'font-semibold text-[#284235]'}`}>
+                    <div className="h-5">
+                      <div className={`text-sm leading-5 truncate ${hasDinnerHere ? 'font-semibold text-stone-900' : 'font-semibold text-[#284235]'}`}>
                         {dRecipe ? formatRecipeTitle(dRecipe.title) : hasCustomDinner ? dayData?.customDinner : 'Välj middag'}
                       </div>
                     </div>

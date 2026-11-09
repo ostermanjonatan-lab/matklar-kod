@@ -400,6 +400,10 @@ export function cleanLeadingStepNumber(text: string): string {
   if (!text) return '';
 
   return text
+    // 0. Invisible characters copied along with the text, which would hide the step number
+    .replace(/[\u200B-\u200F\u2060\uFEFF\u00AD]/g, '')
+    .replace(/[\u00A0\u202F]/g, ' ')
+    .trim()
     // 1. Strip markdown images and HTML tags
     .replace(/!\[.*?\]\(.*?\)/g, '')
     .replace(/<[^>]+>/g, '')

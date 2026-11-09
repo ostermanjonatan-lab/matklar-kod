@@ -1,3 +1,4 @@
+import { cleanLeadingStepNumber } from '../utils/formatters';
 import { getSupabase } from './supabaseClient';
 import type { Recipe, MealPlanDay, ShoppingItem, Household, UserProfile, PantryItem, HouseholdJoinRequest } from '../types/recipe';
 import { WEEKDAY_NAMES, getWeekDates, getWeekStart, isISODate } from '../utils/mealPlanDates';
@@ -86,7 +87,9 @@ export function mapRowToRecipe(row: any): Recipe {
     ingredients: Array.isArray(row.ingredients)
       ? row.ingredients.map((ing: any) => ({ ...ing, isPantryStaple: isCommonPantryStaple(ing?.name || '') }))
       : [],
-    instructions: Array.isArray(row.instructions) ? row.instructions : [],
+    instructions: Array.isArray(row.instructions)
+      ? row.instructions.map((inst: any) => ({ ...inst, text: cleanLeadingStepNumber(inst?.text || '') }))
+      : [],
     prepTimeMinutes: 0,
     cookTimeMinutes: Number(row.cook_time_minutes) > 0 ? Number(row.cook_time_minutes) : (Number(row.prep_time_minutes) || 30),
     // The difficulty is kept as a hidden tag, see utils/recipeDifficulty.ts
