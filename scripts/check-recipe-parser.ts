@@ -1,5 +1,5 @@
 /**
- * Checks the reading of pasted recipe text (parseRawRecipeText) against 20 recipe texts.
+ * Checks the reading of pasted recipe text (parseRawRecipeText) against 25 recipe texts.
  * Run: npx tsx scripts/check-recipe-parser.ts
  * When the reading is improved on purpose, update the expected values below.
  */
@@ -357,6 +357,72 @@ const EXPECTED: Record<string, Expected> = {
       "Lime (skal och saft)"
     ],
     "steps": 2
+  },
+  "instagram": {
+    "title": "Världens godaste pasta",
+    "servings": 4,
+    "cookingTimeMinutes": null,
+    "difficulty": null,
+    "category": "Middag",
+    "ingredients": [
+      "Pasta",
+      "Grädde",
+      "Parmesan"
+    ],
+    "steps": 3
+  },
+  "kommalista": {
+    "title": "Pannkakor",
+    "servings": 4,
+    "cookingTimeMinutes": null,
+    "difficulty": null,
+    "category": "Efterrätt",
+    "ingredients": [
+      "Ägg",
+      "Mjölk",
+      "Vetemjöl",
+      "Salt"
+    ],
+    "steps": 3
+  },
+  "tabell": {
+    "title": "Laxpasta",
+    "servings": 4,
+    "cookingTimeMinutes": null,
+    "difficulty": null,
+    "category": "Middag",
+    "ingredients": [
+      "Pasta",
+      "Laxfilé",
+      "Crème fraiche"
+    ],
+    "steps": 3
+  },
+  "mangdefter": {
+    "title": "Guacamole",
+    "servings": 4,
+    "cookingTimeMinutes": null,
+    "difficulty": null,
+    "category": "Såser",
+    "ingredients": [
+      "Avokado",
+      "Lime",
+      "Salt"
+    ],
+    "steps": 1
+  },
+  "enrad": {
+    "title": "Gröt",
+    "servings": 4,
+    "cookingTimeMinutes": null,
+    "difficulty": null,
+    "category": "Frukost",
+    "ingredients": [
+      "Havregryn",
+      "Vatten",
+      "Salt"
+    ],
+    "steps": 1
   }
 };
 

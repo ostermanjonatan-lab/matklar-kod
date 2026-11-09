@@ -1003,7 +1003,8 @@ export function cleanOcrArtifacts(rawText: string, options: { ocr?: boolean } = 
   if (!rawText) return '';
 
   // Remove null bytes and unusual control characters
-  let text = rawText.replace(/[\x00-\x09\x0B\x0C\x0E-\x1F]/g, '');
+  // Tabs (columns copied from a table, "pasta⇥400 g") become spaces; other control characters go
+  let text = rawText.replace(/\t/g, ' ').replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '');
 
   // Fixes for misread letters only make sense for scanned text. On pasted text they do harm,
   // e.g. "Lägg i lök" would become "Lägg 1 lök".
@@ -1078,11 +1079,17 @@ export function normalizeUnit(rawUnit: string): string {
     case 'matsked':
     case 'matskedar':
     case 'msk':
+    case 'tbsp':
+    case 'tbs':
       return 'msk';
     case 'tesked':
     case 'teskedar':
     case 'tsk':
+    case 'tsp':
       return 'tsk';
+    case 'cup':
+    case 'cups':
+      return 'kopp';
     case 'kryddmått':
     case 'krm':
       return 'krm';
@@ -1203,7 +1210,7 @@ export function normalizeUnit(rawUnit: string): string {
 export const VALID_UNITS = [
   'g', 'gram', 'kg', 'kilo', 'kilogram', 'hg', 'hekto', 'hektogram',
   'dl', 'deciliter', 'cl', 'centiliter', 'ml', 'milliliter', 'l', 'liter',
-  'msk', 'matsked', 'matskedar', 'tsk', 'tesked', 'teskedar', 'krm', 'kryddmått',
+  'msk', 'matsked', 'matskedar', 'tsk', 'tesked', 'teskedar', 'krm', 'kryddmått', 'tsp', 'tbsp', 'tbs', 'cup', 'cups',
   'st', 'styck', 'stycken',
   'skiva', 'skivor',
   'kruka', 'krukor',
@@ -2035,11 +2042,11 @@ const DIET_WORD = /^(vegetarisk|vegetariskt|vegansk|veganskt|glutenfri|glutenfri
 
 /** "Ingredienser", "Du behöver" and similar, possibly followed by portions. */
 const INGREDIENT_HEADER =
-  /^(ingredienser|ingrediens|du behöver|det här behöver du|det behöver du|vad du behöver|vad behöver du|innehåll|handla)\b/i;
+  /^(ingredienser|ingrediens|du behöver|det här behöver du|det behöver du|vad du behöver|vad behöver du|innehåll|handla|ingredients)\b/i;
 
 /** "Gör så här", "Instruktioner" and similar. */
 const INSTRUCTION_HEADER =
-  /^(gör så här|gör såhär|så här gör du|så gör du|tillagning|instruktioner|instruktion|tillvägagångssätt|tillredning|beredning|arbetsgång|metod|steg för steg|steg)\s*:?$/i;
+  /^(gör så här|gör såhär|så här gör du|så gör du|tillagning|instruktioner|instruktion|tillvägagångssätt|tillredning|beredning|arbetsgång|metod|steg för steg|steg|instructions|directions|method|preparation)\s*:?$/i;
 
 /** Sub-headings inside the ingredient list ("Sås", "Till servering"). They are skipped. */
 const INGREDIENT_SUBHEADER =
@@ -2086,6 +2093,8 @@ export function isIngredientSubheading(line: string, next: string = ''): boolean
 function stripBullet(line: string): string {
   return line
     .replace(/^\[\s?[xX ]?\s?\]\s*/, '')
+    // Emojis used as bullets in posts: "✅ 400 g pasta", "👉 Koka pastan."
+    .replace(/^(?:[\p{Extended_Pictographic}\u{1F1E6}-\u{1F1FF}\uFE0F\u200D\u20E3]\s*)+/u, '')
     .replace(/^[•·▪◦●○■□▢☐☑✓✔*]+\s*/, '')
     .replace(/^[-–—]\s+/, '')
     .trim();
@@ -2125,7 +2134,14 @@ function findDifficulty(line: string, alone: boolean): 1 | 2 | 3 | null {
 
 /** The recipe name: plain sentence case, without markdown or trailing colon. */
 function cleanParsedTitle(line: string): string {
-  let t = line.replace(/^#+\s*/, '').replace(/\s*:$/, '').trim();
+  let t = line
+    .replace(/^#+\s*/, '')
+    // Emojis and exclamation marks from posts: "🍝 Världens godaste pasta! 🍝"
+    .replace(/[\p{Extended_Pictographic}\u{1F1E6}-\u{1F1FF}\uFE0F\u200D\u20E3]/gu, '')
+    .replace(/\s*!+\s*$/, '')
+    .replace(/\s*:$/, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
   if (isAllCaps(t)) t = t.toLowerCase();
   return t.charAt(0).toUpperCase() + t.slice(1);
 }
@@ -2151,7 +2167,38 @@ export function parseRawRecipeText(text: string, options: { fromOcr?: boolean } 
   let lines = cleaned
     .split(/\r?\n/)
     .map((l) => stripBullet(l.trim()))
-    .filter((l) => l.length > 0);
+    // Hashtags at the end of a post are not part of the recipe
+    .filter((l) => l.length > 0 && !/^(#[\p{L}\p{N}_]+[\s,]*)+$/u.test(l))
+    // A whole recipe on one line, "Gröt: 1 dl havregryn, 2 dl vatten. Koka upp ...": the name first
+    .flatMap((l) => {
+      const m = l.match(/^([^\d:]{2,40}):\s+(?=(?:ca\.?\s+)?[\d½¼¾⅓⅔⅛])(.+)$/);
+      // Only when a list follows, so "Tid: 35 min" and "Portioner: 4" stay as they are
+      return m && (m[2].match(/,\s/g) || []).length >= 2 ? [m[1].trim(), m[2].trim()] : [l];
+    })
+    // Several ingredients on one line, separated by commas: "3 ägg, 6 dl mjölk, 2,5 dl mjöl",
+    // also as the first sentence of a line that then goes on with the steps
+    .flatMap((l) => {
+      const isList = (t: string) => {
+        const parts = t.split(/,\s+|;\s*/).map((p) => p.trim()).filter(Boolean);
+        return parts.length >= 3 && parts.filter((p) => QUANTITY_START.test(p)).length >= 2 ? parts : null;
+      };
+      const whole = !/[.!?]$/.test(l) ? isList(l) : null;
+      if (whole) return whole;
+      const sentences = l.split(/(?<=[.!?])\s+(?=[A-ZÅÄÖ\d])/);
+      if (sentences.length < 2) return [l];
+      const out: string[] = [];
+      let found = false;
+      for (const sentence of sentences) {
+        const list = isList(sentence.replace(/[.!?]$/, ''));
+        if (list) {
+          out.push(...list);
+          found = true;
+        } else out.push(sentence);
+      }
+      return found ? out : [l];
+    })
+    // "Avokado – en nypa": a word number after the dash counts as an amount
+    .map((l) => l.replace(/^([^\d]{2,40}?)\s+[–—-]\s+(?:en|ett)\s+/i, '$1 – 1 '));
 
   // Two-column cookbook pages only come from photos
   if (fromOcr) {
@@ -2179,7 +2226,10 @@ export function parseRawRecipeText(text: string, options: { fromOcr?: boolean } 
   const looksLikeIngredient = (l: string) =>
     l.length <= 70 &&
     !/[.!?]$/.test(l) &&
-    (startsWithQuantity(l) || isLikelyIngredientLine(l, true));
+    (startsWithQuantity(l) ||
+      isLikelyIngredientLine(l, true) ||
+      // The amount after the name: "Avokado – 2 st", "Mjölk: 3 dl"
+      /^[^\d]{2,40}\s*[–—\-:]\s*(?:ca\.?\s+)?[\d½¼¾⅓⅔⅛][\d\s\/.,]*\s*[a-zåäö]{0,12}\.?$/i.test(l));
   const addStep = (l: string) => {
     const t = cleanLeadingStepNumber(l).trim();
     if (t.length < 2) return;

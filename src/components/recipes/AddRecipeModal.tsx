@@ -161,7 +161,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = ({ onClose, closeGu
         // Very little text extracted – tell user and still show review
         setOcrReviewText(rawText);
         setOcrReviewMode(true);
-        setToastMessage('Lite text avlästes – se över och rätta texten nedan, klicka sedan Tolka.');
+        setToastMessage('Lite text kunde läsas. Rätta texten nedan och tryck på Fyll i receptet.');
         setTimeout(() => setToastMessage(null), 5000);
       }
     } catch (err) {

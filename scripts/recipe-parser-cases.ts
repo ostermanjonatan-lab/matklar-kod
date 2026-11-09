@@ -353,4 +353,30 @@ Ingredienser
 Gör så här
 Koka riset.
 Låt grytan puttra 1 timme och 15 minuter.`,
+instagram: `🍝 Världens godaste pasta! 🍝
+Det här behöver du (4 pers):
+✅ 400 g pasta
+✅ 2 dl grädde
+✅ 100 g parmesan
+Så gör du:
+👉 Koka pastan.
+👉 Värm grädden.
+👉 Blanda allt och toppa med parmesan.
+#pasta #middag`,
+kommalista: `Pannkakor
+3 ägg, 6 dl mjölk, 2,5 dl vetemjöl, 1 krm salt
+Vispa mjöl och hälften av mjölken. Vispa i resten och äggen. Stek tunna pannkakor.`,
+tabell: `Laxpasta
+Ingredienser
+pasta	400 g
+laxfilé	500 g
+crème fraiche	2 dl
+Gör så här
+Koka pastan. Stek laxen. Blanda med crème fraiche.`,
+mangdefter: `Guacamole
+Avokado – 2 st
+Lime – 1/2 st
+Salt – en nypa
+Mosa avokadon och smaka av med lime och salt.`,
+enrad: `Gröt: 1 dl havregryn, 2 dl vatten, 1 krm salt. Koka upp och låt puttra 3 min.`,
 };
