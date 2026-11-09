@@ -2025,9 +2025,10 @@ function parseJsonLdRecipe(schema: any, sourceUrl: string, doc: Document, engine
     }
   }
 
-  // If JSON-LD is essentially empty (empty ingredients AND empty instructions), return null so DOM/Markdown fallbacks can run
-  if (ingredients.length < 2 && instructions.length < 2) {
-    return null;
+  // If JSON-LD is essentially empty, return null so DOM/Markdown fallbacks can run. A short recipe
+  // such as a drink (one ingredient and one step) is still a recipe when the page says it is one.
+  if (ingredients.length === 0 || instructions.length === 0) {
+    if (ingredients.length < 2 && instructions.length < 2) return null;
   }
 
   const deducedSubcats = detectSubcategories(
@@ -2127,7 +2128,12 @@ export function parseHtmlRecipe(html: string, targetUrl: string, engineName: str
         const found = json ? findRecipeInJsonLd(json) : null;
         if (found) {
           const parsed = parseJsonLdRecipe(found, targetUrl, doc, engineName);
-          if (parsed && (parsed.ingredients.length >= 2 || parsed.instructions.length >= 2)) {
+          if (
+            parsed &&
+            (parsed.ingredients.length >= 2 ||
+              parsed.instructions.length >= 2 ||
+              (parsed.ingredients.length >= 1 && parsed.instructions.length >= 1))
+          ) {
             return parsed;
           }
         }

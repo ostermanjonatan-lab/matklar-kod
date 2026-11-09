@@ -31,7 +31,11 @@ export function detectCategory(rawText?: string): RecipeCategory {
   }
 
   // Drinks before desserts, so "varm choklad" is a drink
-  if (/varm choklad|chokladdryck|varm kakao|glögg|lemonad|läsk|milkshake|iste\b|punsch|bål\b/.test(c)) {
+  if (
+    /varm choklad|chokladdryck|varm kakao|glögg|lemonad|läsk|milkshake|iste\b|punsch|bål\b/.test(c) ||
+    // Drinks by what is in them: "Gin och tonic", "Mojito", "Aperol spritz"
+    /(^|[^a-zåäö])(gin|vodka|whisky|whiskey|tequila|tonic|spritz|mojito|margarita|negroni|sangria|daiquiri|cosmopolitan|cider|mjöd|grogg|drinkar?)([^a-zåäö]|$)/.test(c)
+  ) {
     return 'Dryck';
   }
 
