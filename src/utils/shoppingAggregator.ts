@@ -120,14 +120,55 @@ export function clearAisleOverrides(): void {
   }
 }
 
+// Units that can be counted into each other: volume in millilitres, weight in grams
+const VOLUME_ML: Record<string, number> = { ml: 1, cl: 10, dl: 100, l: 1000, krm: 1, tsk: 5, msk: 15 };
+const WEIGHT_G: Record<string, number> = { g: 1, hg: 100, kg: 1000 };
+
+function cleanUnitOf(unit?: string): string {
+  const u = normalizeUnit(unit || '').toLowerCase().trim().replace(/\.$/, '');
+  return !u || u === 'styck' || u === 'stycken' ? 'st' : u;
+}
+
+/** "volym", "vikt" or the unit itself: what amounts can be added up within */
+function unitGroup(unit: string): string {
+  if (unit in VOLUME_ML) return 'volym';
+  if (unit in WEIGHT_G) return 'vikt';
+  return unit;
+}
+
+/** "Vitlöksklyftor" counted in st are the same thing as "vitlök" counted in klyftor */
+function canonical(name: string, unit: string): { name: string; unit: string } {
+  if (/^vitlöksklyft/.test(name) && (unit === 'st' || unit === 'klyfta')) return { name: 'vitlök', unit: 'klyfta' };
+  return { name, unit };
+}
+
 export function normalizeIngredientKey(name: string, unit?: string): string {
-  const cleanName = normalizeIngredientNameForMatching(name);
-  const normalizedU = normalizeUnit(unit || '');
-  let cleanUnit = normalizedU.toLowerCase().trim().replace(/\.$/, '');
-  if (!cleanUnit || cleanUnit === 'st' || cleanUnit === 'styck' || cleanUnit === 'stycken') {
-    cleanUnit = 'st';
+  const c = canonical(normalizeIngredientNameForMatching(name), cleanUnitOf(unit));
+  // 5 dl and 1 l of the same thing are one row, as are 500 g and 1 kg
+  return `${c.name}___${unitGroup(c.unit)}`;
+}
+
+/**
+ * Adds two amounts of the same thing, also in different units of the same kind: 5 dl + 1 l is
+ * 1,5 l, 500 g + 1 kg is 1,5 kg. The sum is given in the larger of the two units.
+ */
+export function addShoppingAmounts(
+  a: { amount: number | null; unit: string },
+  b: { amount: number | null; unit: string }
+): { amount: number | null; unit: string } {
+  if (b.amount === null) return a;
+  if (a.amount === null) return b;
+  const ua = cleanUnitOf(a.unit);
+  const ub = cleanUnitOf(b.unit);
+  const round = (n: number) => Math.round(n * 100) / 100;
+  for (const table of [VOLUME_ML, WEIGHT_G]) {
+    if (ua in table && ub in table && ua !== ub) {
+      const total = a.amount * table[ua] + b.amount * table[ub];
+      const unit = table[ua] >= table[ub] ? a.unit : b.unit;
+      return { amount: round(total / table[cleanUnitOf(unit)]), unit };
+    }
   }
-  return `${cleanName}___${cleanUnit}`;
+  return { amount: round(a.amount + b.amount), unit: a.unit };
 }
 
 export interface GenerateShoppingListOptions {
@@ -225,11 +266,9 @@ export function mergeIngredientsIntoShoppingList(
     } else {
       // Preexisting duplicate item in currentList: merge into the first occurrence
       const existing = keyMap.get(key)!;
-      if (existing.amount !== null && item.amount !== null) {
-        existing.amount = Math.round((existing.amount + item.amount) * 100) / 100;
-      } else if (item.amount !== null && existing.amount === null) {
-        existing.amount = item.amount;
-      }
+      const sum = addShoppingAmounts(existing, item);
+      existing.amount = sum.amount;
+      existing.unit = sum.unit;
 
       if (item.recipeSource || (item.mergedSources && item.mergedSources.length > 0)) {
         const itemSources = item.mergedSources || (item.recipeSource ? [item.recipeSource] : []);
@@ -276,12 +315,10 @@ export function mergeIngredientsIntoShoppingList(
     if (keyMap.has(key)) {
       const existing = keyMap.get(key)!;
 
-      // Sum amounts if both have values
-      if (existing.amount !== null && item.amount !== null) {
-        existing.amount = Math.round((existing.amount + item.amount) * 100) / 100;
-      } else if (item.amount !== null && existing.amount === null) {
-        existing.amount = item.amount;
-      }
+      // Sum amounts if both have values, also across units of the same kind (dl and l, g and kg)
+      const sum = addShoppingAmounts(existing, item);
+      existing.amount = sum.amount;
+      existing.unit = sum.unit;
 
       // Merge recipe sources
       const existingSources = existing.mergedSources || (existing.recipeSource ? [existing.recipeSource] : []);

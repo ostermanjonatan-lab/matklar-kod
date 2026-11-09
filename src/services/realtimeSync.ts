@@ -8,6 +8,7 @@ import {
   loadAisleOverrides,
   mergeAisleOverrides,
   normalizeIngredientKey,
+  addShoppingAmounts,
   normalizeIngredientNameForMatching,
   normalizeRecipeSource,
 } from '../utils/shoppingAggregator';
@@ -611,11 +612,9 @@ export async function fetchHouseholdDataFromSupabase(householdId: string): Promi
         if (seen.has(key)) {
           // Preexisting duplicate in Supabase from prior sessions: merge amounts & remove duplicate ID
           const existing = seen.get(key)!;
-          if (item.amount !== null && existing.amount !== null) {
-            existing.amount = Math.round((existing.amount + item.amount) * 100) / 100;
-          } else if (item.amount !== null && existing.amount === null) {
-            existing.amount = item.amount;
-          }
+          const sum = addShoppingAmounts(existing, item);
+          existing.amount = sum.amount;
+          existing.unit = sum.unit;
           if (!existing.comment && item.comment) {
             existing.comment = item.comment;
           }

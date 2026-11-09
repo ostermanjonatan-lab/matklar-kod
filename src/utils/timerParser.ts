@@ -18,11 +18,23 @@ export function detectTimersInText(text: string): DetectedTimer[] {
 
   const results: DetectedTimer[] = [];
 
+  // 0. Hours and minutes together: "1 timme och 15 minuter", "en timme 30 min" -> one timer
+  const comboRegex = /(\d+(?:[.,]\d+)?|en|ett)\s*(?:timmar|timme|tim|h)\s*(?:och\s*)?(\d+)\s*(?:minuter|minut|min)\b/gi;
+  let combo: RegExpExecArray | null;
+  while ((combo = comboRegex.exec(text)) !== null) {
+    const hours = /^e(n|tt)$/i.test(combo[1]) ? 1 : parseFloat(combo[1].replace(',', '.'));
+    const minutes = Math.round(hours * 60) + parseInt(combo[2], 10);
+    if (minutes > 0 && minutes <= 720) {
+      results.push({ minutes, seconds: minutes * 60, label: combo[0], rawText: combo[0] });
+    }
+  }
+
   // 1. Range minutes/hours: "15-20 minuter", "1-2 timmar"
   const rangeRegex = /(\d+)\s*(?:-|–|till)\s*(\d+)\s*(minuter|minut|min|timmar|timme|tim|h|sekunder|sekund|sek)\b/gi;
   let match: RegExpExecArray | null;
 
   while ((match = rangeRegex.exec(text)) !== null) {
+    if (results.some((r) => r.rawText.includes(match![0]))) continue;
     const minVal = parseInt(match[1], 10);
     const maxVal = parseInt(match[2], 10);
     const unit = match[3].toLowerCase();
@@ -90,6 +102,7 @@ export function detectTimersInText(text: string): DetectedTimer[] {
   for (const sp of specialPhrases) {
     let spMatch: RegExpExecArray | null;
     while ((spMatch = sp.phrase.exec(text)) !== null) {
+      if (results.some((r) => r.rawText.toLowerCase().includes(spMatch![0].toLowerCase()))) continue;
       results.push({
         minutes: sp.minutes,
         seconds: sp.minutes * 60,

@@ -227,7 +227,8 @@ export function resolveSavedAisle(name: string, aisle?: string): string {
 
 export function detectAisle(name: string): string {
   if (!name) return 'Övrigt';
-  const l = name.toLowerCase().trim();
+  // What is in brackets describes the thing ("Lime (skal och saft)") and does not decide the aisle
+  const l = (name.replace(/\([^)]*\)/g, ' ').replace(/\s+/g, ' ').trim() || name).toLowerCase().trim();
 
   // 1. SPECIFIC PRIORITIES & OVERRIDES
   // Frozen items (must come before fresh berries, vegetables, meats)
@@ -944,6 +945,16 @@ export function parseFractionOrNumber(raw: string): number | null {
   if (!raw) return null;
   let str = raw.trim();
 
+  // A range with fractions, e.g. "½-1" or "1 ½–2": the middle of the two, like "2-3" below
+  const fracRange = str.match(/^([\d½¼¾⅓⅔⅛\s\/.,]+?)\s*[-–]\s*([\d½¼¾⅓⅔⅛\s\/.,]+)$/);
+  if (fracRange && /[½¼¾⅓⅔⅛\/]/.test(str)) {
+    const low = parseFractionOrNumber(fracRange[1]);
+    const high = parseFractionOrNumber(fracRange[2]);
+    if (low !== null && high !== null && low >= 0 && high >= 0) {
+      return Math.round(((low + high) / 2) * 100) / 100;
+    }
+  }
+
   // Handle range like "1-2" -> take average or first
   if (/^\d+\s*[-–]\s*\d+$/.test(str)) {
     const parts = str.split(/[-–]/);
@@ -1018,7 +1029,7 @@ export function cleanOcrArtifacts(rawText: string, options: { ocr?: boolean } = 
     // Separate fractions joined with units: e.g. "½dl" -> "½ dl"
     .replace(/([½¼¾⅓⅔⅛])\s*([a-zA-ZåäöÅÄÖ]+)/g, '$1 $2')
     // Strip abbreviation periods after common Swedish units (e.g. "st." -> "st", "dl." -> "dl")
-    .replace(/(?<![a-zA-ZåäöÅÄÖé])(st|pkt|frp|förp|burk|burkar|dl|cl|ml|l|g|kg|hg|msk|tsk|krm)\.(?=\s+[a-zåäö\d]|$)\s*/g, '$1 ')
+    .replace(/(?<![a-zA-ZåäöÅÄÖé])(st|pkt|frp|förp|burk|burkar|dl|cl|ml|l|g|kg|hg|msk|tsk|krm|port|portion)\.(?=\s+[a-zåäö\d]|$)\s*/gi, '$1 ')
     // Separate joined number and unit (e.g. "400g", "2st", "1msk", "2,5dl", "2burkar"). The unit
     // must end there: "3 större" is not "3 st örre" (\b would count ö as the end of a word).
     .replace(/(\d+(?:[,\.]\d+)?)[ \t]*(g|gram|kg|kilo|kilogram|hg|hekto|hektogram|dl|deciliter|cl|centiliter|ml|milliliter|liter|msk|matsked|matskedar|tsk|tesked|teskedar|krm|kryddmått|st|styck|stycken|kruka|krukor|burk|burkar|pkt|paket|skiva|skivor|klyfta|klyftor|blad|påse|påsar|förp|frp|förpackning|förpackningar|nypa|nypor|knippe|knippen|tärning|tärningar|kub|kuber|kopp|koppar|glas|näve|nävar|droppe|droppar|kanna|kannor|bit|bitar|tub|tuber|flaska|flaskor|rulle|rullar|bunt|buntar|stång|stänger|kvist|kvistar|kula|kulor|huvud|huvuden|ask|askar|stjälk|stjälkar|skopa|skopor|korg|korgar|kartong|kartonger|bägare|tråg)(?![A-Za-zÅÄÖåäöéüÉÜ])/gi, '$1 $2')
@@ -1240,6 +1251,14 @@ export function parseIngredientLine(rawLine: string): Ingredient | null {
   if (result) {
     // "(à 400 g )" -> "(à 400 g)"
     result.name = result.name.replace(/\(\s+/g, '(').replace(/\s+\)/g, ')').replace(/\s{2,}/g, ' ').trim();
+    // The size in brackets right after the unit belongs after the name:
+    // "1 burk (400 g) krossade tomater" -> "Krossade tomater (400 g)"
+    const lead = result.name.match(/^\(([^)]*)\)\s*(.+)$/);
+    if (lead) {
+      result.name = `${capitalizeFirst(lead[2])} (${lead[1]})`;
+      result.aisle = detectAisle(result.name);
+      result.isPantryStaple = isCommonPantryStaple(result.name);
+    }
   }
   return result;
 }
@@ -1609,10 +1628,37 @@ export function parseSmartItemInput(rawInput: string): ParsedSmartItem {
  * Parses multi-line ingredients text from the recipe form/modal into structured Ingredient objects.
  * Guarantees that every non-empty line entered by the user is preserved as an ingredient.
  */
+/**
+ * One line with two things joined by "+", split into two lines when the part after the plus
+ * starts with an amount: "6 dl vatten + 1 buljongtärning" -> "6 dl vatten", "1 buljongtärning".
+ * When the first part is only an amount ("1 tsk + 1 msk olja"), both get the name.
+ * "2 msk olivolja + extra till servering" stays one line.
+ */
+export function splitCombinedIngredientLine(line: string): string[] {
+  const parts = line.split(/\s+\+\s+/);
+  if (parts.length < 2) return [line];
+  const amountStart = /^(?:ca\.?\s+)?[\d½¼¾⅓⅔⅛]/;
+  if (!parts.slice(1).every((p) => amountStart.test(p.trim()))) return [line];
+  // Only an amount and a unit, like "1 tsk" (but not "3 ägg", where the word is the thing)
+  const unitOnlyMatch = (t: string) => {
+    const m = t.match(/^(?:ca\.?\s+)?[\d½¼¾⅓⅔⅛\s\/.,\-–]+\s*([a-zåäö]{1,12})\.?$/i);
+    return Boolean(m && VALID_UNITS.includes(m[1].toLowerCase()));
+  };
+  const last = parts[parts.length - 1].trim();
+  const lastName = last
+    .replace(/^(?:ca\.?\s+)?[\d½¼¾⅓⅔⅛\s\/.,\-–]+\s*/i, '')
+    .replace(/^([a-zåäö]+)\.?\s+/i, (w, unit) => (VALID_UNITS.includes(unit.toLowerCase()) ? '' : w))
+    .trim();
+  return parts.map((p) => {
+    const t = p.trim();
+    return unitOnlyMatch(t) && lastName ? `${t} ${lastName}` : t;
+  });
+}
+
 export function parseIngredientsText(rawText: string): Ingredient[] {
   if (!rawText || !rawText.trim()) return [];
 
-  const lines = rawText.split('\n');
+  const lines = rawText.split('\n').flatMap((l) => splitCombinedIngredientLine(l.trim()));
   const result: Ingredient[] = [];
 
   for (const rawLine of lines) {
@@ -2315,7 +2361,7 @@ export function parseRawRecipeText(text: string, options: { fromOcr?: boolean } 
 
   // Ingredients
   const ingredients: Ingredient[] = [];
-  for (const m of mergeIngredientLines(ingredientLines, fromOcr)) {
+  for (const m of mergeIngredientLines(ingredientLines, fromOcr).flatMap(splitCombinedIngredientLine)) {
     const ing = parseIngredientLine(m);
     if (ing) {
       ing.name = ing.name.replace(/\(\s+/g, '(').replace(/\s+\)/g, ')').replace(/\s{2,}/g, ' ').trim();

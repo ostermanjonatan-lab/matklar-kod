@@ -22,9 +22,29 @@ export function detectCategory(rawText?: string): RecipeCategory {
     return 'Förrätt';
   }
 
+  // Pies and pancakes that are food, not dessert: "Kycklingpaj", "Västerbottenpaj", "Fläskpannkaka"
+  if (
+    /(kyckling|lax|fisk|skink|bacon|västerbotten|ost|purjo|broccoli|spenat|svamp|kantarell|kött|färs|tonfisk|räk|grönsak|zucchini|feta|chèvre|chevre|lök|potatis|tomat|kassler|korv)[a-zåäö]*paj/.test(c) ||
+    /quiche|matpaj|pirog|fläskpannkaka|pannkaka med fläsk|ugnspannkaka med (fläsk|bacon)/.test(c)
+  ) {
+    return 'Middag';
+  }
+
+  // Drinks before desserts, so "varm choklad" is a drink
+  if (/varm choklad|chokladdryck|varm kakao|glögg|lemonad|läsk|milkshake|iste\b|punsch|bål\b/.test(c)) {
+    return 'Dryck';
+  }
+
+  // Breakfast before desserts, so "overnight oats" and "äggröra" are breakfast
+  if (/overnight oats|äggröra|granola|müsli|musli|chiapudding|frukostbowl|yoghurtbowl|gröt/.test(c)) {
+    return 'Frukost';
+  }
+
   if (
     c.includes('efterrätt') ||
     c.includes('dessert') ||
+    /mousse|fruktsallad|pannacotta|panna cotta|brûlée|brulee|tiramisu|cheesecake|brownie|parfait|sorbet|ris à la malta|smulpaj|crumble/.test(c) ||
+    /bananbröd|wienerbröd|kanelbröd|längd\b|kokosboll|chokladboll|havreboll|pralin|fudge|tryffel(?!pasta|risotto)|knäck|kola\b|marängsviss|maräng/.test(c) ||
     c.includes('kladdkaka') ||
     c.includes('kaka') ||
     c.includes('kakor') ||
@@ -76,8 +96,8 @@ export function detectCategory(rawText?: string): RecipeCategory {
   }
 
   // Check for sauces/dressings/dips:
-  // Avoid matching meals like "lax med dillsås", "pasta med tomatsås", "köttbullar med gräddsås", "köttfärssås"
-  const isMealWithSauce = /med.*sås|köttfärssås|bolognese|lasagne|stek.*sås/i.test(c);
+  // Avoid matching meals like "lax med dillsås", "fiskbullar i hummersås", "köttbullar med gräddsås", "köttfärssås"
+  const isMealWithSauce = /med.*sås|\si\s.*sås|köttfärssås|bolognese|lasagne|stek.*sås/i.test(c);
   if (
     !isMealWithSauce &&
     (c.includes('sås') ||

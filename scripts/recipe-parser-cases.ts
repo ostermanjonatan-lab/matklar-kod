@@ -341,4 +341,16 @@ Ingredienser
 Gör så här
 Koka potatis och ägg.
 Skiva tomater och lök och blanda med olja.`,
+kombinationer: `Kycklinggryta med ris
+4 portioner
+Ingredienser
+½-1 tsk salt
+1 burk (400 g) krossade tomater
+6 dl vatten + 1 buljongtärning
+3 ägg + 1 äggula
+2 port. ris
+1 lime (skal och saft)
+Gör så här
+Koka riset.
+Låt grytan puttra 1 timme och 15 minuter.`,
 };

@@ -1,5 +1,5 @@
 import type { Ingredient, Instruction, RecipeCategory } from '../types/recipe';
-import { isIngredientSubheading, parseIngredientLine, parseRawRecipeText } from '../utils/ingredientParser';
+import { isIngredientSubheading, parseIngredientLine, parseRawRecipeText, splitCombinedIngredientLine } from '../utils/ingredientParser';
 import { DEFAULT_SUBCATEGORIES } from '../data/categories';
 import { detectCategory, detectSubcategory, detectSubcategories } from '../utils/categoryDetector';
 
@@ -1998,8 +1998,11 @@ function parseJsonLdRecipe(schema: any, sourceUrl: string, doc: Document, engine
     lines.forEach((cleaned: string, idx: number) => {
       // Sub-headings like "Deg", "Fyllning:" or "Till pensling" are not ingredients
       if (isIngredientSubheading(cleaned, lines[idx + 1] || '')) return;
-      const parsed = parseIngredientLine(cleaned);
-      if (parsed) ingredients.push(parsed);
+      // "6 dl vatten + 1 buljongtärning" is two things
+      for (const part of splitCombinedIngredientLine(cleaned)) {
+        const parsed = parseIngredientLine(part);
+        if (parsed) ingredients.push(parsed);
+      }
     });
   }
 
