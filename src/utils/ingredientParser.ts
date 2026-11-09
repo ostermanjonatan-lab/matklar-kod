@@ -955,11 +955,11 @@ export function parseFractionOrNumber(raw: string): number | null {
     }
   }
 
-  // Handle range like "1-2" -> take average or first
-  if (/^\d+\s*[-–]\s*\d+$/.test(str)) {
+  // Handle range like "1-2" or "2,5–3" -> the middle of the two
+  if (/^\d+(?:[.,]\d+)?\s*[-–]\s*\d+(?:[.,]\d+)?$/.test(str)) {
     const parts = str.split(/[-–]/);
-    const low = parseFloat(parts[0]);
-    const high = parseFloat(parts[1]);
+    const low = parseFloat(parts[0].replace(',', '.'));
+    const high = parseFloat(parts[1].replace(',', '.'));
     if (!isNaN(low) && !isNaN(high)) {
       return Math.round(((low + high) / 2) * 10) / 10;
     }
@@ -1004,7 +1004,13 @@ export function cleanOcrArtifacts(rawText: string, options: { ocr?: boolean } = 
 
   // Remove null bytes and unusual control characters
   // Tabs (columns copied from a table, "pasta⇥400 g") become spaces; other control characters go
-  let text = rawText.replace(/\t/g, ' ').replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '');
+  let text = rawText
+    .replace(/\t/g, ' ')
+    // Invisible characters that come along when copying from apps and some pages
+    // (zero-width space, joiners, soft hyphen, byte order mark) and non-breaking spaces
+    .replace(/[\u200B-\u200F\u2060\uFEFF\u00AD]/g, '')
+    .replace(/[\u00A0\u202F]/g, ' ')
+    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '');
 
   // Fixes for misread letters only make sense for scanned text. On pasted text they do harm,
   // e.g. "Lägg i lök" would become "Lägg 1 lök".
@@ -1270,8 +1276,40 @@ export function parseIngredientLine(rawLine: string): Ingredient | null {
   return result;
 }
 
+/**
+ * "Laxfilé: 500–600 g (tärnad i bitar)" -> "500–600 g Laxfilé (tärnad i bitar)", and
+ * "Färsk dill: 1 rejäl knippe (finhackad)" -> "1 knippe Färsk dill (finhackad)". Lines with the
+ * name first and a colon are common in recipes written by hand or by chat assistants.
+ */
+function nameFirstToAmountFirst(line: string): string {
+  const m = line
+    .trim()
+    .match(/^([^\d:]{2,50}?):\s*((?:ca\.?\s+|cirka\s+)?[\d½¼¾⅓⅔⅛][\d½¼¾⅓⅔⅛\s\/.,\-–]*)\s*(.*)$/i);
+  if (!m) return line;
+  const name = m[1].trim();
+  const amount = m[2].trim();
+  let rest = m[3].trim();
+  let unit = '';
+  const words = rest.match(/^([a-zåäö]+)\.?(?:\s+([a-zåäö]+)\.?)?/i);
+  if (words) {
+    if (VALID_UNITS.includes(words[1].toLowerCase())) {
+      unit = words[1];
+      rest = rest.slice(words[0].indexOf(words[1]) + words[1].length).replace(/^\./, '').trim();
+    } else if (words[2] && VALID_UNITS.includes(words[2].toLowerCase()) && /^(rejäl|rejält|stor|stort|stora|liten|litet|små|generös|generöst|knapp|knappt|rågad|struken|dryg|drygt)$/i.test(words[1])) {
+      // "1 rejäl knippe": the size word is left out
+      unit = words[2];
+      rest = rest.slice(words[0].length).trim();
+    }
+  }
+  const note = rest.replace(/^\((.*)\)$/, '$1').trim();
+  const tail = note ? (rest.startsWith('(') ? ` (${note})` : ` ${note}`) : '';
+  return `${amount}${unit ? ` ${unit}` : ''} ${name}${tail}`.replace(/\s{2,}/g, ' ').trim();
+}
+
 function parseIngredientLineInner(rawLine: string): Ingredient | null {
   if (!rawLine) return null;
+  rawLine = rawLine.replace(/[\u200B-\u200F\u2060\uFEFF\u00AD]/g, '').replace(/[\u00A0\u202F]/g, ' ');
+  rawLine = nameFirstToAmountFirst(rawLine);
 
   // 1. Strip markdown images, HTML tags, markdown links, and checkbox markers anywhere in line
   let line = rawLine
@@ -2228,8 +2266,9 @@ export function parseRawRecipeText(text: string, options: { fromOcr?: boolean } 
     !/[.!?]$/.test(l) &&
     (startsWithQuantity(l) ||
       isLikelyIngredientLine(l, true) ||
-      // The amount after the name: "Avokado – 2 st", "Mjölk: 3 dl"
-      /^[^\d]{2,40}\s*[–—\-:]\s*(?:ca\.?\s+)?[\d½¼¾⅓⅔⅛][\d\s\/.,]*\s*[a-zåäö]{0,12}\.?$/i.test(l));
+      // The amount after the name: "Avokado – 2 st", "Mjölk: 3 dl", "Laxfilé: 500 g (tärnad)"
+      /^[^\d]{2,40}\s*[–—\-:]\s*(?:ca\.?\s+)?[\d½¼¾⅓⅔⅛][\d\s\/.,]*\s*[a-zåäö]{0,12}\.?$/i.test(l) ||
+      /^[^\d:]{2,50}:\s*(?:ca\.?\s+|cirka\s+)?[\d½¼¾⅓⅔⅛][\d½¼¾⅓⅔⅛\s\/.,\-–]*\s*[a-zåäö]{0,12}\.?(\s+[a-zåäö]+\.?)?(\s*\(.*\)|\s+(att|till|för)\s.*)?$/i.test(l));
   const addStep = (l: string) => {
     const t = cleanLeadingStepNumber(l).trim();
     if (t.length < 2) return;

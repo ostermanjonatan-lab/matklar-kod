@@ -379,4 +379,17 @@ Lime – 1/2 st
 Salt – en nypa
 Mosa avokadon och smaka av med lime och salt.`,
 enrad: `Gröt: 1 dl havregryn, 2 dl vatten, 1 krm salt. Koka upp och låt puttra 3 min.`,
+laxsoppa: `Ingredienser (4 portioner)
+\u200bLaxfilé: 500–600 g (tärnad i bitar om ca 2–3 cm)
+\u200bFast potatis: 500 g (ca 5–6 medelstora, tärnade)
+\u200bMorötter: 2 st (skivade i slantar eller halvmånar)
+\u200bSalladslök: 2–3 st (skivade; spara gärna det mörkgröna till servering)
+\u200bSmör eller olja: 1–2 msk att fräsa i
+\u200bFiskfond (koncentrerad): 2–2,5 msk
+\u200bFärsk dill: 1 rejäl knippe (finhackad)
+\u200bSalt och nymalen vit- eller svartpeppar
+\u200bGör så här
+\u200b1. Förbered grönsakerna: Skala och tärna potatisen. Skala och slanta morötterna.
+\u200b2. Koka soppan: Fräs löken i smöret. Tillsätt fond, vatten, potatis och morötter och koka 10–12 minuter.
+\u200b3. I med laxen: Lägg i laxen och låt den gå på eftervärme i 3–5 minuter. Toppa med dill.`,
 };

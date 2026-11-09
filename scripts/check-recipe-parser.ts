@@ -1,5 +1,5 @@
 /**
- * Checks the reading of pasted recipe text (parseRawRecipeText) against 25 recipe texts.
+ * Checks the reading of pasted recipe text (parseRawRecipeText) against 26 recipe texts.
  * Run: npx tsx scripts/check-recipe-parser.ts
  * When the reading is improved on purpose, update the expected values below.
  */
@@ -423,6 +423,24 @@ const EXPECTED: Record<string, Expected> = {
       "Salt"
     ],
     "steps": 1
+  },
+  "laxsoppa": {
+    "title": "",
+    "servings": 4,
+    "cookingTimeMinutes": null,
+    "difficulty": null,
+    "category": "Middag",
+    "ingredients": [
+      "Laxfilé (tärnad i bitar om ca 2–3 cm)",
+      "Fast potatis (ca 5–6 medelstora, tärnade)",
+      "Morötter (skivade i slantar eller halvmånar)",
+      "Salladslök (skivade; spara gärna det mörkgröna till servering)",
+      "Smör eller olja att fräsa i",
+      "Fiskfond (koncentrerad)",
+      "Färsk dill (finhackad)",
+      "Salt och nymalen vit- eller svartpeppar"
+    ],
+    "steps": 3
   }
 };
 
