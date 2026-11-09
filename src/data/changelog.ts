@@ -11,6 +11,19 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.0.164',
+    date: '2026-11-09',
+    items: [
+      'Inklistrad recepttext hamnar i rätt rutor oftare, även med emojis, osynliga tecken, tabeller, kommalistor och rader som Laxfilé: 500 g.',
+      'Drinkar och recept med bara en ingrediens går att läsa in från länk.',
+      'Planeraren visar vilka måltider som redan finns i inköpslistan, och de läggs inte till en gång till.',
+      'Samma vara i olika mått, som dl och msk eller g och kg, läggs ihop i inköpslistan.',
+      '1 timme och 15 minuter i ett steg blir en timer.',
+      'Stegen får inte längre dubbla nummer när receptet sparas.',
+      'Maträttens namn står på en rad i planeraren.',
+    ],
+  },
+  {
     version: '1.0.163',
     date: '2026-11-08',
     items: [
