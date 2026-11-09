@@ -55,6 +55,8 @@ import {
   generateShoppingListFromMealPlan,
   mergeIngredientsIntoShoppingList,
   normalizeIngredientKey,
+  mealsInShoppingList,
+  plannedMealKey,
   normalizeIngredientNameForMatching,
   setAisleOverride,
   clearAisleOverrides,
@@ -884,7 +886,16 @@ export const RecipeProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   const generateShoppingListFromWeek = useCallback((skipPantryStaples: boolean): number => {
     // Dinners that also become leftover lunches are bought for the extra portions.
     // Days before today are already eaten, so only today and later are bought for.
-    const upcoming = withLeftoverPortions(weekMealPlan).filter((d) => !d.dateStr || d.dateStr >= today);
+    // Meals already in the list (added before, bought or not) are not added a second time
+    const inList = mealsInShoppingList(shoppingListRef.current);
+    const titleOf = (id?: string | null) => recipes.find((r) => r.id === id)?.title || '';
+    const upcoming = withLeftoverPortions(weekMealPlan)
+      .filter((d) => !d.dateStr || d.dateStr >= today)
+      .map((d) => ({
+        ...d,
+        dinnerRecipeId: d.dinnerRecipeId && inList.has(plannedMealKey(titleOf(d.dinnerRecipeId), d.dayName, 'dinner')) ? null : d.dinnerRecipeId,
+        lunchRecipeId: d.lunchRecipeId && inList.has(plannedMealKey(titleOf(d.lunchRecipeId), d.dayName, 'lunch')) ? null : d.lunchRecipeId,
+      }));
     const { items } = generateShoppingListFromMealPlan(upcoming, recipes, {
       skipPantryStaples,
     });

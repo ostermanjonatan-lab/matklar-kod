@@ -6,6 +6,7 @@ import { ConfirmSheet } from '../layout/ConfirmSheet';
 import { flushSync } from 'react-dom';
 import type { MealPlanDay } from '../../types/recipe';
 import { useRecipes } from '../../context/RecipeContext';
+import { mealsInShoppingList, plannedMealKey } from '../../utils/shoppingAggregator';
 import { useModalBackHandler } from '../../hooks/useModalBackHandler';
 import { useStoredState } from '../../hooks/useStoredState';
 import {
@@ -62,6 +63,7 @@ export const MealPlanView: React.FC = () => {
     setPlanWeekStart,
     getMealPlanForDate,
     today,
+    shoppingList,
   } = useRecipes();
 
   const thisWeekStart = getWeekStart();
@@ -272,13 +274,24 @@ export const MealPlanView: React.FC = () => {
 
   const totalPlannedMeals = plannedDinnerCount + plannedLunchCount;
 
+  // Meals whose ingredients are already in the shopping list. They stay in the plan, marked
+  // as added, and are not added again.
+  const inShoppingList = useMemo(() => mealsInShoppingList(shoppingList), [shoppingList]);
+  const isInList = (day: MealPlanDay['dayName'], meal: 'dinner' | 'lunch', recipeId?: string | null) => {
+    const recipe = recipeId ? recipes.find((r) => r.id === recipeId) : undefined;
+    return Boolean(recipe && inShoppingList.has(plannedMealKey(recipe.title, day, meal)));
+  };
+
   // The shopping list is only made for today and later: earlier days are already eaten
   const upcomingDays = mealPlan.filter((d) => !d.dateStr || d.dateStr >= today);
   const upcomingDinnerCount = upcomingDays.filter(
-    (d) => (d.dinnerRecipeId && recipes.some((r) => r.id === d.dinnerRecipeId)) || Boolean(d.customDinner?.trim())
+    (d) => d.dinnerRecipeId && recipes.some((r) => r.id === d.dinnerRecipeId) && !isInList(d.dayName, 'dinner', d.dinnerRecipeId)
   ).length;
   const upcomingLunchCount = upcomingDays.filter(
-    (d) => (d.lunchRecipeId && recipes.some((r) => r.id === d.lunchRecipeId)) || Boolean(d.customLunch?.trim())
+    (d) => d.lunchRecipeId && recipes.some((r) => r.id === d.lunchRecipeId) && !isInList(d.dayName, 'lunch', d.lunchRecipeId)
+  ).length;
+  const alreadyAddedCount = upcomingDays.filter(
+    (d) => isInList(d.dayName, 'dinner', d.dinnerRecipeId) || isInList(d.dayName, 'lunch', d.lunchRecipeId)
   ).length;
 
   // "5 middagar, 1 lunch"
@@ -290,7 +303,11 @@ export const MealPlanView: React.FC = () => {
   const openGenerate = () => {
     if (upcomingDinnerCount + upcomingLunchCount === 0) {
       setGeneratedToast(
-        totalPlannedMeals > 0 ? 'Alla planerade måltider i veckan är före i dag' : 'Planera in minst en måltid i veckan först'
+        alreadyAddedCount > 0
+          ? 'Veckans måltider finns redan i inköpslistan'
+          : totalPlannedMeals > 0
+          ? 'Alla planerade måltider i veckan är före i dag'
+          : 'Planera in minst en måltid i veckan först'
       );
       setTimeout(() => setGeneratedToast(null), 2500);
       return;
@@ -757,7 +774,7 @@ export const MealPlanView: React.FC = () => {
                     <div className="absolute top-3 left-3 right-3 flex items-center justify-between text-white z-10">
                       <div className="flex items-center gap-1.5 flex-wrap">
                         <span className="bg-white/95 text-stone-900 text-[11px] font-bold px-2.5 py-1 rounded-full shadow-xs">
-                          Middag
+                          {isInList(activeDayName, 'dinner', dinnerRecipe.id) ? 'Middag · i inköpslistan' : 'Middag'}
                         </span>
                         {dinnerRecipe.category && dinnerRecipe.category !== 'Middag' && (
                           <span className="bg-black/60 backdrop-blur-md text-white text-[11px] font-semibold px-2.5 py-1 rounded-full border border-white/20 shadow-xs">
@@ -1082,6 +1099,7 @@ export const MealPlanView: React.FC = () => {
                       </h4>
                       <p className="text-[11px] text-stone-500">
                         {categoryLabel(lunchRecipe.category)}
+                        {isInList(activeDayName, 'lunch', lunchRecipe.id) && ' · i inköpslistan'}
                       </p>
                     </div>
                   </div>
@@ -1281,6 +1299,9 @@ export const MealPlanView: React.FC = () => {
                           <span className="shrink-0">
                             {dRecipe ? `${formatCookingTime(dRecipe.prepTimeMinutes, dRecipe.cookTimeMinutes)}, ` : ''}
                             {dayData?.dinnerServings || 4} port
+                            {isInList(day, 'dinner', dayData?.dinnerRecipeId) && (
+                              <span className="text-[#284235]"> · i listan</span>
+                            )}
                           </span>
                         )}
                         {hasDinnerHere && <span aria-hidden="true">·</span>}

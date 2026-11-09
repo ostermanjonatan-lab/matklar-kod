@@ -458,3 +458,24 @@ export function generateShoppingListFromMealPlan(
     plannedMealCount,
   };
 }
+
+/** A planned meal as the shopping list names it: the recipe, the weekday and dinner or lunch. */
+export function plannedMealKey(recipeTitle: string, dayName: string, meal: 'dinner' | 'lunch'): string {
+  return `${recipeTitle.trim().toLowerCase()}|${dayName.trim().toLowerCase()}|${meal}`;
+}
+
+/**
+ * The planned meals whose ingredients are already in the shopping list, bought or not. Read from
+ * where each item comes from, e.g. "Laxpasta (fredag, 4p)" or "Soppa (måndag Lunch, 2p)".
+ */
+export function mealsInShoppingList(list: ShoppingItem[]): Set<string> {
+  const keys = new Set<string>();
+  for (const item of list) {
+    const sources = item.mergedSources?.length ? item.mergedSources : normalizeSourcesList([item.recipeSource]);
+    for (const source of sources) {
+      const m = source.match(/^(.*)\s\(([a-zåäö]+)(\s+lunch)?,\s*[\d.,]+\s*p\)$/i);
+      if (m) keys.add(plannedMealKey(m[1], m[2], m[3] ? 'lunch' : 'dinner'));
+    }
+  }
+  return keys;
+}
