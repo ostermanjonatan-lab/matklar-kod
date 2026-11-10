@@ -16,6 +16,7 @@ const formatValue = (value: number | undefined, unit: string) => {
  */
 export const NutritionPanel: React.FC<{ recipe: Recipe; servings: number }> = ({ recipe, servings }) => {
   const [open, setOpen] = useState(false);
+  const [showItems, setShowItems] = useState(false);
   const nutrition = useMemo(() => recipeNutrition(recipe), [recipe]);
 
   // The whole dish follows the portions chosen above the ingredients
@@ -136,6 +137,48 @@ export const NutritionPanel: React.FC<{ recipe: Recipe; servings: number }> = ({
                       {label}: {names}.
                     </p>
                   ))}
+                </div>
+              )}
+
+              {/* Each ingredient's share, for the whole dish at the portions chosen */}
+              {worksOut && nutrition.items.length > 0 && (
+                <div className="mt-3 border-t border-[#EBE7DF]">
+                  <button
+                    type="button"
+                    onClick={() => setShowItems(!showItems)}
+                    aria-expanded={showItems}
+                    className="w-full flex items-center justify-between min-h-[44px] text-sm font-semibold text-[#284235] touch-manipulation"
+                  >
+                    {showItems ? 'Dölj per ingrediens' : 'Visa per ingrediens'}
+                    <ChevronDown className={`w-4 h-4 transition-transform ${showItems ? 'rotate-180' : ''}`} />
+                  </button>
+                  {showItems && (
+                    <ul className="divide-y divide-[#EBE7DF] text-sm">
+                      {nutrition.items.map((item, i) => {
+                        const f = servings / (recipe.servings || 4);
+                        const name = formatIngredientName(item.name, null, '');
+                        const g = (v: number) => {
+                          const x = v * f;
+                          return `${(x >= 10 ? Math.round(x) : Math.round(x * 10) / 10).toLocaleString('sv-SE')}\u00a0g`;
+                        };
+                        const sameName = name.toLowerCase().includes(item.as.toLowerCase());
+                        return (
+                          <li key={`${item.name}-${i}`} className="py-2">
+                            <div className="flex items-baseline justify-between gap-3">
+                              <span className="min-w-0 text-stone-800">
+                                {name} <span className="text-xs text-stone-500 tabular-nums">{Math.round(item.grams * f).toLocaleString('sv-SE')}&nbsp;g</span>
+                              </span>
+                              <span className="shrink-0 tabular-nums font-semibold text-stone-900">{formatValue(item.values.kcal * f, 'kcal')}</span>
+                            </div>
+                            <p className="text-xs text-stone-500 tabular-nums">
+                              {!sameName && <>som {item.fromProduct ? item.as : item.as.toLowerCase()} · </>}
+                              kolhydrater {g(item.values.carbs)} · protein {g(item.values.protein)} · fett {g(item.values.fat)}
+                            </p>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
                 </div>
               )}
             </>

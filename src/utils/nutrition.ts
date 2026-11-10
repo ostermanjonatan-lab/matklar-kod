@@ -545,6 +545,17 @@ export interface CalculatedNutrition {
   missingGrams: number;
   /** Everything not counted and why, also what has no amount ("salt efter smak") */
   notCounted: NotCounted[];
+  /** Each counted ingredient: its weight, what it was counted as and its share of the dish */
+  items: IngredientNutrition[];
+}
+
+export interface IngredientNutrition {
+  name: string;
+  grams: number;
+  /** What it was counted as: the table's word, Livsmedelsverket's word or the product's name */
+  as: string;
+  fromProduct: boolean;
+  values: NutritionValues;
 }
 
 export interface NotCounted {
@@ -563,6 +574,7 @@ export function calculateNutrition(
   const missing: string[] = [];
   const missingItems: Pick<Ingredient, 'amount' | 'unit' | 'name'>[] = [];
   const notCounted: NotCounted[] = [];
+  const items: IngredientNutrition[] = [];
   let missingGrams = 0;
   for (const ing of ingredients) {
     // Salt for the water pasta or potatoes cook in is poured away with it
@@ -596,11 +608,14 @@ export function calculateNutrition(
     }
     grams += g;
     counted++;
+    const values = zero();
     (Object.keys(total) as (keyof NutritionValues)[]).forEach((k, i) => {
-      total[k] += (per100(food)[i] * g) / 100;
+      values[k] = (per100(food)[i] * g) / 100;
+      total[k] += values[k];
     });
+    items.push({ name: ing.name, grams: g, as: food.words[0], fromProduct: Boolean(link), values });
   }
-  return { total, grams, counted, missing, missingItems, missingGrams, notCounted };
+  return { total, grams, counted, missing, missingItems, missingGrams, notCounted, items };
 }
 
 export const scaleNutrition = (v: Partial<NutritionValues>, factor: number): Partial<NutritionValues> => {
@@ -648,6 +663,8 @@ export interface RecipeNutrition {
   notCounted: NotCounted[];
   /** Ingredients counted with a package's values from Open Food Facts */
   products: ProductLink[];
+  /** Each counted ingredient for the whole dish as written */
+  items: IngredientNutrition[];
   /** Share of the dish's weight that is left out (0 to 1), when it can be told */
   missingShare: number;
   counted: number;
@@ -674,6 +691,7 @@ export function recipeNutrition(recipe: {
     missingItems: calc.missingItems,
     notCounted: calc.notCounted,
     products,
+    items: calc.items,
     missingShare: calc.missingGrams > 0 ? calc.missingGrams / (calc.missingGrams + calc.grams) : 0,
     counted: calc.counted,
     ingredientCount: recipe.ingredients.length,
