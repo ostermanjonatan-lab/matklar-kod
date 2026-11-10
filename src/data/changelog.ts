@@ -11,6 +11,15 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.0.165',
+    date: '2026-11-10',
+    items: [
+      'Recept utan bild visas med en grå ruta och Ingen bild vald i stället för ett foto av en sallad.',
+      'Ett fotograferat recept får inte längre fotot som bild.',
+      'Egen måltid i Planerare visar namnet med en ikon som passar, som en matlåda för Rester och en påse för Hämtmat.',
+    ],
+  },
+  {
     version: '1.0.164',
     date: '2026-11-09',
     items: [
