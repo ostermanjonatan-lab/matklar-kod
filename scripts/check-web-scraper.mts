@@ -1,5 +1,6 @@
 /**
- * Checks how recipe web pages are read (parseHtmlRecipe) against 10 test pages: recipe data
+ * Checks how recipe web pages are read (parseHtmlRecipe) against 10 test pages, and one page
+ * through the reader service (scrapeRecipeFromUrl): recipe data
  * for search engines (JSON-LD, also in @graph and with sections), microdata, a WordPress recipe
  * plugin and a page with only headings and lists.
  * Run: npx tsx scripts/check-web-scraper.mts
@@ -10,6 +11,8 @@ import { DOMParser } from 'linkedom';
 (globalThis as unknown as { DOMParser: unknown }).DOMParser = DOMParser;
 const { parseHtmlRecipe } = await import('../src/services/webRecipeScraper');
 const { PAGES } = await import('./web-recipe-pages');
+const { MARKDOWN_PAGES } = await import('./web-recipe-markdown');
+const { scrapeRecipeFromUrl } = await import('../src/services/webRecipeScraper');
 
 interface Expected {
   title: string;
@@ -158,14 +161,35 @@ const EXPECTED: Record<string, Expected> = {
       "Jalapeños"
     ],
     "steps": 3
+  },
+  "icadrink": {
+    "title": "Gin och tonic",
+    "servings": 1,
+    "cookTimeMinutes": 15,
+    "category": "Dryck",
+    "ingredients": [
+      "Isbitar",
+      "Gin",
+      "Tonic water",
+      "Citronskivor eller limeskivor"
+    ],
+    "steps": 2
   }
 };
 
+// Pages read through the reader service: the app's own server is refused and the reader answers
+const results: [string, Awaited<ReturnType<typeof scrapeRecipeFromUrl>> | null][] = [];
+for (const [key, page] of Object.entries(PAGES)) results.push([key, parseHtmlRecipe(page.html, page.url, 'test')]);
+for (const [key, page] of Object.entries(MARKDOWN_PAGES)) {
+  (globalThis as unknown as { fetch: unknown }).fetch = async (url: string) =>
+    url.startsWith('https://r.jina.ai/') ? new Response(page.markdown) : new Response('Access Denied', { status: 403 });
+  results.push([key, await scrapeRecipeFromUrl(page.url).catch(() => null)]);
+}
+
 let failures = 0;
-for (const [key, page] of Object.entries(PAGES)) {
+for (const [key, r] of results) {
   const want = EXPECTED[key];
   if (!want) continue;
-  const r = parseHtmlRecipe(page.html, page.url, 'test');
   if (!r) {
     failures++;
     console.log(`FEL   ${key}: sidan gav inget recept`);

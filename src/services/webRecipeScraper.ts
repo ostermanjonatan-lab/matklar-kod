@@ -216,6 +216,9 @@ export function isAntiBotBlockPage(html: string): boolean {
   if (!html) return false;
   const lower = html.toLowerCase();
   return (
+    // The reader service notes when the site answered with an error (ICA always says 403 to
+    // it), but often still shows the whole page. Only blocked when no recipe came along.
+    (lower.includes('warning: target url returned error') && !/ingredienser|ingredients|gör så här|instructions/.test(lower)) ||
     lower.includes("you've reached a blocked page") ||
     lower.includes('hoppsan, här var det stopp') ||
     lower.includes('attention required! | cloudflare') ||
@@ -224,7 +227,6 @@ export function isAntiBotBlockPage(html: string): boolean {
     lower.includes('enable cookies and reload the page') ||
     lower.includes('cf-browser-verification') ||
     lower.includes('ray id:') ||
-    lower.includes('warning: target url returned error') ||
     lower.includes('error 404: not found')
   );
 }
@@ -615,7 +617,9 @@ function isPotentialIngredientLine(text: string): boolean {
   const commonUnmeasured = [
     'salt', 'peppar', 'svartpeppar', 'vitpeppar', 'flingsalt', 'olja', 'rapsolja',
     'olivolja', 'smör', 'vatten', 'koriander', 'persilja', 'dill', 'gräslök',
-    'topping', 'garnering', 'soja', 'sesamolja', 'is', 'salladslök', 'gurka'
+    'topping', 'garnering', 'soja', 'sesamolja', 'is', 'salladslök', 'gurka',
+    // Garnish and the like, often written without an amount ("citronskivor eller limeskivor")
+    'citron', 'lime', 'mynta', 'basilika', 'timjan', 'rosmarin', 'chili', 'socker', 'honung',
   ];
   return commonUnmeasured.some((k) => parsed.name.toLowerCase().includes(k));
 }
@@ -1654,7 +1658,8 @@ function parseMarkdownRecipe(markdown: string, sourceUrl: string): ScrapedRecipe
 
     const isIngredientHeading =
       cleanHeadingLower.includes('ingrediens') ||
-      cleanHeadingLower.includes('innehåll') ||
+      // "Innehåll" as a heading, not "Hoppa till sidans innehåll" at the top of a page
+      cleanHeadingLower.startsWith('innehåll') ||
       cleanHeadingLower.includes('vad du behöver') ||
       cleanHeadingLower.includes('du behöver') ||
       cleanHeadingLower.includes('det här behöver du') ||
@@ -1820,6 +1825,8 @@ function parseMarkdownRecipe(markdown: string, sourceUrl: string): ScrapedRecipe
       if (stopKeywords.some((k) => cleanHeadingLower.includes(k))) {
         if (instructions.length >= 2) break;
       }
+      // A tips heading after the steps ends them, so the tip does not become a step
+      if (/^(?:tips|kocktips|tips och tricks|tips & tricks):?$/.test(cleanHeadingLower) && instructions.length >= 1) break;
 
       // Major blog section heading (## Kommentarer, ## Fler recept, ### Lämna kommentar) ends instructions
       if (/^#{1,3}\s+/.test(line) && !isInstructionHeading) {
@@ -1835,8 +1842,17 @@ function parseMarkdownRecipe(markdown: string, sourceUrl: string): ScrapedRecipe
         if (instructions.length >= 2) break;
       }
 
-      // Strip leading numbers, bullets, dashes, checkboxes, and markdown artifacts
-      const cleaned = cleanLeadingStepNumber(line);
+      // Strip markdown (pictures, links, checkboxes like "- [x]", bold), then leading numbers and bullets
+      const cleaned = cleanLeadingStepNumber(
+        line
+          .replace(/!\[.*?\]\(.*?\)/g, '')
+          .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
+          .replace(/^[•\-*+–—\s]*\[[ xX✓✔☑☐]?\]\s*/, '')
+          .replace(/\*\*|__/g, '')
+          .replace(/\s{2,}/g, ' ')
+          // "Sås:Skala och hacka" once the bold around "Sås:" is gone
+          .replace(/^(\s*[^\s:]{2,25}):(?=[A-ZÅÄÖ])/, '$1: ')
+      );
 
       const ignorePhrases = [
         'håll skärmen tänd',

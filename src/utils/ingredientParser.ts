@@ -1525,7 +1525,9 @@ function parseIngredientLineInner(rawLine: string): Ingredient | null {
     const rawAmt = revMatch[2].trim();
     const potentialUnit = revMatch[3].toLowerCase().trim();
 
-    if (VALID_UNITS.includes(potentialUnit)) {
+    // Not when the line starts with its own amount: "1 purjolök (à ca 300 g)" is 1 purjolök,
+    // and the weight in brackets belongs to the name (step 8)
+    if (VALID_UNITS.includes(potentialUnit) && !/^[\d½¼¾⅓⅔⅛]/.test(potentialName)) {
       const amount = parseFractionOrNumber(rawAmt);
       const cleanPotentialName = potentialName.replace(/[,\s]+(?:ca|cirka)$/i, '').trim();
       const name = capitalizeFirst(cleanPotentialName);
