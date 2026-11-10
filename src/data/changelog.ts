@@ -11,6 +11,13 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.0.173',
+    date: '2026-11-10',
+    items: [
+      'Under näringstabellen visar Visa per ingrediens vad varje ingrediens ger i energi, kolhydrater, protein och fett, och vad den räknats som.',
+    ],
+  },
+  {
     version: '1.0.172',
     date: '2026-11-10',
     items: [
