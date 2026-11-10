@@ -32,6 +32,7 @@ import {
   ShoppingCart
 } from 'lucide-react';
 import { PortionScaler } from './PortionScaler';
+import { NutritionPanel } from './NutritionPanel';
 import { findIngredientMentions, type IngredientMention } from '../../utils/stepIngredients';
 import { EditRecipeModal } from './EditRecipeModal';
 import { useModalBackHandler } from '../../hooks/useModalBackHandler';
@@ -788,6 +789,9 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
 
           {showNotesSavedToast && <Toast message="Anteckningen är sparad för hela hushållet" />}
         </div>
+
+        {/* Nutrition, a row that opens and closes */}
+        <NutritionPanel recipe={recipe} servings={servings} />
 
         {/* Quick Add to Meal Plan & Edit Recipe Footer Actions */}
         <div className="pt-2 space-y-2.5 w-full">

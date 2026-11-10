@@ -1,3 +1,4 @@
+import type { PageNutrition } from '../utils/nutrition';
 import { detectMeatKinds, OLD_MEAT_SUBCATEGORY } from '../utils/meatKinds';
 export type RecipeSourceType = 'manual' | 'url' | 'pdf' | 'recipe_image';
 
@@ -41,6 +42,8 @@ export interface Recipe {
   tags?: string[];
   /** 1 = lätt, 2 = medel, 3 = avancerad. Missing when not set. */
   difficulty?: RecipeDifficulty;
+  /** Nutrition as the recipe's web page gives it. Without it, it is worked out from the ingredients. */
+  pageNutrition?: PageNutrition;
   createdAt?: string;
   updatedAt?: string;
 }

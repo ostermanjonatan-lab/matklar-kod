@@ -50,6 +50,8 @@ export const EditRecipeModal: React.FC<EditRecipeModalProps> = ({
       : ''
   );
 
+  const initialIngredientsRef = useRef(ingredientsText);
+
   // One step per line in a single text box
   const [instructionsText, setInstructionsText] = useState<string>(() =>
     recipe.instructions && recipe.instructions.length > 0 ? recipe.instructions.map((inst) => inst.text).join('\n') : ''
@@ -142,6 +144,9 @@ export const EditRecipeModal: React.FC<EditRecipeModalProps> = ({
       prepTimeMinutes: 0,
       cookTimeMinutes: Number(cookingTimeMinutes) >= 0 ? Number(cookingTimeMinutes) : 0,
       difficulty,
+      // The web page's nutrition no longer fits when the ingredients are changed: then it is
+      // worked out from the ingredients instead
+      pageNutrition: ingredientsText === initialIngredientsRef.current ? recipe.pageNutrition : undefined,
     };
 
     updateRecipe(updatedRecipe);

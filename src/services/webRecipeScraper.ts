@@ -1,4 +1,5 @@
 import type { Ingredient, Instruction, RecipeCategory } from '../types/recipe';
+import { nutritionFromSchema, nutritionFromText, type PageNutrition } from '../utils/nutrition';
 import { isIngredientSubheading, parseIngredientLine, parseRawRecipeText, splitCombinedIngredientLine } from '../utils/ingredientParser';
 import { DEFAULT_SUBCATEGORIES } from '../data/categories';
 import { detectCategory, detectSubcategory, detectSubcategories } from '../utils/categoryDetector';
@@ -19,6 +20,8 @@ export interface ScrapedRecipe {
   instructions: Instruction[];
   sourceUrl: string;
   engineUsed?: string;
+  /** Nutrition as the page gives it, per portion or per 100 g */
+  nutrition?: PageNutrition;
 }
 
 /**
@@ -1951,6 +1954,7 @@ function parseMarkdownRecipe(markdown: string, sourceUrl: string): ScrapedRecipe
     instructions,
     sourceUrl,
     engineUsed: 'Jina AI Reader (Markdown)',
+    nutrition: nutritionFromText(markdown) || undefined,
   };
 }
 
@@ -2083,6 +2087,7 @@ function parseJsonLdRecipe(schema: any, sourceUrl: string, doc: Document, engine
     difficulty: extractDifficultyFromDom(doc),
     sourceUrl,
     engineUsed: engineName,
+    nutrition: nutritionFromSchema(schema.nutrition) || nutritionFromText(doc.body?.textContent || '') || undefined,
   };
 }
 
@@ -2124,6 +2129,7 @@ function parseHtmlFallback(doc: Document, sourceUrl: string, engineName = 'DOM P
     difficulty: extractDifficultyFromDom(doc),
     sourceUrl,
     engineUsed: engineName,
+    nutrition: nutritionFromText(doc.body?.textContent || '') || undefined,
   };
 }
 

@@ -1,6 +1,7 @@
 ﻿import React, { useState, useMemo } from 'react';
 import { estimateDifficulty } from '../../utils/recipeDifficulty';
 import { isCommonPantryStaple } from '../../utils/ingredientParser';
+import type { PageNutrition } from '../../utils/nutrition';
 import { Toast } from '../layout/Toast';
 import { isRecipeLink, readRecipeLink } from '../../utils/recipeLink';
 import type { Recipe, Instruction, Ingredient, RecipeCategory, RecipeSourceType, RecipeDifficulty } from '../../types/recipe';
@@ -53,6 +54,8 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = ({ onClose, closeGu
   const [cookingTimeMinutes, setCookingTimeMinutes] = useState<number | string>(30);
   const [coverImageUrl, setCoverImageUrl] = useState('');
   const [recipeDocumentUrl, setRecipeDocumentUrl] = useState('');
+  // Nutrition from the recipe's web page, kept as the page gives it
+  const [pageNutrition, setPageNutrition] = useState<PageNutrition | undefined>(undefined);
   const [sourceUrl, setSourceUrl] = useState('');
   const [sourceType, setSourceType] = useState<RecipeSourceType>('manual');
   const [notes, setNotes] = useState('');
@@ -299,6 +302,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = ({ onClose, closeGu
       setUrlFetchStatus('Fyller i receptet');
 
       if (scraped.title) setTitle(scraped.title);
+      setPageNutrition(scraped.nutrition);
       if (scraped.coverImageUrl) setCoverImageUrl(scraped.coverImageUrl);
       if (scraped.servings) setServings(scraped.servings);
       setDifficulty(
@@ -440,6 +444,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = ({ onClose, closeGu
       prepTimeMinutes: 0,
       cookTimeMinutes: Number(cookingTimeMinutes) || 0,
       difficulty,
+      pageNutrition,
       createdAt: new Date().toISOString(),
     };
 
