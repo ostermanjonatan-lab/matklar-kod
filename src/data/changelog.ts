@@ -11,6 +11,14 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.0.168',
+    date: '2026-11-10',
+    items: [
+      'Näringsvärdet går att skriva in under Redigera recept, per portion, per 100 g eller för hela rätten. De andra räknas ut av sig själva.',
+      'Fotade receptsidor läses del för del: spalter, rutor och tabeller hålls isär, och berättelser, dryckestips och näringsrutor runt receptet hoppas över.',
+    ],
+  },
+  {
     version: '1.0.167',
     date: '2026-11-10',
     items: [
