@@ -28,10 +28,16 @@ export const NUTRIENTS: { key: keyof NutritionValues; label: string; unit: strin
   { key: 'salt', label: 'Salt', unit: 'g' },
 ];
 
-/** Values from a web page: per portion, or per 100 g when the page says so. */
+export type NutritionBasis = 'portion' | '100g' | 'total';
+
+/**
+ * Values given for the recipe rather than worked out: from its web page (per portion, or per
+ * 100 g when the page says so), or written in when the recipe is edited (manual).
+ */
 export interface PageNutrition {
-  per: 'portion' | '100g';
+  per: NutritionBasis;
   values: Partial<NutritionValues>;
+  source?: 'page' | 'manual';
 }
 
 type Per100 = [kcal: number, protein: number, carbs: number, fat: number, fiber: number, salt: number];
@@ -376,8 +382,35 @@ export const scaleNutrition = (v: Partial<NutritionValues>, factor: number): Par
   return out;
 };
 
+/** The weight of the dish in grams from its ingredients, or null when too few can be weighed. */
+export function recipeGrams(ingredients: Pick<Ingredient, 'amount' | 'unit' | 'name'>[]): number | null {
+  const calc = calculateNutrition(ingredients || []);
+  const weighable = ingredients.length > 0 && calc.missing.length <= ingredients.length * 0.3 && calc.grams > 0;
+  return weighable ? calc.grams : null;
+}
+
+/**
+ * Values given for one basis (a portion, 100 g or the whole dish) as all three. 100 g needs the
+ * dish's weight; without it that one is missing.
+ */
+export function nutritionForAllBases(
+  values: Partial<NutritionValues>,
+  per: NutritionBasis,
+  servings: number,
+  grams: number | null
+): { total?: Partial<NutritionValues>; perPortion?: Partial<NutritionValues>; per100g?: Partial<NutritionValues> } {
+  const portions = servings > 0 ? servings : 4;
+  const total =
+    per === 'total' ? values : per === 'portion' ? scaleNutrition(values, portions) : grams ? scaleNutrition(values, grams / 100) : undefined;
+  return {
+    total,
+    perPortion: per === 'portion' ? values : total ? scaleNutrition(total, 1 / portions) : undefined,
+    per100g: per === '100g' ? values : total && grams ? scaleNutrition(total, 100 / grams) : undefined,
+  };
+}
+
 export interface RecipeNutrition {
-  source: 'page' | 'calculated';
+  source: 'page' | 'manual' | 'calculated';
   total?: Partial<NutritionValues>;
   perPortion?: Partial<NutritionValues>;
   per100g?: Partial<NutritionValues>;
@@ -403,21 +436,9 @@ export function recipeNutrition(recipe: {
 
   const page = recipe.pageNutrition;
   if (page && Object.keys(page.values).length > 0) {
-    if (page.per === 'portion') {
-      const total = scaleNutrition(page.values, servings);
-      return {
-        source: 'page',
-        perPortion: page.values,
-        total,
-        per100g: weighable ? scaleNutrition(total, 100 / calc.grams) : undefined,
-        ...base,
-      };
-    }
     return {
-      source: 'page',
-      per100g: page.values,
-      total: weighable ? scaleNutrition(page.values, calc.grams / 100) : undefined,
-      perPortion: weighable ? scaleNutrition(page.values, calc.grams / 100 / servings) : undefined,
+      source: page.source === 'manual' ? 'manual' : 'page',
+      ...nutritionForAllBases(page.values, page.per, servings, weighable ? calc.grams : null),
       ...base,
     };
   }
@@ -506,7 +527,8 @@ export function nutritionFromText(text: string): PageNutrition | null {
 
 /**
  * The page's values are kept as a hidden tag, like the difficulty, so no new column is needed in
- * the database: "__naring:portion:kcal=490;protein=24;carbs=52;fat=19;salt=1.4"
+ * the database: "__naring:portion:kcal=490;protein=24;carbs=52;fat=19;salt=1.4". Values written in
+ * by hand are marked "+egen": "__naring:total+egen:kcal=2400;..."
  */
 const TAG_PREFIX = '__naring:';
 
@@ -514,14 +536,17 @@ export function splitNutritionTag(tags: string[] | undefined): { nutrition?: Pag
   let nutrition: PageNutrition | undefined;
   const rest = (tags || []).filter((t) => {
     if (typeof t !== 'string' || !t.startsWith(TAG_PREFIX)) return true;
-    const [per, body = ''] = t.slice(TAG_PREFIX.length).split(':');
+    const [head, body = ''] = t.slice(TAG_PREFIX.length).split(':');
+    const [per, how] = head.split('+');
     const values: Partial<NutritionValues> = {};
     for (const pair of body.split(';')) {
       const [k, v] = pair.split('=');
       const x = parseFloat(v);
       if (NUTRIENTS.some((n) => n.key === k) && isFinite(x)) values[k as keyof NutritionValues] = x;
     }
-    if ((per === 'portion' || per === '100g') && Object.keys(values).length) nutrition = { per, values };
+    if ((per === 'portion' || per === '100g' || per === 'total') && Object.keys(values).length) {
+      nutrition = { per, values, source: how === 'egen' ? 'manual' : 'page' };
+    }
     return false;
   });
   return { nutrition, tags: rest };
@@ -533,5 +558,5 @@ export function withNutritionTag(tags: string[], nutrition: PageNutrition | unde
   const body = NUTRIENTS.filter((n) => typeof nutrition.values[n.key] === 'number')
     .map((n) => `${n.key}=${Math.round((nutrition.values[n.key] as number) * 10) / 10}`)
     .join(';');
-  return [...rest, `${TAG_PREFIX}${nutrition.per}:${body}`];
+  return [...rest, `${TAG_PREFIX}${nutrition.per}${nutrition.source === 'manual' ? '+egen' : ''}:${body}`];
 }

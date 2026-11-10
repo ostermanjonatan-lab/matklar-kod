@@ -8,6 +8,8 @@ import { parseIngredientsText } from '../../utils/ingredientParser';
 import { uploadRecipePhoto } from '../../utils/imageService';
 import { cleanLeadingStepNumber, formatIngredientsToText } from '../../utils/formatters';
 import { RecipeFormFields } from './RecipeFormFields';
+import { NutritionEditor, type NutritionEdit } from './NutritionEditor';
+import { recipeGrams, recipeNutrition, type PageNutrition } from '../../utils/nutrition';
 
 interface EditRecipeModalProps {
   recipe: Recipe;
@@ -59,6 +61,10 @@ export const EditRecipeModal: React.FC<EditRecipeModalProps> = ({
 
   const [showDiscardPrompt, setShowDiscardPrompt] = useState<boolean>(false);
 
+  // Nutrition written in here, and whether the values given before are to be left out
+  const [nutritionEdit, setNutritionEdit] = useState<NutritionEdit | null>(null);
+  const [nutritionCleared, setNutritionCleared] = useState(false);
+
   // Image Upload State
   const [isImageUploading, setIsImageUploading] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -103,9 +109,23 @@ export const EditRecipeModal: React.FC<EditRecipeModalProps> = ({
       }));
   }, [instructionsText]);
 
+  // The values the recipe had: kept unless they were cleared, or came from the web page and the
+  // ingredients have been changed since (then they no longer fit and are worked out instead)
+  const givenNutrition: PageNutrition | undefined =
+    nutritionCleared ||
+    (recipe.pageNutrition?.source !== 'manual' && ingredientsText !== initialIngredientsRef.current)
+      ? undefined
+      : recipe.pageNutrition;
+  const nutritionServings = Number(servings) || 4;
+  const currentNutrition = useMemo(
+    () => recipeNutrition({ ingredients: parsedIngredients, servings: nutritionServings, pageNutrition: givenNutrition }),
+    [parsedIngredients, nutritionServings, givenNutrition]
+  );
+  const dishGrams = useMemo(() => recipeGrams(parsedIngredients), [parsedIngredients]);
+
   // Unsaved changes: compare with how the form looked when it opened
   const snapshot = () =>
-    JSON.stringify([title, category, subcategories, servings, difficulty, cookingTimeMinutes, coverImageUrl, notes, ingredientsText, instructionsText]);
+    JSON.stringify([title, category, subcategories, servings, difficulty, cookingTimeMinutes, coverImageUrl, notes, ingredientsText, instructionsText, nutritionEdit, nutritionCleared]);
   const initialSnapshotRef = useRef<string | null>(null);
   if (initialSnapshotRef.current === null) initialSnapshotRef.current = snapshot();
   const isDirty = snapshot() !== initialSnapshotRef.current;
@@ -144,9 +164,11 @@ export const EditRecipeModal: React.FC<EditRecipeModalProps> = ({
       prepTimeMinutes: 0,
       cookTimeMinutes: Number(cookingTimeMinutes) >= 0 ? Number(cookingTimeMinutes) : 0,
       difficulty,
-      // The web page's nutrition no longer fits when the ingredients are changed: then it is
-      // worked out from the ingredients instead
-      pageNutrition: ingredientsText === initialIngredientsRef.current ? recipe.pageNutrition : undefined,
+      // Values written in here win; otherwise the ones the recipe had, see givenNutrition
+      pageNutrition:
+        nutritionEdit && Object.keys(nutritionEdit.values).length > 0
+          ? { per: nutritionEdit.per, values: nutritionEdit.values, source: 'manual' }
+          : givenNutrition,
     };
 
     updateRecipe(updatedRecipe);
@@ -207,6 +229,22 @@ export const EditRecipeModal: React.FC<EditRecipeModalProps> = ({
             stepCount={parsedInstructions.length}
             idPrefix="edit"
             defaultServings={recipe.servings || 4}
+          />
+
+          <NutritionEditor
+            current={currentNutrition}
+            servings={nutritionServings}
+            grams={dishGrams}
+            edit={nutritionEdit}
+            onEdit={(e) => {
+              setNutritionEdit(e);
+              if (e) setNutritionCleared(false);
+            }}
+            onUseIngredients={() => {
+              setNutritionEdit(null);
+              setNutritionCleared(true);
+            }}
+            usesIngredients={!nutritionEdit && !givenNutrition}
           />
 
           {/* Delete, away from Spara */}

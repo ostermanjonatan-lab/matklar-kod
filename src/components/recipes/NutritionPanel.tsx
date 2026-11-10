@@ -76,7 +76,11 @@ export const NutritionPanel: React.FC<{ recipe: Recipe; servings: number }> = ({
                 </tbody>
               </table>
               <p className="mt-2 text-xs text-stone-500 leading-relaxed">
-                {nutrition.source === 'page' ? 'Från receptets webbsida.' : 'Uppskattat från ingredienserna.'}
+                {nutrition.source === 'page'
+                  ? 'Från receptets webbsida.'
+                  : nutrition.source === 'manual'
+                    ? 'Inskrivet i receptet.'
+                    : 'Uppskattat från ingredienserna.'}
                 {` Hela rätten gäller ${servings} ${servings === 1 ? 'portion' : 'portioner'}.`}
                 {nutrition.missing.length > 0 && nutrition.source === 'calculated' && (
                   <> Inte med: {nutrition.missing.map((m) => formatIngredientName(m, null, '').toLowerCase()).join(', ')}.</>
