@@ -143,6 +143,7 @@ const FOODS: Food[] = [
   { lmv: 845, piece: 20, words: ['pasta', 'spaghetti', 'lasagneplattor', 'lasagneplatta', 'tagliatelle', 'penne', 'makaroner', 'fusilli', 'nudlar', 'äggnudlar', 'risnudlar', 'linguine', 'fettuccine', 'rigatoni', 'farfalle', 'snabbmakaroner'], v: [355, 12.5, 70, 1.5, 3.5, 0], density: 0.5 },
   { lmv: 831, words: ['couscous', 'bulgur', 'matvete'], v: [360, 12, 72, 1.5, 6, 0], density: 0.75 },
   { lmv: 7025, words: ['quinoa'], v: [370, 14, 64, 6, 7, 0], density: 0.8 },
+  { lmv: 244, words: ['pommes frites', 'pommes', 'frites', 'pommes strips', 'klyftpotatis', 'potatisklyftor'], v: [216, 3.2, 32, 7.6, 3.2, 0], pack: 750 },
   { lmv: 230, words: ['bakpotatis', 'bakpotatisar'], v: [75, 2, 16, 0.1, 1.5, 0], piece: 250 },
   { lmv: 230, words: ['potatis', 'potatisar', 'färskpotatis', 'mandelpotatis'], v: [75, 2, 16, 0.1, 1.5, 0], piece: 100 },
   { lmv: 3765, words: ['sötpotatis'], v: [85, 1.6, 18, 0.1, 3, 0.1], piece: 250 },
@@ -230,6 +231,8 @@ const FOODS: Food[] = [
   { lmv: 488, words: ['bostongurka', 'smörgåsgurka', 'gurkmajonnäs'], v: [78, 1, 16.6, 0.4, 1.8, 1.5], density: 1.02 }, // PM 2024
   { lmv: 1969, words: ['ketchup', 'chilisås', 'sweet chili', 'sweet chilisås', 'grillsås', 'bbq-sås'], v: [130, 1.2, 30, 0.2, 1, 2], density: 1.2 }, // PM 2024
   { lmv: 909, words: ['soja', 'sojasås', 'japansk soja', 'kinesisk soja', 'tamari', 'fisksås', 'ostronsås'], v: [60, 8, 6, 0, 0, 14], density: 1.15 },
+  { lmv: 1988, words: ['ostsås', 'cheddarsås', 'nachosås', 'cheesesås', 'cheese sauce'], v: [154, 7.3, 7.3, 10.6, 0.1, 0.9], density: 1.05 },
+  { lmv: 50, words: ['chipotlemayo', 'chipotlemajonnäs', 'mayo', 'srirachamayo', 'vitlöksmayo'], v: [666, 1.3, 5, 72.4, 0, 1.1], density: 0.96 },
   { lmv: 50, words: ['majonnäs', 'aioli', 'srirachamajonnäs', 'tryffelmajonnäs', 'remoulad', 'bearnaisesås', 'burgersås'], v: [680, 1.5, 3, 74, 0, 1.3], density: 0.96, pack: 200 }, // PM 2024
   { lmv: 45, words: ['dressing', 'caesardressing', 'vinägrett', 'salladsdressing'], v: [450, 2, 5, 47, 0, 2], density: 1, pack: 250 },
   { lmv: 2004, words: ['pesto'], v: [450, 5, 5, 45, 2, 2], density: 0.99 }, // PM 2024
@@ -390,6 +393,10 @@ export interface CalculatedNutrition {
   counted: number;
   /** Ingredients that could not be counted (unknown food, or no amount for something that matters) */
   missing: string[];
+  /** The same with their amounts, for saying what is left out */
+  missingItems: Pick<Ingredient, 'amount' | 'unit' | 'name'>[];
+  /** Weight of what is left out, as far as it can be told from the amounts (grams, kg, dl) */
+  missingGrams: number;
 }
 
 /** Nutrition of the whole dish from its ingredients. */
@@ -398,6 +405,8 @@ export function calculateNutrition(ingredients: Pick<Ingredient, 'amount' | 'uni
   let grams = 0;
   let counted = 0;
   const missing: string[] = [];
+  const missingItems: Pick<Ingredient, 'amount' | 'unit' | 'name'>[] = [];
+  let missingGrams = 0;
   for (const ing of ingredients) {
     // Salt for the water pasta or potatoes cook in is poured away with it
     if (/salt/i.test(ing.name) && /(?:pasta|kok|potatis)vatten|vattnet/i.test(ing.name)) {
@@ -421,6 +430,8 @@ export function calculateNutrition(ingredients: Pick<Ingredient, 'amount' | 'uni
         continue;
       }
       missing.push(ing.name);
+      missingItems.push(ing);
+      missingGrams += ingredientGrams(ing, null) ?? 0;
       continue;
     }
     grams += g;
@@ -429,7 +440,7 @@ export function calculateNutrition(ingredients: Pick<Ingredient, 'amount' | 'uni
       total[k] += (per100(food)[i] * g) / 100;
     });
   }
-  return { total, grams, counted, missing };
+  return { total, grams, counted, missing, missingItems, missingGrams };
 }
 
 export const scaleNutrition = (v: Partial<NutritionValues>, factor: number): Partial<NutritionValues> => {
@@ -473,6 +484,9 @@ export interface RecipeNutrition {
   perPortion?: Partial<NutritionValues>;
   per100g?: Partial<NutritionValues>;
   missing: string[];
+  missingItems: Pick<Ingredient, 'amount' | 'unit' | 'name'>[];
+  /** Share of the dish's weight that is left out (0 to 1), when it can be told */
+  missingShare: number;
   counted: number;
   ingredientCount: number;
 }
@@ -490,7 +504,13 @@ export function recipeNutrition(recipe: {
   const calc = calculateNutrition(recipe.ingredients || []);
   // The weight is only worth using when most of the ingredients could be weighed
   const weighable = recipe.ingredients.length > 0 && calc.missing.length <= recipe.ingredients.length * 0.3 && calc.grams > 0;
-  const base = { missing: calc.missing, counted: calc.counted, ingredientCount: recipe.ingredients.length };
+  const base = {
+    missing: calc.missing,
+    missingItems: calc.missingItems,
+    missingShare: calc.missingGrams > 0 ? calc.missingGrams / (calc.missingGrams + calc.grams) : 0,
+    counted: calc.counted,
+    ingredientCount: recipe.ingredients.length,
+  };
 
   const page = recipe.pageNutrition;
   const calculated =

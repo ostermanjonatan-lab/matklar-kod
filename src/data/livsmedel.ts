@@ -137,4 +137,6 @@ export const LIVSMEDEL: Record<number, [number, number, number, number, number, 
   6907: [581, 8.4, 34, 43.9, 10.8, 0], // Mörk choklad kakao 70%
   7025: [356, 14.4, 56.8, 6.1, 7, 0], // Mjölmålla quinoa okokt
   7266: [168, 1.2, 0, 18.3, 0.8, 0.1], // Kokosmjölk fett ca 18%
+  244: [216, 3.2, 32, 7.6, 3.2, 0], // Pommes frites friterad potatis värmd i ugn fett ca 7% frysvara
+  1988: [154, 7.3, 7.3, 10.6, 0.1, 0.9], // Ostsås
 };

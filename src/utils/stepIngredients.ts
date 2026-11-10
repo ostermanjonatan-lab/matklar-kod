@@ -57,7 +57,8 @@ const ENDINGS = ['orna', 'erna', 'arna', 'orna', 'en', 'et', 'na', 'or', 'er', '
 // Base nouns keep their full form where a shorter stem would also match a verb
 // ("grädde" not "grädd", which would match "grädda").
 function baseKey(base: string): string {
-  return base === 'grädde' ? 'grädde' : base === 'olja' ? 'olj' : stem(base);
+  // "färs" keeps its s, so "färg" is not taken for it
+  return base === 'grädde' || base === 'färs' ? base : base === 'olja' ? 'olj' : stem(base);
 }
 
 function stem(word: string): string {

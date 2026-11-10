@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 import type { Recipe } from '../../types/recipe';
 import { NUTRIENTS, recipeNutrition, scaleNutrition, type NutritionValues } from '../../utils/nutrition';
-import { formatIngredientName } from '../../utils/formatters';
+import { formatAmount, formatIngredientName, formatUnit } from '../../utils/formatters';
 
 const formatValue = (value: number | undefined, unit: string) => {
   if (value === undefined || !isFinite(value)) return '–';
@@ -29,7 +29,22 @@ export const NutritionPanel: React.FC<{ recipe: Recipe; servings: number }> = ({
     { label: '100 g', values: nutrition?.per100g },
     { label: 'Hela rätten', values: whole },
   ];
-  const summary = nutrition?.perPortion?.kcal !== undefined ? `${formatValue(nutrition.perPortion.kcal, 'kcal')} per portion` : '';
+  // Ingredients that could not be counted make what is worked out too low. Values from the web
+  // page, or all written in, do not depend on them.
+  const worksOut = nutrition?.source === 'calculated' || (nutrition?.source === 'manual' && !(nutrition.manual?.portion && nutrition.manual?.per100g));
+  const incomplete = Boolean(nutrition && worksOut && nutrition.missingItems.length > 0);
+  const missingText = (nutrition?.missingItems || [])
+    .map((m) => {
+      const amount = typeof m.amount === 'number' ? `${formatAmount(m.amount)}\u00a0${formatUnit(m.unit, m.amount)}`.trim() : '';
+      return `${formatIngredientName(m.name, null, '').toLowerCase()}${amount ? ` (${amount})` : ''}`;
+    })
+    .join(', ');
+  const share = nutrition?.missingShare ?? 0;
+  const summary = incomplete
+    ? 'Ofullständigt'
+    : nutrition?.perPortion?.kcal !== undefined
+      ? `${formatValue(nutrition.perPortion.kcal, 'kcal')} per portion`
+      : '';
 
   return (
     <div className="w-full border-t border-[#EBE7DF]">
@@ -40,7 +55,7 @@ export const NutritionPanel: React.FC<{ recipe: Recipe; servings: number }> = ({
         className="w-full flex items-center gap-3 min-h-[52px] text-left touch-manipulation"
       >
         <h2 className="font-serif text-lg font-bold text-stone-900 flex-1">Näringsvärde</h2>
-        {!open && summary && <span className="text-sm text-stone-500 tabular-nums">{summary}</span>}
+        {!open && summary && <span className={`text-sm tabular-nums ${incomplete ? 'text-amber-800' : 'text-stone-500'}`}>{summary}</span>}
         <ChevronDown className={`w-5 h-5 text-stone-500 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
 
@@ -48,6 +63,12 @@ export const NutritionPanel: React.FC<{ recipe: Recipe; servings: number }> = ({
         <div className="pb-3 animate-fade-in">
           {nutrition ? (
             <>
+              {incomplete && (
+                <p className="mb-3 rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-800 leading-relaxed">
+                  Räknas inte med: {missingText}. Värdena är därför för låga
+                  {share >= 0.1 ? `, ungefär ${Math.round(share * 100)} % av rättens vikt saknas` : ''}.
+                </p>
+              )}
               <table className="w-full text-sm tabular-nums">
                 <thead>
                   <tr className="text-xs text-stone-500">
@@ -86,9 +107,6 @@ export const NutritionPanel: React.FC<{ recipe: Recipe; servings: number }> = ({
                         : '100 g är inskrivet, portion och hela rätten är uppskattade från ingredienserna.'
                     : 'Uppskattat från ingredienserna med Livsmedelsverkets livsmedelsdatabas.'}
                 {` Hela rätten gäller ${servings} ${servings === 1 ? 'portion' : 'portioner'}.`}
-                {nutrition.missing.length > 0 && nutrition.source === 'calculated' && (
-                  <> Inte med: {nutrition.missing.map((m) => formatIngredientName(m, null, '').toLowerCase()).join(', ')}.</>
-                )}
               </p>
             </>
           ) : (
