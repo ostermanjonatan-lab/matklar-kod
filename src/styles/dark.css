@@ -61,7 +61,6 @@ html.dark, html.dark body { background-color: #1B1916 !important; color: #DCD4C7
 .dark .border-\[\#EBE7DF\] { border-color: #3A352E !important; }
 .dark .border-\[\#EBE7DF\]\/80 { border-color: rgba(58,53,46,0.80) !important; }
 .dark .border-amber-200 { border-color: rgba(245,158,11,0.30) !important; }
-.dark .border-amber-200\/80 { border-color: rgba(245,158,11,0.24) !important; }
 .dark .border-amber-300 { border-color: rgba(245,158,11,0.40) !important; }
 .dark .border-amber-300\/80 { border-color: rgba(245,158,11,0.32) !important; }
 .dark .border-emerald-300 { border-color: rgba(52,211,153,0.35) !important; }

@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { FadeImage } from '../layout/FadeImage';
-import { NoImage } from '../layout/NoImage';
+import { CustomMealImage } from './CustomMealImage';
 import { categoryLabel } from '../../data/categories';
 import { Toast } from '../layout/Toast';
 import { ConfirmSheet } from '../layout/ConfirmSheet';
@@ -629,9 +629,7 @@ export const MealPlanView: React.FC = () => {
                         {recipe ? (
                           <FadeImage src={recipe.coverImageUrl} alt={recipe.title} className="absolute inset-0 w-full h-full object-cover" />
                         ) : hasCustomDinner ? (
-                          <span title={dayData?.customDinner}>
-                            <NoImage />
-                          </span>
+                          <CustomMealImage name={dayData!.customDinner!.trim()} />
                         ) : (
                           <span className="text-base font-bold text-stone-300 group-hover:text-stone-400">
                             +
@@ -894,16 +892,15 @@ export const MealPlanView: React.FC = () => {
                   </div>
                 </div>
               ) : activeDayData.customDinner?.trim() ? (
-                /* Own meal: shaped like a recipe without a picture, the grey box with the name on it */
+                /* Own meal: the same shape as a recipe, grey with an icon that fits the meal and its name */
                 <div>
                   <div
                     onClick={() => openPickerModal(activeDayName, 'dinner')}
                     className="relative aspect-16/10 rounded-t-3xl overflow-hidden cursor-pointer touch-manipulation"
                   >
-                    <NoImage />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/35 via-45% to-black/20" />
+                    <CustomMealImage name={activeDayData.customDinner.trim()} />
 
-                    <div className="absolute top-3 left-3 right-3 flex items-center justify-between text-white z-10">
+                    <div className="absolute top-3 left-3 right-3 flex items-center justify-between z-10">
                       <span className="bg-white/95 text-stone-900 text-[11px] font-bold px-2.5 py-1 rounded-full shadow-xs">
                         Middag
                       </span>
@@ -913,17 +910,11 @@ export const MealPlanView: React.FC = () => {
                           e.stopPropagation();
                           handleClearMeal(activeDayName, 'dinner');
                         }}
-                        className="w-8 h-8 rounded-full bg-black/50 backdrop-blur-md text-white hover:bg-rose-600/90 flex items-center justify-center active:scale-90 transition-all touch-manipulation"
+                        className="w-8 h-8 rounded-full bg-white text-stone-700 hover:text-rose-600 flex items-center justify-center active:scale-90 transition-all touch-manipulation shadow-xs"
                         title="Ta bort middag"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
-                    </div>
-
-                    <div className="absolute bottom-3.5 left-3.5 right-3.5 text-white">
-                      <h3 className="font-serif font-bold text-xl leading-snug drop-shadow-md text-white">
-                        {activeDayData.customDinner}
-                      </h3>
                     </div>
                   </div>
 
@@ -1161,7 +1152,15 @@ export const MealPlanView: React.FC = () => {
                     onClick={() => openPickerModal(activeDayName, 'lunch')}
                     className="flex items-center gap-3 min-w-0 flex-1 text-left touch-manipulation"
                   >
-                    <LunchboxIcon className="w-5 h-5 text-stone-400 shrink-0" />
+                    <span className="relative w-12 h-12 rounded-xl overflow-hidden shrink-0 block">
+                      {parseLeftoverLunch(activeDayData.customLunch) ? (
+                        <span className="absolute inset-0 bg-stone-100 flex items-center justify-center">
+                          <LunchboxIcon className="w-5 h-5 text-stone-400" />
+                        </span>
+                      ) : (
+                        <CustomMealImage name={activeDayData.customLunch.trim()} />
+                      )}
+                    </span>
                     <div className="min-w-0 flex-1">
                       <h4 className="font-serif font-bold text-base leading-5 text-stone-900 truncate">
                         {parseLeftoverLunch(activeDayData.customLunch)?.title ?? activeDayData.customLunch}
@@ -1276,7 +1275,7 @@ export const MealPlanView: React.FC = () => {
                     {dRecipe ? (
                       <FadeImage src={dRecipe.coverImageUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
                     ) : hasCustomDinner ? (
-                      <NoImage />
+                      <CustomMealImage name={dayData!.customDinner!.trim()} />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-stone-400">
                         <Plus className="w-4 h-4" />
