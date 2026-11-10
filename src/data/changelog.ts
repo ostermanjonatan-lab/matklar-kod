@@ -11,6 +11,13 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.0.169',
+    date: '2026-11-10',
+    items: [
+      'Näringsvärde per 100 g fylls i för sig i Redigera recept och ändrar inte portion eller hela rätten.',
+    ],
+  },
+  {
     version: '1.0.168',
     date: '2026-11-10',
     items: [
