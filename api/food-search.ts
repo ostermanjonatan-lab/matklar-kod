@@ -71,7 +71,7 @@ export async function searchFoods(query: string): Promise<FoodHit[]> {
       signal: AbortSignal.timeout(8000),
     });
     if (!res.ok) return [];
-    const data = await res.json();
+    const data: any = await res.json();
     const hit = toHit(data.product);
     return hit ? [hit] : [];
   }
@@ -80,7 +80,7 @@ export async function searchFoods(query: string): Promise<FoodHit[]> {
     { headers: { 'User-Agent': USER_AGENT }, signal: AbortSignal.timeout(8000) }
   );
   if (!res.ok) throw new Error(`Open Food Facts svarade ${res.status}`);
-  const data = await res.json();
+  const data: any = await res.json();
   const hits = (data.hits || []).map(toHit).filter((h: FoodHit | null): h is FoodHit => h !== null);
   // Products sold in Sweden first, otherwise in Open Food Facts' order
   return [...hits.filter((h: FoodHit) => h.swedish), ...hits.filter((h: FoodHit) => !h.swedish)].slice(0, 20);

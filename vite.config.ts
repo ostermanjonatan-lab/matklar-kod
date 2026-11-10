@@ -1,7 +1,7 @@
 import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
-import { searchFoods } from './src/services/openFoodFacts';
+import { searchFoods } from './src/services/openFoodFacts.ts';
 
 function recipeFetcherPlugin(): Plugin {
   return {
