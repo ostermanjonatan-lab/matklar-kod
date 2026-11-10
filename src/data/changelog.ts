@@ -11,6 +11,13 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.0.172',
+    date: '2026-11-10',
+    items: [
+      'En ingrediens kan kopplas till en färdig vara från Open Food Facts under Redigera recept, Näringsvärde. Sök på namn eller streckkod, så används förpackningens näringsvärden.',
+    ],
+  },
+  {
     version: '1.0.171',
     date: '2026-11-10',
     items: [
