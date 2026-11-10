@@ -1,3 +1,4 @@
+import { hasCoverImage } from './coverImage';
 import type { Recipe } from '../types/recipe';
 import { DIFFICULTY_LABELS } from './recipeDifficulty';
 import {
@@ -248,7 +249,7 @@ export async function createRecipeImage(recipe: Recipe, servings: number): Promi
   } catch {
     // Fall back to the system fonts
   }
-  const photo = await loadPhoto(recipe.coverImageUrl);
+  const photo = hasCoverImage(recipe.coverImageUrl) ? await loadPhoto(recipe.coverImageUrl) : null;
 
   const canvas = document.createElement('canvas');
   canvas.width = WIDTH;

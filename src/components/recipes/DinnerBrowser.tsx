@@ -5,6 +5,8 @@ import type { Recipe, RecipeDifficulty } from '../../types/recipe';
 import { DifficultyFilter, matchesDifficulty } from './DifficultyPicker';
 import { getRecipeSubcategories } from '../../types/recipe';
 import { formatCookingTime, formatRecipeTitle } from '../../utils/formatters';
+import { hasCoverImage } from '../../utils/coverImage';
+import { NoImage } from '../layout/NoImage';
 
 
 // Subcategory value meaning "all recipes in the category"
@@ -15,10 +17,12 @@ const SLIDE_INTERVAL_MS = 4000;
 const thumbClass = 'w-11 h-11 rounded-xl object-cover bg-stone-200';
 
 const Thumb: React.FC<{ src?: string }> = ({ src }) =>
-  src ? (
+  hasCoverImage(src) ? (
     <img src={smallImage(src)} alt="" loading="lazy" className={`${thumbClass} shrink-0`} />
   ) : (
-    <div className="w-11 h-11 rounded-xl bg-stone-200 shrink-0" />
+    <span className="relative block w-11 h-11 rounded-xl overflow-hidden shrink-0">
+      <NoImage />
+    </span>
   );
 
 /**
@@ -54,7 +58,7 @@ const SlideshowThumb: React.FC<{ images: string[] }> = ({ images }) => {
     next.src = images[(idx + 1) % images.length];
   }, [idx, images]);
 
-  if (images.length === 0) return <div className="w-11 h-11 rounded-xl bg-stone-200 shrink-0" />;
+  if (images.length === 0) return <Thumb />;
   const current = images[idx % images.length];
   const previous = prevIdx !== null ? images[prevIdx % images.length] : null;
 
@@ -79,7 +83,7 @@ const smallImage = (url: string) =>
 
 const imagesOf = (list: Recipe[]) =>
   Array.from(
-    new Set(list.map((r) => r.coverImageUrl).filter((u): u is string => Boolean(u && u.trim())).map(smallImage))
+    new Set(list.map((r) => r.coverImageUrl).filter(hasCoverImage).map(smallImage))
   );
 
 const byTitle = (a: Recipe, b: Recipe) =>

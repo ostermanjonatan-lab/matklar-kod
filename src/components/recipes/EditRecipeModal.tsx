@@ -130,9 +130,7 @@ export const EditRecipeModal: React.FC<EditRecipeModalProps> = ({
       ...recipe,
       title: title.trim(),
       description: '',
-      coverImageUrl:
-        coverImageUrl.trim() ||
-        'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=1200&q=80',
+      coverImageUrl: coverImageUrl.trim(),
       recipeDocumentUrl: recipe.recipeDocumentUrl,
       servings: Number(servings) || 4,
       category,

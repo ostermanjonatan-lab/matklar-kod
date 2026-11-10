@@ -1,6 +1,7 @@
 ﻿import React, { useState, useMemo } from 'react';
 import { estimateDifficulty } from '../../utils/recipeDifficulty';
 import { isCommonPantryStaple } from '../../utils/ingredientParser';
+import { hasCoverImage } from '../../utils/coverImage';
 import { Toast } from '../layout/Toast';
 import { isRecipeLink, readRecipeLink } from '../../utils/recipeLink';
 import type { Recipe, Instruction, Ingredient, RecipeCategory, RecipeSourceType, RecipeDifficulty } from '../../types/recipe';
@@ -51,9 +52,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = ({ onClose, closeGu
   const [servings, setServings] = useState<number | string>(4);
   const [difficulty, setDifficulty] = useState<RecipeDifficulty | undefined>(undefined);
   const [cookingTimeMinutes, setCookingTimeMinutes] = useState<number | string>(30);
-  const [coverImageUrl, setCoverImageUrl] = useState(
-    'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=1200&q=80'
-  );
+  const [coverImageUrl, setCoverImageUrl] = useState('');
   const [recipeDocumentUrl, setRecipeDocumentUrl] = useState('');
   const [sourceUrl, setSourceUrl] = useState('');
   const [sourceType, setSourceType] = useState<RecipeSourceType>('manual');
@@ -220,8 +219,8 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = ({ onClose, closeGu
       const persistentUrl = await persistRecipeDocument(file);
       setRecipeDocumentUrl(persistentUrl);
 
-      // If user still has default Unsplash cover, set this document as the cover photo
-      if (coverImageUrl.includes('unsplash.com')) {
+      // With no picture chosen yet, the photographed recipe becomes the picture
+      if (!hasCoverImage(coverImageUrl)) {
         setCoverImageUrl(persistentUrl);
       }
     } catch (saveErr) {
@@ -428,9 +427,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = ({ onClose, closeGu
       id: `custom-rec-${Date.now()}`,
       title: title.trim(),
       description: '',
-      coverImageUrl:
-        coverImageUrl.trim() ||
-        'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=1200&q=80',
+      coverImageUrl: coverImageUrl.trim(),
       recipeDocumentUrl: recipeDocumentUrl.trim() || undefined,
       sourceUrl: sourceUrl.trim() || undefined,
       sourceType,

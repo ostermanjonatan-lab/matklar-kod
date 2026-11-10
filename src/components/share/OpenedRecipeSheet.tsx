@@ -5,6 +5,7 @@ import { isRecipeLink, openedRecipeLink, readRecipeLink, type RecipeFromLink } f
 import { copyTextToClipboard } from '../../utils/recipeShare';
 import { detectAisle, isCommonPantryStaple } from '../../utils/ingredientParser';
 import { formatRecipeTitle } from '../../utils/formatters';
+import { hasCoverImage } from '../../utils/coverImage';
 
 /** A full recipe for this household from a shared link. */
 export function recipeFromLink(shared: RecipeFromLink): Recipe {
@@ -12,8 +13,7 @@ export function recipeFromLink(shared: RecipeFromLink): Recipe {
     id: `custom-rec-${Date.now()}`,
     title: shared.title,
     description: '',
-    coverImageUrl:
-      shared.coverImageUrl || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=1200&q=80',
+    coverImageUrl: shared.coverImageUrl || '',
     sourceUrl: shared.sourceUrl,
     sourceType: shared.sourceUrl ? 'url' : 'manual',
     servings: shared.servings,
@@ -123,7 +123,7 @@ export const OpenedRecipeSheet: React.FC = () => {
         ) : (
           <>
             <div className="flex gap-3 items-start">
-              {shared.coverImageUrl && (
+              {hasCoverImage(shared.coverImageUrl) && (
                 <img src={shared.coverImageUrl} alt="" className="w-16 h-16 rounded-xl object-cover shrink-0 bg-stone-100" />
               )}
               <div className="min-w-0">

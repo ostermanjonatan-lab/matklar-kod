@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { hasCoverImage } from '../../utils/coverImage';
+import { NoImage } from './NoImage';
 
 type FadeImageProps = React.ImgHTMLAttributes<HTMLImageElement> & {
   /** Used if the picture cannot be loaded. */
@@ -10,9 +12,11 @@ const DEFAULT_FALLBACK = 'https://images.unsplash.com/photo-1498837167922-ddd275
 /**
  * A photo that fades in when it has loaded. Until then the place it fills shows a skeleton,
  * so put it in a box with a size (the box gets the skeleton look while the photo loads).
+ * A recipe without a picture of its own gets the grey Ingen bild vald box instead.
  */
 export const FadeImage: React.FC<FadeImageProps> = ({ className = '', fallbackSrc = DEFAULT_FALLBACK, onLoad, onError, ...rest }) => {
   const [loaded, setLoaded] = useState(false);
+  if (!hasCoverImage(rest.src)) return <NoImage />;
   return (
     <>
       {!loaded && <span aria-hidden="true" className="skeleton absolute inset-0 block" />}

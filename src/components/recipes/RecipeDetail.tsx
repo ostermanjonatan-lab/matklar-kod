@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { FadeImage } from '../layout/FadeImage';
+import { hasCoverImage } from '../../utils/coverImage';
 import { Toast } from '../layout/Toast';
 import { PhotoViewer } from '../layout/PhotoViewer';
 import { ConfirmSheet } from '../layout/ConfirmSheet';
@@ -359,8 +360,8 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
   // sits in the left column above the ingredients, with the steps beside it.
   const renderCover = (className: string) => (
     <div
-      className={`relative w-full overflow-hidden shrink-0 ${recipe.coverImageUrl ? 'cursor-zoom-in' : ''} ${className}`}
-      onClick={() => recipe.coverImageUrl && setShowPhoto(true)}
+      className={`relative w-full overflow-hidden shrink-0 ${hasCoverImage(recipe.coverImageUrl) ? 'cursor-zoom-in' : ''} ${className}`}
+      onClick={() => hasCoverImage(recipe.coverImageUrl) && setShowPhoto(true)}
     >
       <FadeImage src={recipe.coverImageUrl} alt={recipe.title} className="absolute inset-0 w-full h-full object-cover" />
       <div className="absolute inset-0 bg-gradient-to-t from-stone-950/85 via-black/30 to-black/20" />
@@ -847,7 +848,7 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
         </div>
       </div>
 
-      {showPhoto && recipe.coverImageUrl && (
+      {showPhoto && hasCoverImage(recipe.coverImageUrl) && (
         <PhotoViewer src={recipe.coverImageUrl} alt={formatRecipeTitle(recipe.title)} onClose={() => setShowPhoto(false)} />
       )}
 

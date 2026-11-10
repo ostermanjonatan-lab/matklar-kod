@@ -1,4 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { hasCoverImage } from '../../utils/coverImage';
+import { NoImage } from '../layout/NoImage';
 import { categoryLabel } from '../../data/categories';
 import { DifficultyDots } from './DifficultyPicker';
 import { DIFFICULTY_LABELS } from '../../utils/recipeDifficulty';
@@ -510,11 +512,15 @@ export const RandomPickerModal: React.FC<RandomPickerModalProps> = ({
                     }`}
                   >
                     <div className="relative aspect-16/10 w-full bg-stone-100">
-                      <img
-                        src={displayedRecipe.coverImageUrl}
-                        alt={displayedRecipe.title}
-                        className="w-full h-full object-cover"
-                      />
+                      {hasCoverImage(displayedRecipe.coverImageUrl) ? (
+                        <img
+                          src={displayedRecipe.coverImageUrl}
+                          alt={displayedRecipe.title}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <NoImage />
+                      )}
                       <div className="absolute inset-0 bg-gradient-to-t from-stone-950/80 via-transparent to-transparent" />
                       <div className="absolute bottom-3 left-3 right-3 text-white">
                         <span className="bg-white/95 text-stone-900 text-[10px] font-bold px-2.5 py-0.5 rounded-full mb-1 inline-block">

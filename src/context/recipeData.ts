@@ -2,6 +2,7 @@
  * Pure helpers for the app's data: cleaning up saved recipes and building the meal plan week.
  * They hold no state, so they are kept apart from RecipeContext.
  */
+import { hasCoverImage } from '../utils/coverImage';
 import { cleanLeadingStepNumber } from '../utils/formatters';
 import { estimateDifficulty, isRecipeDifficulty } from '../utils/recipeDifficulty';
 import type { Recipe, MealPlanDay } from '../types/recipe';
@@ -117,7 +118,8 @@ export function sanitizeRecipe(recipe: Recipe): Recipe {
 
   return {
     ...recipe,
-    coverImageUrl: coverImageUrl || 'https://images.unsplash.com/photo-1498837167922-ddd27525d352?auto=format&fit=crop&w=1200&q=80',
+    // No picture is saved as none, and shown as the grey Ingen bild vald box
+    coverImageUrl: hasCoverImage(coverImageUrl) ? coverImageUrl : '',
     subcategories: clean,
     subcategory: clean.join(', '),
     ingredients: cleanIngredients,

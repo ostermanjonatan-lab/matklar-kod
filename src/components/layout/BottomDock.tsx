@@ -1,4 +1,6 @@
 import React from 'react';
+import { hasCoverImage } from '../../utils/coverImage';
+import { NoImage } from './NoImage';
 import { ChevronUp, X } from 'lucide-react';
 import type { Recipe } from '../../types/recipe';
 import { useTimer } from '../../context/TimerContext';
@@ -48,14 +50,20 @@ export const BottomDock: React.FC<BottomDockProps> = ({ minimized, onCloseMinimi
               className="flex items-center gap-3 min-w-0 flex-1 text-left touch-manipulation"
               aria-label={`Visa ${formatRecipeTitle(minimized.title)}`}
             >
-              <img
-                src={minimized.coverImageUrl}
-                alt=""
-                className="w-11 h-11 rounded-xl object-cover bg-stone-100 shrink-0"
-                onError={(e) => {
-                  e.currentTarget.style.visibility = 'hidden';
-                }}
-              />
+              {hasCoverImage(minimized.coverImageUrl) ? (
+                <img
+                  src={minimized.coverImageUrl}
+                  alt=""
+                  className="w-11 h-11 rounded-xl object-cover bg-stone-100 shrink-0"
+                  onError={(e) => {
+                    e.currentTarget.style.visibility = 'hidden';
+                  }}
+                />
+              ) : (
+                <span className="relative block w-11 h-11 rounded-xl overflow-hidden shrink-0">
+                  <NoImage />
+                </span>
+              )}
               <span className="min-w-0 flex-1 font-serif font-bold text-base text-stone-900 truncate">
                 {formatRecipeTitle(minimized.title)}
               </span>

@@ -1925,9 +1925,7 @@ function parseMarkdownRecipe(markdown: string, sourceUrl: string): ScrapedRecipe
   return {
     title,
     description: description.trim(),
-    coverImageUrl:
-      coverImageUrl ||
-      'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=1200&q=80',
+    coverImageUrl: coverImageUrl || '',
     servings: servings || 4,
     category: detectCategory(title),
     subcategory: detectSubcategory(title, detectCategory(title), ingredients, description),
@@ -1972,7 +1970,7 @@ function parseJsonLdRecipe(schema: any, sourceUrl: string, doc: Document, engine
   const coverImageUrl =
     extractImageUrl(schema.image) ||
     extractBestCoverImageFromDom(doc) ||
-    'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=1200&q=80';
+    '';
 
   const servings = parseServings(schema.recipeYield) || extractServingsFromDom(doc) || 4;
   const parsedTotal = parseRecipeTimeString(schema.totalTime || schema.performTime);
@@ -2085,7 +2083,7 @@ function parseHtmlFallback(doc: Document, sourceUrl: string, engineName = 'DOM P
   const description = extractDescriptionFromDom(doc, title);
   const coverImageUrl =
     extractBestCoverImageFromDom(doc) ||
-    'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=1200&q=80';
+    '';
 
   const ingredients = extractIngredientsFromDom(doc);
   const instructions = extractInstructionsFromDom(doc);
