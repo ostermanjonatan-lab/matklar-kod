@@ -3,7 +3,7 @@ import { getSupabase } from './supabaseClient';
 import type { Recipe, MealPlanDay, ShoppingItem, Household, UserProfile, PantryItem, HouseholdJoinRequest } from '../types/recipe';
 import { WEEKDAY_NAMES, getWeekDates, getWeekStart, isISODate } from '../utils/mealPlanDates';
 import { splitDifficultyTag, withDifficultyTag, estimateDifficulty } from '../utils/recipeDifficulty';
-import { splitNutritionTag, withNutritionTag } from '../utils/nutrition';
+import { splitNutritionTag, withNutritionTag, splitProductTags, withProductTags } from '../utils/nutrition';
 import { getRecipeSubcategories } from '../types/recipe';
 import {
   getAisleOverride,
@@ -94,7 +94,8 @@ export function mapRowToRecipe(row: any): Recipe {
     prepTimeMinutes: 0,
     cookTimeMinutes: Number(row.cook_time_minutes) > 0 ? Number(row.cook_time_minutes) : (Number(row.prep_time_minutes) || 30),
     // The difficulty is kept as a hidden tag, see utils/recipeDifficulty.ts
-    tags: splitNutritionTag(splitDifficultyTag(row.tags).tags).tags,
+    tags: splitProductTags(splitNutritionTag(splitDifficultyTag(row.tags).tags).tags).tags,
+    productLinks: splitProductTags(splitNutritionTag(splitDifficultyTag(row.tags).tags).tags).products,
     // The web page's nutrition is kept as a hidden tag too, see utils/nutrition.ts
     pageNutrition: splitNutritionTag(splitDifficultyTag(row.tags).tags).nutrition,
     difficulty:
@@ -144,7 +145,7 @@ export async function pushRecipeToSupabase(recipe: Recipe, householdId: string) 
       instructions: recipe.instructions || [],
       prep_time_minutes: 0,
       cook_time_minutes: Number(recipe.cookTimeMinutes) > 0 ? Number(recipe.cookTimeMinutes) : (Number(recipe.prepTimeMinutes) || 30),
-      tags: withNutritionTag(withDifficultyTag(recipe.tags, recipe.difficulty), recipe.pageNutrition),
+      tags: withProductTags(withNutritionTag(withDifficultyTag(recipe.tags, recipe.difficulty), recipe.pageNutrition), recipe.productLinks),
       created_at: recipe.createdAt || new Date().toISOString(),
       updated_at: new Date().toISOString(),
     });

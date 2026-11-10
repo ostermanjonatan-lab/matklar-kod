@@ -9,7 +9,8 @@ import { uploadRecipePhoto } from '../../utils/imageService';
 import { cleanLeadingStepNumber, formatIngredientsToText } from '../../utils/formatters';
 import { RecipeFormFields } from './RecipeFormFields';
 import { NutritionEditor, type NutritionEdit } from './NutritionEditor';
-import { recipeNutrition, type PageNutrition } from '../../utils/nutrition';
+import { productKey, recipeNutrition, type PageNutrition, type ProductLink } from '../../utils/nutrition';
+import { ProductSearchSheet } from './ProductSearchSheet';
 
 interface EditRecipeModalProps {
   recipe: Recipe;
@@ -64,6 +65,9 @@ export const EditRecipeModal: React.FC<EditRecipeModalProps> = ({
   // Nutrition written in here, and whether the values given before are to be left out
   const [nutritionEdit, setNutritionEdit] = useState<NutritionEdit>({});
   const [nutritionCleared, setNutritionCleared] = useState(false);
+  // Ingredients tied to packaged foods in Open Food Facts
+  const [productLinks, setProductLinks] = useState<ProductLink[]>(recipe.productLinks || []);
+  const [showProductSearch, setShowProductSearch] = useState(false);
 
   // Image Upload State
   const [isImageUploading, setIsImageUploading] = useState(false);
@@ -118,8 +122,8 @@ export const EditRecipeModal: React.FC<EditRecipeModalProps> = ({
       : recipe.pageNutrition;
   const nutritionServings = Number(servings) || 4;
   const currentNutrition = useMemo(
-    () => recipeNutrition({ ingredients: parsedIngredients, servings: nutritionServings, pageNutrition: givenNutrition }),
-    [parsedIngredients, nutritionServings, givenNutrition]
+    () => recipeNutrition({ ingredients: parsedIngredients, servings: nutritionServings, pageNutrition: givenNutrition, productLinks }),
+    [parsedIngredients, nutritionServings, givenNutrition, productLinks]
   );
 
   // What to save: values written here, together with values written in before that were not changed
@@ -137,7 +141,7 @@ export const EditRecipeModal: React.FC<EditRecipeModalProps> = ({
 
   // Unsaved changes: compare with how the form looked when it opened
   const snapshot = () =>
-    JSON.stringify([title, category, subcategories, servings, difficulty, cookingTimeMinutes, coverImageUrl, notes, ingredientsText, instructionsText, nutritionEdit, nutritionCleared]);
+    JSON.stringify([title, category, subcategories, servings, difficulty, cookingTimeMinutes, coverImageUrl, notes, ingredientsText, instructionsText, nutritionEdit, nutritionCleared, productLinks]);
   const initialSnapshotRef = useRef<string | null>(null);
   if (initialSnapshotRef.current === null) initialSnapshotRef.current = snapshot();
   const isDirty = snapshot() !== initialSnapshotRef.current;
@@ -178,6 +182,8 @@ export const EditRecipeModal: React.FC<EditRecipeModalProps> = ({
       difficulty,
       // Values written in here win; otherwise the ones the recipe had, see givenNutrition
       pageNutrition: nutritionToSave(),
+      // Only for ingredients the recipe still has
+      productLinks: productLinks.filter((p) => parsedIngredients.some((i) => productKey(i.name) === p.ingredient)),
     };
 
     updateRecipe(updatedRecipe);
@@ -253,6 +259,10 @@ export const EditRecipeModal: React.FC<EditRecipeModalProps> = ({
               setNutritionCleared(true);
             }}
             usesIngredients={!nutritionEdit.linked && !nutritionEdit.per100g && !givenNutrition}
+            products={productLinks}
+            pieceIngredients={parsedIngredients.filter((i) => ['', 'st'].includes((i.unit || '').toLowerCase()) && i.amount != null).map((i) => productKey(i.name))}
+            onProductsChange={setProductLinks}
+            onFindProduct={() => setShowProductSearch(true)}
           />
 
           {/* Delete, away from Spara */}
@@ -289,6 +299,18 @@ export const EditRecipeModal: React.FC<EditRecipeModalProps> = ({
             Spara ändringar
           </button>
         </div>
+
+        {showProductSearch && (
+          <ProductSearchSheet
+            ingredients={parsedIngredients.map((i) => i.name)}
+            notCounted={(currentNutrition?.notCounted || []).filter((n) => n.reason !== 'ingen mängd').map((n) => n.name)}
+            onChoose={(link) => {
+              setProductLinks([...productLinks.filter((p) => p.ingredient !== link.ingredient), link]);
+              setShowProductSearch(false);
+            }}
+            onClose={() => setShowProductSearch(false)}
+          />
+        )}
 
         {/* Unsaved changes */}
         {showDiscardPrompt && (

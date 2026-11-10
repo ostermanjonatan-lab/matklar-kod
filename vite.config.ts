@@ -1,11 +1,24 @@
 import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
+import { searchFoods } from './src/services/openFoodFacts';
 
 function recipeFetcherPlugin(): Plugin {
   return {
     name: 'recipe-fetcher-middleware',
     configureServer(server) {
+      // Product search for nutrition, as the Vercel function api/food-search.ts does it
+      server.middlewares.use('/api/food-search', async (req, res) => {
+        res.setHeader('Content-Type', 'application/json');
+        try {
+          const q = new URL(req.url || '', `http://${req.headers.host}`).searchParams.get('q') || '';
+          res.end(JSON.stringify({ hits: await searchFoods(q) }));
+        } catch (err) {
+          res.statusCode = 502;
+          res.end(JSON.stringify({ error: err instanceof Error ? err.message : 'Sökningen gick inte att göra' }));
+        }
+      });
+
       server.middlewares.use('/api/fetch-recipe', async (req, res) => {
         try {
           const urlParams = new URL(req.url || '', `http://${req.headers.host}`);

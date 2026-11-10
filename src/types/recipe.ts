@@ -1,4 +1,4 @@
-import type { PageNutrition } from '../utils/nutrition';
+import type { PageNutrition, ProductLink } from '../utils/nutrition';
 import { detectMeatKinds, OLD_MEAT_SUBCATEGORY } from '../utils/meatKinds';
 export type RecipeSourceType = 'manual' | 'url' | 'pdf' | 'recipe_image';
 
@@ -44,6 +44,8 @@ export interface Recipe {
   difficulty?: RecipeDifficulty;
   /** Nutrition as the recipe's web page gives it. Without it, it is worked out from the ingredients. */
   pageNutrition?: PageNutrition;
+  /** Ingredients tied to packaged foods in Open Food Facts, whose values are used for them */
+  productLinks?: ProductLink[];
   createdAt?: string;
   updatedAt?: string;
 }

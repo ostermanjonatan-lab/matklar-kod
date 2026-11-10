@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { ChevronDown } from 'lucide-react';
-import { NUTRIENTS, nutritionForAllBases, type NutritionValues, type RecipeNutrition } from '../../utils/nutrition';
+import { NUTRIENTS, nutritionForAllBases, type NutritionValues, type ProductLink, type RecipeNutrition } from '../../utils/nutrition';
 
 type Basis = 'portion' | 'total' | '100g';
 type Key = keyof NutritionValues;
@@ -43,13 +43,30 @@ interface NutritionEditorProps {
   /** Leave out the values written in, so they are worked out from the ingredients again */
   onUseIngredients: () => void;
   usesIngredients: boolean;
+  /** Ingredients tied to packaged foods, and how they are changed */
+  products: ProductLink[];
+  /** Ingredients counted in pieces ("20 st"), which can take a weight per piece */
+  pieceIngredients: string[];
+  onProductsChange: (products: ProductLink[]) => void;
+  onFindProduct: () => void;
 }
 
 /**
  * Nutrition in Redigera recept: a row that opens, with the values per portion, for the whole dish
  * or per 100 g.
  */
-export const NutritionEditor: React.FC<NutritionEditorProps> = ({ current, servings, edit, onEdit, onUseIngredients, usesIngredients }) => {
+export const NutritionEditor: React.FC<NutritionEditorProps> = ({
+  current,
+  servings,
+  edit,
+  onEdit,
+  onUseIngredients,
+  usesIngredients,
+  products,
+  pieceIngredients,
+  onProductsChange,
+  onFindProduct,
+}) => {
   const [open, setOpen] = useState(false);
   const [basis, setBasis] = useState<Basis>('portion');
   // What is in the fields, as written (so "1," can be typed on the way to "1,5")
@@ -147,6 +164,55 @@ export const NutritionEditor: React.FC<NutritionEditorProps> = ({ current, servi
               Räkna från ingredienserna
             </button>
           )}
+
+          {/* Packaged foods: an ingredient counted with the values on its package */}
+          <div className="pt-2 border-t border-[#EBE7DF] space-y-2">
+            <p className="text-sm font-semibold text-stone-900">Färdiga produkter</p>
+            {products.length === 0 && (
+              <p className="text-xs text-stone-500">Koppla en ingrediens till en vara, så används förpackningens näringsvärden för den.</p>
+            )}
+            {products.map((p) => (
+              <div key={p.ingredient} className="text-sm">
+                <div className="flex items-start gap-2">
+                  <p className="flex-1 min-w-0 text-stone-800">
+                    <span>{p.ingredient.charAt(0).toUpperCase() + p.ingredient.slice(1)}</span>
+                    <span className="block text-xs text-stone-500">
+                      {[p.name, p.brand, p.per100.kcal !== undefined ? `${Math.round(p.per100.kcal)} kcal per 100 g` : '', p.packGrams ? `förpackning ${p.packGrams} g` : '']
+                        .filter(Boolean)
+                        .join(' · ')}
+                    </span>
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => onProductsChange(products.filter((x) => x !== p))}
+                    className="shrink-0 text-xs font-semibold text-rose-700 min-h-[36px] px-1 touch-manipulation"
+                  >
+                    Ta bort
+                  </button>
+                </div>
+                {pieceIngredients.includes(p.ingredient) && (
+                  <label className="mt-1 flex items-center gap-2 text-xs text-stone-600">
+                    Vikt per styck
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      value={p.pieceGrams !== undefined ? String(p.pieceGrams).replace('.', ',') : ''}
+                      placeholder="–"
+                      onChange={(e) => {
+                        const n = parseFloat(e.target.value.replace(',', '.'));
+                        onProductsChange(products.map((x) => (x === p ? { ...x, pieceGrams: isFinite(n) && n > 0 ? n : undefined } : x)));
+                      }}
+                      className="w-20 h-9 px-2 text-right tabular-nums bg-[#FCFAF5] border border-[#EBE7DF] rounded-lg text-stone-900 focus:outline-none focus:ring-2 focus:ring-[#284235]"
+                    />
+                    g
+                  </label>
+                )}
+              </div>
+            ))}
+            <button type="button" onClick={onFindProduct} className="text-sm text-[#284235] font-semibold min-h-[40px] touch-manipulation">
+              Koppla ingrediens till produkt
+            </button>
+          </div>
         </div>
       )}
     </div>

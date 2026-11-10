@@ -123,6 +123,11 @@ export const NutritionPanel: React.FC<{ recipe: Recipe; servings: number }> = ({
                     : 'Uppskattat från ingredienserna med Livsmedelsverkets livsmedelsdatabas.'}
                 {` Hela rätten gäller ${servings} ${servings === 1 ? 'portion' : 'portioner'}.`}
               </p>
+              {nutrition.products.length > 0 && worksOut && (
+                <p className="mt-2 text-xs text-stone-500 leading-relaxed">
+                  Förpackningens värden från Open Food Facts för {nutrition.products.map((p) => `${p.ingredient} (${p.name}${p.brand ? `, ${p.brand}` : ''})`).join(', ')}.
+                </p>
+              )}
               {groups.length > 0 && (
                 <div className="mt-2 text-xs text-stone-500 leading-relaxed">
                   <p className="font-semibold text-stone-600">Inte med i uträkningen</p>

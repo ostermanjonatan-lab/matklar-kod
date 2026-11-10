@@ -38,6 +38,43 @@ export const NUTRIENTS: { key: keyof NutritionValues; label: string; unit: strin
 export type NutritionBasis = 'portion' | '100g' | 'total';
 
 /**
+ * An ingredient tied to a packaged food in Open Food Facts: the package's values per 100 g are used
+ * for it instead of the table's.
+ */
+export interface ProductLink {
+  /** The ingredient's name as productKey() writes it */
+  ingredient: string;
+  name: string;
+  brand?: string;
+  code?: string;
+  per100: Partial<NutritionValues>;
+  /** Weight of the package, for "1 förp" */
+  packGrams?: number;
+  /** Weight of one piece, for "20 st nuggets", when written in */
+  pieceGrams?: number;
+}
+
+/** An ingredient's name as products are tied to it: lower case, without invisible signs and colon */
+export const productKey = (name: string) =>
+  (name || '')
+    .replace(/[\u200B-\u200F\u2060\uFEFF\u00AD]/g, '')
+    .replace(/\s*:\s*$/, '')
+    .trim()
+    .toLowerCase();
+
+function productFood(link: ProductLink, amount: number | null | undefined): Food {
+  const v = link.per100;
+  return {
+    words: [link.name],
+    v: [v.kcal ?? 0, v.protein ?? 0, v.carbs ?? 0, v.fat ?? 0, v.fiber ?? 0, v.salt ?? 0],
+    density: 1,
+    // A piece is the package unless a weight per piece is written in; "20 st" of a package is not 20 packages
+    piece: link.pieceGrams ?? (link.packGrams && (amount ?? 1) <= 2 ? link.packGrams : undefined),
+    pack: link.packGrams,
+  };
+}
+
+/**
  * Values given for the recipe rather than worked out: from its web page (per portion, or per
  * 100 g when the page says so), or written in when the recipe is edited (manual).
  */
@@ -516,7 +553,10 @@ export interface NotCounted {
 }
 
 /** Nutrition of the whole dish from its ingredients. */
-export function calculateNutrition(ingredients: Pick<Ingredient, 'amount' | 'unit' | 'name'>[]): CalculatedNutrition {
+export function calculateNutrition(
+  ingredients: Pick<Ingredient, 'amount' | 'unit' | 'name'>[],
+  products: ProductLink[] = []
+): CalculatedNutrition {
   const total = zero();
   let grams = 0;
   let counted = 0;
@@ -530,7 +570,8 @@ export function calculateNutrition(ingredients: Pick<Ingredient, 'amount' | 'uni
       counted++;
       continue;
     }
-    const food = findFood(ing.name);
+    const link = products.find((p) => p.ingredient === productKey(ing.name));
+    const food = link ? productFood(link, ing.amount) : findFood(ing.name);
     if (food?.trace) {
       // Pepper, water, baking powder: their weight if known, nothing else
       grams += ingredientGrams(ing, food) ?? 0;
@@ -605,6 +646,8 @@ export interface RecipeNutrition {
   missing: string[];
   missingItems: Pick<Ingredient, 'amount' | 'unit' | 'name'>[];
   notCounted: NotCounted[];
+  /** Ingredients counted with a package's values from Open Food Facts */
+  products: ProductLink[];
   /** Share of the dish's weight that is left out (0 to 1), when it can be told */
   missingShare: number;
   counted: number;
@@ -619,15 +662,18 @@ export function recipeNutrition(recipe: {
   ingredients: Pick<Ingredient, 'amount' | 'unit' | 'name'>[];
   servings: number;
   pageNutrition?: PageNutrition;
+  productLinks?: ProductLink[];
 }): RecipeNutrition | null {
   const servings = recipe.servings > 0 ? recipe.servings : 4;
-  const calc = calculateNutrition(recipe.ingredients || []);
+  const products = (recipe.productLinks || []).filter((p) => (recipe.ingredients || []).some((i) => productKey(i.name) === p.ingredient));
+  const calc = calculateNutrition(recipe.ingredients || [], products);
   // The weight is only worth using when most of the ingredients could be weighed
   const weighable = recipe.ingredients.length > 0 && calc.missing.length <= recipe.ingredients.length * 0.3 && calc.grams > 0;
   const base = {
     missing: calc.missing,
     missingItems: calc.missingItems,
     notCounted: calc.notCounted,
+    products,
     missingShare: calc.missingGrams > 0 ? calc.missingGrams / (calc.missingGrams + calc.grams) : 0,
     counted: calc.counted,
     ingredientCount: recipe.ingredients.length,
@@ -792,4 +838,27 @@ export function withNutritionTag(tags: string[], nutrition: PageNutrition | unde
   // Values per 100 g written in on their own come after a "|"
   const body = write(nutrition.values) + (nutrition.per100g ? `|${write(nutrition.per100g)}` : '');
   return [...rest, `${TAG_PREFIX}${nutrition.per}${nutrition.source === 'manual' ? '+egen' : ''}:${body}`];
+}
+
+/** Products tied to ingredients are kept as hidden tags too: "__produkt:" and the link as JSON */
+const PRODUCT_PREFIX = '__produkt:';
+
+export function splitProductTags(tags: string[] | undefined): { products: ProductLink[]; tags: string[] } {
+  const products: ProductLink[] = [];
+  const rest = (tags || []).filter((t) => {
+    if (typeof t !== 'string' || !t.startsWith(PRODUCT_PREFIX)) return true;
+    try {
+      const p = JSON.parse(decodeURIComponent(t.slice(PRODUCT_PREFIX.length)));
+      if (p && typeof p.ingredient === 'string' && typeof p.name === 'string' && p.per100) products.push(p);
+    } catch {
+      // A broken tag is dropped
+    }
+    return false;
+  });
+  return { products, tags: rest };
+}
+
+export function withProductTags(tags: string[], products: ProductLink[] | undefined): string[] {
+  const rest = splitProductTags(tags).tags;
+  return [...rest, ...(products || []).map((p) => PRODUCT_PREFIX + encodeURIComponent(JSON.stringify(p)))];
 }
