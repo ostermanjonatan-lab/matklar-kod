@@ -1,6 +1,8 @@
 export interface DetectedTimer {
   minutes: number;
   seconds: number;
+  /** For a range ("10-20 min"): the upper end in seconds, so a time in between can be chosen */
+  maxSeconds?: number;
   label: string;
   rawText: string;
 }
@@ -50,10 +52,12 @@ export function detectTimersInText(text: string): DetectedTimer[] {
       seconds = minVal;
     }
 
+    const maxSeconds = unit.startsWith('tim') || unit === 'h' ? maxVal * 3600 : unit.startsWith('sek') ? maxVal : maxVal * 60;
     if (minutes > 0 && minutes <= 720) {
       results.push({
         minutes,
         seconds,
+        maxSeconds: maxSeconds > seconds ? maxSeconds : undefined,
         label: `${minVal}-${maxVal} ${unit}`,
         rawText: match[0],
       });

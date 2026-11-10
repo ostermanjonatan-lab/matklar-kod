@@ -29,7 +29,9 @@ import {
   ChevronDown,
   Share2,
   Sun,
-  ShoppingCart
+  ShoppingCart,
+  Minus,
+  Plus
 } from 'lucide-react';
 import { PortionScaler } from './PortionScaler';
 import { NutritionPanel } from './NutritionPanel';
@@ -66,18 +68,103 @@ function shortDuration(minutes: number): string {
 
 /** The timers in a step, each length once, in the order they are written. */
 function stepTimers(segments: ReturnType<typeof splitTextIntoTimerSegments>) {
-  const seen = new Set<number>();
-  const result: { minutes: number; label: string }[] = [];
+  const seen = new Set<string>();
+  const result: { minutes: number; maxMinutes?: number; label: string }[] = [];
   for (const seg of segments) {
     // seconds is exact. minutes is rounded up to whole minutes for times in seconds.
     const minutes = seg.timer ? (seg.timer.seconds > 0 ? seg.timer.seconds / 60 : seg.timer.minutes) : 0;
-    if (seg.timer && !seen.has(minutes)) {
-      seen.add(minutes);
-      result.push({ minutes, label: seg.timer.label });
+    const maxMinutes = seg.timer?.maxSeconds ? seg.timer.maxSeconds / 60 : undefined;
+    const key = `${minutes}-${maxMinutes ?? ''}`;
+    if (seg.timer && !seen.has(key)) {
+      seen.add(key);
+      result.push({ minutes, maxMinutes, label: seg.timer.label });
     }
   }
   return result;
 }
+
+/** "10–20 min", "1–2 tim" or "30–45 sek" for a timer button */
+function rangeDuration(min: number, max: number): string {
+  const a = shortDuration(min);
+  const b = shortDuration(max);
+  const [aNum, aUnit] = a.split(' ');
+  const [bNum, bUnit] = b.split(' ');
+  return a.split(' ').length === 2 && b.split(' ').length === 2 && aUnit === bUnit ? `${aNum}–${bNum} ${bUnit}` : `${a}–${b}`;
+}
+
+/**
+ * A timer for a range in a step ("ca 10-20 min"): opens a row where the time is chosen with
+ * − and + between the two, starting in the middle.
+ */
+const RangeTimer: React.FC<{ min: number; max: number; label: string; onStart: (minutes: number, label: string) => void }> = ({
+  min,
+  max,
+  label,
+  onStart,
+}) => {
+  const span = (max - min) * 60;
+  const step = (span <= 60 ? 5 : span <= 900 ? 60 : 300) / 60;
+  const [open, setOpen] = useState(false);
+  const [chosen, setChosen] = useState(() => Math.min(max, min + Math.round((max - min) / 2 / step) * step));
+  if (!open) {
+    return (
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          setOpen(true);
+        }}
+        className="inline-flex items-center gap-1.5 min-h-[40px] text-sm font-semibold text-[#284235] touch-manipulation"
+      >
+        <Play className="w-3.5 h-3.5 fill-current" />
+        Starta timer {rangeDuration(min, max)}
+      </button>
+    );
+  }
+  const change = (delta: number) => setChosen((c) => Math.min(max, Math.max(min, Math.round((c + delta) * 60) / 60)));
+  return (
+    <div className="flex items-center gap-2 min-h-[44px]" onClick={(e) => e.stopPropagation()}>
+      <button
+        type="button"
+        onClick={() => change(-step)}
+        disabled={chosen <= min}
+        aria-label="Kortare tid"
+        className="w-9 h-9 rounded-xl bg-white border border-[#EBE7DF] flex items-center justify-center text-stone-700 disabled:opacity-40 touch-manipulation"
+      >
+        <Minus className="w-4 h-4" />
+      </button>
+      <span className="min-w-[4.5rem] text-center text-sm font-semibold tabular-nums text-stone-900">{shortDuration(chosen)}</span>
+      <button
+        type="button"
+        onClick={() => change(step)}
+        disabled={chosen >= max}
+        aria-label="Längre tid"
+        className="w-9 h-9 rounded-xl bg-white border border-[#EBE7DF] flex items-center justify-center text-stone-700 disabled:opacity-40 touch-manipulation"
+      >
+        <Plus className="w-4 h-4" />
+      </button>
+      <button
+        type="button"
+        onClick={() => {
+          onStart(chosen, `${shortDuration(chosen)} (${label})`);
+          setOpen(false);
+        }}
+        className="ml-1 inline-flex items-center gap-1.5 h-9 px-3 rounded-xl bg-[#284235] text-white text-sm font-semibold touch-manipulation"
+      >
+        <Play className="w-3.5 h-3.5 fill-current" />
+        Starta
+      </button>
+      <button
+        type="button"
+        onClick={() => setOpen(false)}
+        aria-label="Stäng"
+        className="w-9 h-9 flex items-center justify-center text-stone-500 touch-manipulation"
+      >
+        <X className="w-4 h-4" />
+      </button>
+    </div>
+  );
+};
 
 export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecipe, onBack, onMinimize, hidden = false }) => {
   const {
@@ -709,7 +796,10 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
 
                       {!isStepDone && stepTimers(segments).length > 0 && (
                         <div className="mt-1.5 flex flex-wrap gap-x-4">
-                          {stepTimers(segments).map((t) => (
+                          {stepTimers(segments).map((t) =>
+                            t.maxMinutes ? (
+                              <RangeTimer key={`${t.minutes}-${t.maxMinutes}`} min={t.minutes} max={t.maxMinutes} label={t.label} onStart={handleStartInlineTimer} />
+                            ) : (
                             <button
                               key={t.minutes}
                               type="button"
@@ -722,7 +812,8 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
                               <Play className="w-3.5 h-3.5 fill-current" />
                               Starta timer {shortDuration(t.minutes)}
                             </button>
-                          ))}
+                            )
+                          )}
                         </div>
                       )}
                     </div>
