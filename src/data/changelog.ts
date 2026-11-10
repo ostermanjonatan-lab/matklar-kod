@@ -11,6 +11,15 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.0.167',
+    date: '2026-11-10',
+    items: [
+      'Näringsvärde under Anteckningar i varje recept: per portion, per 100 g och för hela rätten. Recept från webbsidor får sidans värden, egna recept räknas ut från ingredienserna.',
+      'Fotade recept med liten text eller ljus text på mörk botten läses bättre.',
+      'Ett steg som "Stek i ca 8-10 minuter" delas inte längre i två.',
+    ],
+  },
+  {
     version: '1.0.166',
     date: '2026-11-10',
     items: [
