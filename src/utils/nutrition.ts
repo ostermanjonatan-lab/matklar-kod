@@ -1,6 +1,7 @@
 import type { Ingredient } from '../types/recipe';
 import { normalizeUnit } from './ingredientParser';
 import { LIVSMEDEL } from '../data/livsmedel';
+import { LIVSMEDEL_BAS } from '../data/livsmedel-bas';
 
 /**
  * Nutrition for a recipe.
@@ -87,7 +88,7 @@ const FOODS: Food[] = [
   { lmv: 6113, words: ['turkisk yoghurt', 'grekisk yoghurt'], v: [125, 3.5, 4, 10, 0, 0.1], density: 1.05 }, // PM 2024
   { lmv: 76, words: ['kesella', 'kvarg 10'], v: [152, 12.7, 2.9, 10, 0, 0.1], density: 1.11 }, // PM 2024
   { lmv: 3243, words: ['kvarg'], v: [62, 11, 3.5, 0.2, 0, 0.1], density: 1.11 }, // PM 2024
-  { lmv: 7266, words: ['kokosmjölk'], v: [190, 2, 3, 19, 0, 0.05], density: 1, pack: 400 },
+  { lmv: 7266, words: ['kokosmjölk', 'kokosgrädde'], v: [190, 2, 3, 19, 0, 0.05], density: 1, pack: 400 },
   { lmv: 96, words: ['ost', 'prästost', 'herrgårdsost', 'cheddar', 'cheddarost', 'västerbottensost', 'gruyère', 'gruyèreost', 'gruyereost', 'gruyéreost', 'emmentaler'], v: [380, 27, 0, 30, 0, 1.6], density: 0.4, piece: 15 },
   { lmv: 103, words: ['parmesan', 'parmesanost', 'pecorino'], v: [400, 35, 0, 29, 0, 1.6], density: 0.35 },
   { lmv: 2255, words: ['mozzarella'], v: [250, 18, 1, 19, 0, 0.5], piece: 125 },
@@ -188,7 +189,7 @@ const FOODS: Food[] = [
   { lmv: 371, words: ['hel vitlök', 'vitlökar', 'vitlöksknöl', 'vitlöksknölar'], v: [135, 6, 27, 0.5, 2, 0], piece: 50 },
   { lmv: 371, words: ['vitlök', 'vitlöksklyfta', 'vitlöksklyftor'], v: [135, 6, 27, 0.5, 2, 0], piece: 5 },
   { lmv: 289, words: ['morot', 'morötter'], v: [40, 0.8, 7, 0.3, 3, 0.1], piece: 70, density: 0.45 },
-  { lmv: 290, words: ['palsternacka', 'rotselleri', 'kålrot', 'rödbeta', 'rödbetor', 'rotfrukter'], v: [45, 1.3, 8, 0.3, 3.5, 0.1], piece: 150 },
+  { lmv: 290, words: ['palsternacka', 'palsternackor', 'rotfrukter'], v: [45, 1.3, 8, 0.3, 3.5, 0.1], piece: 150 },
   { lmv: 287, words: ['jordärtskocka', 'jordärtskockor'], v: [70, 2, 13, 0.1, 2, 0], piece: 40 },
   { lmv: 364, words: ['tomat', 'tomater', 'kvisttomater', 'plommontomater'], v: [20, 0.9, 3, 0.2, 1.2, 0], piece: 100 },
   { lmv: 364, words: ['körsbärstomat', 'körsbärstomater', 'cocktailtomater'], v: [22, 0.9, 3.5, 0.2, 1.2, 0], piece: 15 },
@@ -294,7 +295,7 @@ const DRINKS: Food[] = [
   { lmv: 1829, words: ['cola', 'läsk', 'coca-cola', 'pepsi', 'cola-dryck', 'läskedryck'], v: [43, 0, 10.5, 0, 0, 0], density: 1 },
   // "Sockerfri cola-dryck" is not sugar
   { lmv: 1831, words: ['sockerfri cola-dryck', 'sockerfri cola', 'sockerfri läsk', 'sockerfri tonic', 'sockerfri', 'sockerfritt', 'sockerfria', 'cola zero', 'pepsi max', 'cola light', 'light-läsk'], v: [0, 0, 0.1, 0, 0, 0], density: 1 },
-  { lmv: 643, words: ['juice', 'apelsinjuice', 'äppeljuice', 'saft'], v: [45, 0.5, 10, 0, 0, 0], density: 1.04 },
+  { lmv: 643, words: ['juice', 'apelsinjuice', 'äppeljuice', 'saft', 'dricka', 'saftdricka', 'lingondricka', 'fläderdricka'], v: [45, 0.5, 10, 0, 0, 0], density: 1.04 },
 ];
 
 const ALL_FOODS = [...FOODS, ...DRINKS];
@@ -329,8 +330,62 @@ function findFoodByName(name: string): Food | null {
   const whole = normalizeName(name);
   // Of two choices the first one, when it is known: "ansjovisfilé à 125 g eller 1 burk matjesill".
   // Otherwise the whole name ("färska eller förvällda kantareller", "pappardelle eller fettuccine").
-  const first = whole.includes(' eller ') ? matchFood(whole.split(' eller ')[0].trim()) : null;
-  return first ?? matchFood(whole);
+  const name1 = whole.includes(' eller ') ? whole.split(' eller ')[0].trim() : whole;
+  const own = matchFood(name1) ?? (name1 !== whole ? matchFood(whole) : null);
+  const base = baseFood(name1, true) ?? (name1 !== whole ? baseFood(whole, true) : null);
+  // Livsmedelsverket's own food for exactly this word goes before the table's rough values, and
+  // before a match on only the last part of a compound word ("bovetemjöl" is not "vetemjöl")
+  // (but spices stay a trace, and the table's weights per piece and dl come along)
+  if (base && !own?.trace && (!own || !own.lmv || !own.words.includes(name1))) {
+    return own ? { ...base, density: own.density ?? base.density, piece: own.piece, pack: own.pack, edible: own.edible } : base;
+  }
+  return own ?? baseFood(name1, false) ?? (name1 !== whole ? baseFood(whole, false) : null);
+}
+
+const baseFoods = new Map<string, Food | null>();
+/**
+ * A food from the wider selection of Livsmedelsverket's database (data/livsmedel-bas.ts), for names
+ * the table above does not know. Only the same word, or the word without a plural ending
+ * ("rädisor" is "rädisa", "kantareller" is "kantarell"), so it does not guess.
+ */
+function baseFood(n: string, exact: boolean): Food | null {
+  const cacheKey = `${exact ? '=' : '~'}${n}`;
+  if (baseFoods.has(cacheKey)) return baseFoods.get(cacheKey) ?? null;
+  const words = n.split(/[\s-]+/).filter((w) => w.length >= 3);
+  // Exact: the whole name is the word ("rödbetor", "gös"). Otherwise also its last or first word.
+  const tries = (exact ? [n] : [n, words[words.length - 1], words[0]]).filter((w): w is string => Boolean(w));
+  let found: Food | null = null;
+  for (const word of tries) {
+    const stems = [word];
+    for (const end of ['orna', 'erna', 'arna', 'or', 'ar', 'er', 'na', 'en', 'n', 's']) {
+      if (word.endsWith(end) && word.length - end.length >= 4) {
+        const stem = word.slice(0, -end.length);
+        stems.push(stem, stem + 'a', stem + 'e');
+      }
+    }
+    let key = stems.find((k) => LIVSMEDEL_BAS[k]);
+    // The last part of a compound word: "butternutpumpa" is pumpa
+    if (!key && !exact) {
+      for (let i = 1; i <= word.length - 5 && !key; i++) {
+        const tail = word.slice(i);
+        key = [tail, ...['or', 'ar', 'er', 'na'].filter((e) => tail.endsWith(e)).map((e) => tail.slice(0, -e.length))].find(
+          (k) => k.length >= 5 && LIVSMEDEL_BAS[k]
+        );
+      }
+    }
+    if (key) {
+      const row = LIVSMEDEL_BAS[key];
+      found = {
+        words: [key],
+        v: [row[0], row[1], row[2], row[3], row[4], row[5]],
+        // Dry foods weigh less per dl than water
+        density: /mjöl|gryn|flingor|frö|nötter|kli|socker|ris$/.test(key) ? 0.6 : /sylt|marmelad|honung|sirap/.test(key) ? 1.3 : 1,
+      };
+      break;
+    }
+  }
+  baseFoods.set(cacheKey, found);
+  return found;
 }
 
 function matchFood(n: string): Food | null {
@@ -416,6 +471,9 @@ function gramsOf(ing: Pick<Ingredient, 'amount' | 'unit' | 'name'>, food: Food |
       return amount * 25;
     case 'blad':
       return amount * 2;
+    case 'bit':
+    case 'bitar':
+      return amount * (food.piece && food.piece <= 50 ? food.piece : 20);
     case 'stjälk':
     case 'stjälkar':
       return amount * 40;
@@ -448,6 +506,13 @@ export interface CalculatedNutrition {
   missingItems: Pick<Ingredient, 'amount' | 'unit' | 'name'>[];
   /** Weight of what is left out, as far as it can be told from the amounts (grams, kg, dl) */
   missingGrams: number;
+  /** Everything not counted and why, also what has no amount ("salt efter smak") */
+  notCounted: NotCounted[];
+}
+
+export interface NotCounted {
+  name: string;
+  reason: 'ingen mängd' | 'okänt livsmedel' | 'vikt per styck okänd';
 }
 
 /** Nutrition of the whole dish from its ingredients. */
@@ -457,6 +522,7 @@ export function calculateNutrition(ingredients: Pick<Ingredient, 'amount' | 'uni
   let counted = 0;
   const missing: string[] = [];
   const missingItems: Pick<Ingredient, 'amount' | 'unit' | 'name'>[] = [];
+  const notCounted: NotCounted[] = [];
   let missingGrams = 0;
   for (const ing of ingredients) {
     // Salt for the water pasta or potatoes cook in is poured away with it
@@ -478,8 +544,10 @@ export function calculateNutrition(ingredients: Pick<Ingredient, 'amount' | 'uni
       const optional = ing.amount == null || !(typeof ing.amount === 'number' && ing.amount > 0);
       if (optional) {
         counted++;
+        notCounted.push({ name: ing.name, reason: 'ingen mängd' });
         continue;
       }
+      notCounted.push({ name: ing.name, reason: food ? 'vikt per styck okänd' : 'okänt livsmedel' });
       missing.push(ing.name);
       missingItems.push(ing);
       missingGrams += ingredientGrams(ing, null) ?? 0;
@@ -491,7 +559,7 @@ export function calculateNutrition(ingredients: Pick<Ingredient, 'amount' | 'uni
       total[k] += (per100(food)[i] * g) / 100;
     });
   }
-  return { total, grams, counted, missing, missingItems, missingGrams };
+  return { total, grams, counted, missing, missingItems, missingGrams, notCounted };
 }
 
 export const scaleNutrition = (v: Partial<NutritionValues>, factor: number): Partial<NutritionValues> => {
@@ -536,6 +604,7 @@ export interface RecipeNutrition {
   per100g?: Partial<NutritionValues>;
   missing: string[];
   missingItems: Pick<Ingredient, 'amount' | 'unit' | 'name'>[];
+  notCounted: NotCounted[];
   /** Share of the dish's weight that is left out (0 to 1), when it can be told */
   missingShare: number;
   counted: number;
@@ -558,6 +627,7 @@ export function recipeNutrition(recipe: {
   const base = {
     missing: calc.missing,
     missingItems: calc.missingItems,
+    notCounted: calc.notCounted,
     missingShare: calc.missingGrams > 0 ? calc.missingGrams / (calc.missingGrams + calc.grams) : 0,
     counted: calc.counted,
     ingredientCount: recipe.ingredients.length,

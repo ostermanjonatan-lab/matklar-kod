@@ -40,6 +40,21 @@ export const NutritionPanel: React.FC<{ recipe: Recipe; servings: number }> = ({
     })
     .join(', ');
   const share = nutrition?.missingShare ?? 0;
+  // Everything left out of the calculation, grouped by why
+  const groups: [string, string][] = worksOut
+    ? (
+        [
+          ['ingen mängd', 'Utan mängd'],
+          ['okänt livsmedel', 'Okänt för appen'],
+          ['vikt per styck okänd', 'Vikt per styck saknas'],
+        ] as const
+      )
+        .map(([reason, label]): [string, string] => [
+          label,
+          [...new Set((nutrition?.notCounted || []).filter((n) => n.reason === reason).map((n) => formatIngredientName(n.name, null, '').toLowerCase()))].join(', '),
+        ])
+        .filter(([, names]) => names.length > 0)
+    : [];
   const summary = incomplete
     ? 'Ofullständigt'
     : nutrition?.perPortion?.kcal !== undefined
@@ -108,6 +123,16 @@ export const NutritionPanel: React.FC<{ recipe: Recipe; servings: number }> = ({
                     : 'Uppskattat från ingredienserna med Livsmedelsverkets livsmedelsdatabas.'}
                 {` Hela rätten gäller ${servings} ${servings === 1 ? 'portion' : 'portioner'}.`}
               </p>
+              {groups.length > 0 && (
+                <div className="mt-2 text-xs text-stone-500 leading-relaxed">
+                  <p className="font-semibold text-stone-600">Inte med i uträkningen</p>
+                  {groups.map(([label, names]) => (
+                    <p key={label}>
+                      {label}: {names}.
+                    </p>
+                  ))}
+                </div>
+              )}
             </>
           ) : (
             <p className="text-sm text-stone-500">
