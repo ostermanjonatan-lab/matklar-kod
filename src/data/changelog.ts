@@ -11,6 +11,13 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.0.174',
+    date: '2026-11-10',
+    items: [
+      'När ett steg anger ett intervall, som ca 10-20 min, går tiden att välja med minus och plus innan timern startar.',
+    ],
+  },
+  {
     version: '1.0.173',
     date: '2026-11-10',
     items: [
