@@ -79,7 +79,11 @@ export const NutritionPanel: React.FC<{ recipe: Recipe; servings: number }> = ({
                 {nutrition.source === 'page'
                   ? 'Från receptets webbsida.'
                   : nutrition.source === 'manual'
-                    ? 'Inskrivet i receptet.'
+                    ? nutrition.manual?.portion && nutrition.manual?.per100g
+                      ? 'Inskrivet i receptet.'
+                      : nutrition.manual?.portion
+                        ? 'Portion och hela rätten är inskrivna, 100 g är uppskattat från ingredienserna.'
+                        : '100 g är inskrivet, portion och hela rätten är uppskattade från ingredienserna.'
                     : 'Uppskattat från ingredienserna.'}
                 {` Hela rätten gäller ${servings} ${servings === 1 ? 'portion' : 'portioner'}.`}
                 {nutrition.missing.length > 0 && nutrition.source === 'calculated' && (

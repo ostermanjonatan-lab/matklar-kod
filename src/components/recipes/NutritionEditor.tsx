@@ -1,20 +1,15 @@
 import React, { useState } from 'react';
 import { ChevronDown } from 'lucide-react';
-import {
-  NUTRIENTS,
-  nutritionForAllBases,
-  type NutritionBasis,
-  type NutritionValues,
-  type RecipeNutrition,
-} from '../../utils/nutrition';
+import { NUTRIENTS, nutritionForAllBases, type NutritionValues, type RecipeNutrition } from '../../utils/nutrition';
 
-const BASES: { key: NutritionBasis; label: string }[] = [
-  { key: 'portion', label: 'Per portion' },
-  { key: '100g', label: 'Per 100 g' },
-  { key: 'total', label: 'Hela rätten' },
-];
-
+type Basis = 'portion' | 'total' | '100g';
 type Key = keyof NutritionValues;
+
+const BASES: { key: Basis; label: string }[] = [
+  { key: 'portion', label: 'Per portion' },
+  { key: 'total', label: 'Hela rätten' },
+  { key: '100g', label: 'Per 100 g' },
+];
 
 /** A value as it is written in the field: whole kcal, grams with a decimal comma under 10 */
 const toField = (value: number | undefined, key: Key) => {
@@ -28,78 +23,63 @@ const fromField = (text: string): number | undefined => {
   return isFinite(n) && n >= 0 ? n : undefined;
 };
 
-const shortValue = (v: number | undefined) => (v === undefined ? '–' : Math.round(v).toLocaleString('sv-SE'));
+const kcalText = (v: number | undefined) => (v === undefined ? '–' : `${Math.round(v).toLocaleString('sv-SE')} kcal`);
 
+/**
+ * What has been written in here. A portion and the whole dish go together (one is worked out from
+ * the other with the number of portions); 100 g is written on its own and changes neither.
+ */
 export interface NutritionEdit {
-  per: NutritionBasis;
-  values: Partial<NutritionValues>;
+  linked?: { per: 'portion' | 'total'; values: Partial<NutritionValues> };
+  per100g?: Partial<NutritionValues>;
 }
 
 interface NutritionEditorProps {
   /** What the recipe shows now: written in, from its web page or worked out */
   current: RecipeNutrition | null;
   servings: number;
-  /** The dish's weight from the ingredients, or null when it cannot be weighed */
-  grams: number | null;
-  /** The values written in here, or null when nothing has been written */
-  edit: NutritionEdit | null;
-  onEdit: (edit: NutritionEdit | null) => void;
+  edit: NutritionEdit;
+  onEdit: (edit: NutritionEdit) => void;
   /** Leave out the values written in, so they are worked out from the ingredients again */
   onUseIngredients: () => void;
   usesIngredients: boolean;
 }
 
 /**
- * Nutrition in Redigera recept: a row that opens. The values can be written per portion, per
- * 100 g or for the whole dish, and the other two are worked out from the portions and the weight
- * of the ingredients.
+ * Nutrition in Redigera recept: a row that opens, with the values per portion, for the whole dish
+ * or per 100 g.
  */
-export const NutritionEditor: React.FC<NutritionEditorProps> = ({
-  current,
-  servings,
-  grams,
-  edit,
-  onEdit,
-  onUseIngredients,
-  usesIngredients,
-}) => {
+export const NutritionEditor: React.FC<NutritionEditorProps> = ({ current, servings, edit, onEdit, onUseIngredients, usesIngredients }) => {
   const [open, setOpen] = useState(false);
-  const [basis, setBasis] = useState<NutritionBasis>(edit?.per ?? 'portion');
+  const [basis, setBasis] = useState<Basis>('portion');
   // What is in the fields, as written (so "1," can be typed on the way to "1,5")
   const [texts, setTexts] = useState<Partial<Record<Key, string>>>({});
 
-  // The values in the chosen basis: those written here, else what the recipe has now
-  const shown = (() => {
-    if (edit) return nutritionForAllBases(edit.values, edit.per, servings, grams);
-    return { total: current?.total, perPortion: current?.perPortion, per100g: current?.per100g };
-  })();
-  const valuesFor = (b: NutritionBasis) => (b === 'portion' ? shown.perPortion : b === '100g' ? shown.per100g : shown.total);
+  // A portion and the whole dish: those written here, else what the recipe has now
+  const linked = edit.linked
+    ? nutritionForAllBases(edit.linked.values, edit.linked.per, servings, null)
+    : { perPortion: current?.perPortion, total: current?.total };
+  const valuesFor = (b: Basis) => (b === 'portion' ? linked.perPortion : b === 'total' ? linked.total : edit.per100g ?? current?.per100g);
   const inBasis = valuesFor(basis);
-
-  const chooseBasis = (b: NutritionBasis) => {
-    setBasis(b);
-    setTexts({});
-    // Written values follow along into the new basis
-    if (edit) {
-      const converted = valuesFor(b);
-      if (converted) onEdit({ per: b, values: converted });
-    }
-  };
 
   const change = (key: Key, text: string) => {
     setTexts((t) => ({ ...t, [key]: text }));
-    const start = edit && edit.per === basis ? edit.values : { ...(inBasis || {}) };
-    const values: Partial<NutritionValues> = { ...start };
+    const values: Partial<NutritionValues> = { ...(inBasis || {}) };
     const n = fromField(text);
     if (n === undefined) delete values[key];
     else values[key] = n;
-    onEdit({ per: basis, values });
+    if (basis === '100g') onEdit({ ...edit, per100g: values });
+    else onEdit({ ...edit, linked: { per: basis, values } });
   };
 
-  const others = BASES.filter((b) => b.key !== basis)
-    .map((b) => `${b.label.toLowerCase()} ${shortValue(valuesFor(b.key)?.kcal)} kcal`)
-    .join(', ');
-  const source = edit || current?.source === 'manual' ? 'Inskrivet' : current?.source === 'page' ? 'Från webbsidan' : 'Uppskattat från ingredienserna';
+  const hint =
+    basis === 'portion'
+      ? `Hela rätten blir ${kcalText(linked.total?.kcal)} för ${servings} ${servings === 1 ? 'portion' : 'portioner'}.`
+      : basis === 'total'
+        ? `Per portion blir det ${kcalText(linked.perPortion?.kcal)}, med ${servings} ${servings === 1 ? 'portion' : 'portioner'}.`
+        : 'Fylls i för sig och ändrar inte portion eller hela rätten.';
+  const written = Boolean(edit.linked || edit.per100g) || current?.source === 'manual';
+  const source = written ? 'Inskrivet' : current?.source === 'page' ? 'Från webbsidan' : 'Uppskattat från ingredienserna';
 
   return (
     <div className="border-t border-[#EBE7DF]">
@@ -117,24 +97,23 @@ export const NutritionEditor: React.FC<NutritionEditorProps> = ({
       {open && (
         <div className="pb-4 space-y-3">
           <div className="flex rounded-xl bg-stone-100 p-1" role="radiogroup" aria-label="Värdena gäller">
-            {BASES.map((b) => {
-              const disabled = b.key === '100g' && !grams;
-              return (
-                <button
-                  key={b.key}
-                  type="button"
-                  role="radio"
-                  aria-checked={basis === b.key}
-                  disabled={disabled}
-                  onClick={() => chooseBasis(b.key)}
-                  className={`flex-1 min-h-[36px] rounded-lg text-xs font-semibold touch-manipulation disabled:opacity-40 ${
-                    basis === b.key ? 'bg-white text-stone-900 shadow-xs' : 'text-stone-600'
-                  }`}
-                >
-                  {b.label}
-                </button>
-              );
-            })}
+            {BASES.map((b) => (
+              <button
+                key={b.key}
+                type="button"
+                role="radio"
+                aria-checked={basis === b.key}
+                onClick={() => {
+                  setBasis(b.key);
+                  setTexts({});
+                }}
+                className={`flex-1 min-h-[36px] rounded-lg text-xs font-semibold touch-manipulation ${
+                  basis === b.key ? 'bg-white text-stone-900 shadow-xs' : 'text-stone-600'
+                }`}
+              >
+                {b.label}
+              </button>
+            ))}
           </div>
 
           <div className="divide-y divide-[#EBE7DF]">
@@ -154,10 +133,7 @@ export const NutritionEditor: React.FC<NutritionEditorProps> = ({
             ))}
           </div>
 
-          <p className="text-xs text-stone-500 leading-relaxed">
-            {others ? `Blir ${others}.` : ''}
-            {!grams && ' Per 100 g går inte att räkna ut, eftersom ingredienserna inte kan vägas.'}
-          </p>
+          <p className="text-xs text-stone-500 leading-relaxed">{hint}</p>
 
           {!usesIngredients && (
             <button

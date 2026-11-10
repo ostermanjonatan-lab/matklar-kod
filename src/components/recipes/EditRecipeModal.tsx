@@ -9,7 +9,7 @@ import { uploadRecipePhoto } from '../../utils/imageService';
 import { cleanLeadingStepNumber, formatIngredientsToText } from '../../utils/formatters';
 import { RecipeFormFields } from './RecipeFormFields';
 import { NutritionEditor, type NutritionEdit } from './NutritionEditor';
-import { recipeGrams, recipeNutrition, type PageNutrition } from '../../utils/nutrition';
+import { recipeNutrition, type PageNutrition } from '../../utils/nutrition';
 
 interface EditRecipeModalProps {
   recipe: Recipe;
@@ -62,7 +62,7 @@ export const EditRecipeModal: React.FC<EditRecipeModalProps> = ({
   const [showDiscardPrompt, setShowDiscardPrompt] = useState<boolean>(false);
 
   // Nutrition written in here, and whether the values given before are to be left out
-  const [nutritionEdit, setNutritionEdit] = useState<NutritionEdit | null>(null);
+  const [nutritionEdit, setNutritionEdit] = useState<NutritionEdit>({});
   const [nutritionCleared, setNutritionCleared] = useState(false);
 
   // Image Upload State
@@ -121,7 +121,19 @@ export const EditRecipeModal: React.FC<EditRecipeModalProps> = ({
     () => recipeNutrition({ ingredients: parsedIngredients, servings: nutritionServings, pageNutrition: givenNutrition }),
     [parsedIngredients, nutritionServings, givenNutrition]
   );
-  const dishGrams = useMemo(() => recipeGrams(parsedIngredients), [parsedIngredients]);
+
+  // What to save: values written here, together with values written in before that were not changed
+  const nutritionToSave = (): PageNutrition | undefined => {
+    const before = givenNutrition?.source === 'manual' ? givenNutrition : undefined;
+    const beforeLinked = before && before.per !== '100g' && Object.keys(before.values).length ? { per: before.per as 'portion' | 'total', values: before.values } : undefined;
+    const before100 = before ? before.per100g ?? (before.per === '100g' ? before.values : undefined) : undefined;
+    const linked = nutritionEdit.linked && Object.keys(nutritionEdit.linked.values).length ? nutritionEdit.linked : nutritionEdit.linked ? undefined : beforeLinked;
+    const per100g = nutritionEdit.per100g && Object.keys(nutritionEdit.per100g).length ? nutritionEdit.per100g : nutritionEdit.per100g ? undefined : before100;
+    if (!nutritionEdit.linked && !nutritionEdit.per100g) return givenNutrition;
+    if (linked) return { per: linked.per, values: linked.values, source: 'manual', ...(per100g ? { per100g } : {}) };
+    if (per100g) return { per: '100g', values: per100g, source: 'manual' };
+    return undefined;
+  };
 
   // Unsaved changes: compare with how the form looked when it opened
   const snapshot = () =>
@@ -165,10 +177,7 @@ export const EditRecipeModal: React.FC<EditRecipeModalProps> = ({
       cookTimeMinutes: Number(cookingTimeMinutes) >= 0 ? Number(cookingTimeMinutes) : 0,
       difficulty,
       // Values written in here win; otherwise the ones the recipe had, see givenNutrition
-      pageNutrition:
-        nutritionEdit && Object.keys(nutritionEdit.values).length > 0
-          ? { per: nutritionEdit.per, values: nutritionEdit.values, source: 'manual' }
-          : givenNutrition,
+      pageNutrition: nutritionToSave(),
     };
 
     updateRecipe(updatedRecipe);
@@ -234,17 +243,16 @@ export const EditRecipeModal: React.FC<EditRecipeModalProps> = ({
           <NutritionEditor
             current={currentNutrition}
             servings={nutritionServings}
-            grams={dishGrams}
             edit={nutritionEdit}
             onEdit={(e) => {
               setNutritionEdit(e);
-              if (e) setNutritionCleared(false);
+              setNutritionCleared(false);
             }}
             onUseIngredients={() => {
-              setNutritionEdit(null);
+              setNutritionEdit({});
               setNutritionCleared(true);
             }}
-            usesIngredients={!nutritionEdit && !givenNutrition}
+            usesIngredients={!nutritionEdit.linked && !nutritionEdit.per100g && !givenNutrition}
           />
 
           {/* Delete, away from Spara */}

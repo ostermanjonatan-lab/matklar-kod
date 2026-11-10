@@ -38,6 +38,9 @@ export interface PageNutrition {
   per: NutritionBasis;
   values: Partial<NutritionValues>;
   source?: 'page' | 'manual';
+  /** Written in per 100 g on their own, beside values per portion or for the whole dish. They
+   *  are not worked out from those, nor those from them. */
+  per100g?: Partial<NutritionValues>;
 }
 
 type Per100 = [kcal: number, protein: number, carbs: number, fat: number, fiber: number, salt: number];
@@ -411,6 +414,8 @@ export function nutritionForAllBases(
 
 export interface RecipeNutrition {
   source: 'page' | 'manual' | 'calculated';
+  /** For values written in: which columns were written, the rest is worked out from the ingredients */
+  manual?: { portion: boolean; per100g: boolean };
   total?: Partial<NutritionValues>;
   perPortion?: Partial<NutritionValues>;
   per100g?: Partial<NutritionValues>;
@@ -435,9 +440,33 @@ export function recipeNutrition(recipe: {
   const base = { missing: calc.missing, counted: calc.counted, ingredientCount: recipe.ingredients.length };
 
   const page = recipe.pageNutrition;
+  const calculated =
+    calc.counted > 0 && calc.counted >= recipe.ingredients.length * 0.5
+      ? {
+          total: calc.total,
+          perPortion: scaleNutrition(calc.total, 1 / servings),
+          per100g: calc.grams > 0 ? scaleNutrition(calc.total, 100 / calc.grams) : undefined,
+        }
+      : null;
+
+  // Written in by hand: a portion and the whole dish go together, 100 g stands on its own. What
+  // was not written in is worked out from the ingredients.
+  if (page?.source === 'manual') {
+    const linked = page.per !== '100g' && Object.keys(page.values).length ? nutritionForAllBases(page.values, page.per, servings, null) : null;
+    const own100 = page.per100g && Object.keys(page.per100g).length ? page.per100g : page.per === '100g' ? page.values : undefined;
+    return {
+      source: 'manual',
+      manual: { portion: Boolean(linked), per100g: Boolean(own100) },
+      total: linked?.total ?? calculated?.total,
+      perPortion: linked?.perPortion ?? calculated?.perPortion,
+      per100g: own100 ?? calculated?.per100g,
+      ...base,
+    };
+  }
+
   if (page && Object.keys(page.values).length > 0) {
     return {
-      source: page.source === 'manual' ? 'manual' : 'page',
+      source: 'page',
       ...nutritionForAllBases(page.values, page.per, servings, weighable ? calc.grams : null),
       ...base,
     };
@@ -538,14 +567,21 @@ export function splitNutritionTag(tags: string[] | undefined): { nutrition?: Pag
     if (typeof t !== 'string' || !t.startsWith(TAG_PREFIX)) return true;
     const [head, body = ''] = t.slice(TAG_PREFIX.length).split(':');
     const [per, how] = head.split('+');
-    const values: Partial<NutritionValues> = {};
-    for (const pair of body.split(';')) {
-      const [k, v] = pair.split('=');
-      const x = parseFloat(v);
-      if (NUTRIENTS.some((n) => n.key === k) && isFinite(x)) values[k as keyof NutritionValues] = x;
-    }
-    if ((per === 'portion' || per === '100g' || per === 'total') && Object.keys(values).length) {
+    const read = (part: string) => {
+      const values: Partial<NutritionValues> = {};
+      for (const pair of part.split(';')) {
+        const [k, v] = pair.split('=');
+        const x = parseFloat(v);
+        if (NUTRIENTS.some((n) => n.key === k) && isFinite(x)) values[k as keyof NutritionValues] = x;
+      }
+      return values;
+    };
+    const [main, own100 = ''] = body.split('|');
+    const values = read(main);
+    const per100g = read(own100);
+    if ((per === 'portion' || per === '100g' || per === 'total') && (Object.keys(values).length || Object.keys(per100g).length)) {
       nutrition = { per, values, source: how === 'egen' ? 'manual' : 'page' };
+      if (Object.keys(per100g).length) nutrition.per100g = per100g;
     }
     return false;
   });
@@ -554,9 +590,12 @@ export function splitNutritionTag(tags: string[] | undefined): { nutrition?: Pag
 
 export function withNutritionTag(tags: string[], nutrition: PageNutrition | undefined): string[] {
   const rest = splitNutritionTag(tags).tags;
-  if (!nutrition || Object.keys(nutrition.values).length === 0) return rest;
-  const body = NUTRIENTS.filter((n) => typeof nutrition.values[n.key] === 'number')
-    .map((n) => `${n.key}=${Math.round((nutrition.values[n.key] as number) * 10) / 10}`)
-    .join(';');
+  if (!nutrition || (Object.keys(nutrition.values).length === 0 && !nutrition.per100g)) return rest;
+  const write = (v: Partial<NutritionValues>) =>
+    NUTRIENTS.filter((n) => typeof v[n.key] === 'number')
+      .map((n) => `${n.key}=${Math.round((v[n.key] as number) * 10) / 10}`)
+      .join(';');
+  // Values per 100 g written in on their own come after a "|"
+  const body = write(nutrition.values) + (nutrition.per100g ? `|${write(nutrition.per100g)}` : '');
   return [...rest, `${TAG_PREFIX}${nutrition.per}${nutrition.source === 'manual' ? '+egen' : ''}:${body}`];
 }
