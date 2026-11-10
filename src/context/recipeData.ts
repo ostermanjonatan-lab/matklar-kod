@@ -8,7 +8,7 @@ import { estimateDifficulty, isRecipeDifficulty } from '../utils/recipeDifficult
 import type { Recipe, MealPlanDay } from '../types/recipe';
 import { getRecipeSubcategories } from '../types/recipe';
 import { WEEKDAY_NAMES, dayNameForDate, getWeekDates, getWeekStart, isISODate } from '../utils/mealPlanDates';
-import { isCommonPantryStaple, resolveSavedAisle } from '../utils/ingredientParser';
+import { repairIngredient, isCommonPantryStaple, resolveSavedAisle } from '../utils/ingredientParser';
 
 // Auto-repair known broken or duplicate images for starter demo recipes
 const STARTER_IMAGE_FIXES: Record<string, string> = {
@@ -84,7 +84,7 @@ export function buildWeek(plan: MealPlanDay[], weekStart: string): MealPlanDay[]
 
 export function sanitizeRecipe(recipe: Recipe): Recipe {
   const clean = getRecipeSubcategories(recipe);
-  const cleanIngredients = (recipe.ingredients || []).map((ing) => ({
+  const cleanIngredients = (recipe.ingredients || []).map(repairIngredient).map((ing) => ({
     ...ing,
     aisle: resolveSavedAisle(ing.name, ing.aisle),
     isPantryStaple: isCommonPantryStaple(ing.name),

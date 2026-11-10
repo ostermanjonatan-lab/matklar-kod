@@ -2503,3 +2503,23 @@ export function parseRawRecipeText(
     instructions,
   };
 }
+
+/**
+ * Repairs an ingredient saved before the reading of pasted text was fixed: invisible characters
+ * and a colon after the name ("\u200bLaxfilé:"), and the amount left in the name with none of its
+ * own ("400 g krossade tomater"). Run when recipes are loaded, so old recipes come right.
+ */
+export function repairIngredient<T extends { name: string; amount: number | null; unit: string; aisle?: string }>(ing: T): T {
+  const name = (ing.name || '')
+    .replace(/[\u200B-\u200F\u2060\uFEFF\u00AD]/g, '')
+    .replace(/[\u00A0\u202F]/g, ' ')
+    .replace(/\s*:\s*$/, '')
+    .trim();
+  if ((ing.amount === null || ing.amount === undefined) && /^[\d½¼¾⅓⅔⅛]/.test(name)) {
+    const parsed = parseIngredientLine(name);
+    if (parsed && parsed.amount !== null && parsed.name) {
+      return { ...ing, name: parsed.name, amount: parsed.amount, unit: parsed.unit, aisle: parsed.aisle };
+    }
+  }
+  return name === ing.name ? ing : { ...ing, name };
+}

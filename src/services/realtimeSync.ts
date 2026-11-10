@@ -14,7 +14,7 @@ import {
   normalizeIngredientNameForMatching,
   normalizeRecipeSource,
 } from '../utils/shoppingAggregator';
-import { resolveSavedAisle, isCommonPantryStaple } from '../utils/ingredientParser';
+import { repairIngredient, resolveSavedAisle, isCommonPantryStaple } from '../utils/ingredientParser';
 
 export type SyncMessageType =
   | { type: 'RECIPE_UPDATE'; payload: Recipe }
@@ -86,7 +86,7 @@ export function mapRowToRecipe(row: any): Recipe {
     notes: row.notes || '',
     // Whether something is a staple is worked out again, so a change in the rules reaches old recipes
     ingredients: Array.isArray(row.ingredients)
-      ? row.ingredients.map((ing: any) => ({ ...ing, isPantryStaple: isCommonPantryStaple(ing?.name || '') }))
+      ? row.ingredients.map((ing: any) => repairIngredient({ ...ing, name: ing?.name || '' })).map((ing: any) => ({ ...ing, isPantryStaple: isCommonPantryStaple(ing?.name || '') }))
       : [],
     instructions: Array.isArray(row.instructions)
       ? row.instructions.map((inst: any) => ({ ...inst, text: cleanLeadingStepNumber(inst?.text || '') }))

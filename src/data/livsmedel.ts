@@ -139,4 +139,27 @@ export const LIVSMEDEL: Record<number, [number, number, number, number, number, 
   7266: [168, 1.2, 0, 18.3, 0.8, 0.1], // Kokosmjölk fett ca 18%
   244: [216, 3.2, 32, 7.6, 3.2, 0], // Pommes frites friterad potatis värmd i ugn fett ca 7% frysvara
   1988: [154, 7.3, 7.3, 10.6, 0.1, 0.9], // Ostsås
+  76: [152, 12.7, 2.9, 10, 0, 0.1], // Kvarg färskost fett 10%
+  273: [167, 4, 22, 6.3, 2.7, 1], // Potatisbullar stekta
+  322: [25, 1.7, 3.7, 0, 1.8, 0.1], // Blomkål
+  343: [29, 1.7, 4.4, 0.1, 1.8, 0], // Kålrabbi
+  374: [69, 5.2, 8.9, 0.4, 4.4, 0.1], // Gröna ärtor frysvara
+  488: [78, 1, 16.6, 0.4, 1.8, 1.5], // Bostongurka
+  490: [15, 0.9, 1.4, 0.2, 1.8, 3.5], // Saltgurka u. lag
+  526: [41, 0.5, 8.3, 0.2, 1.9, 0], // Jordgubbar
+  603: [321, 2.4, 71.9, 0.6, 7.5, 0], // Dadlar torkade
+  872: [186, 7.2, 25.7, 5.3, 2.6, 1], // Tortellini m. ostfyllning kokt
+  1102: [217, 12.3, 6.5, 15.6, 1.5, 1.6], // Köttbullar frysvara
+  1167: [196, 18.9, 0, 13.5, 0, 0.2], // Kyckling lår rå m. skinn
+  1168: [186, 19.2, 0, 12.2, 0, 0.2], // Kyckling vinge rå m. skinn
+  1244: [151, 19.9, 0, 7.9, 0, 0.1], // Röding rå
+  1509: [278, 11, 4.6, 24, 1, 0.8], // Korv isterband fermenterad kött 59%
+  1581: [461, 7.1, 63.6, 17.9, 7.9, 0.7], // Chips majs tortilla 
+  1795: [265, 0.2, 64.7, 0, 0.8, 0], // Gelé svarta vinbär
+  1829: [43, 0, 10.5, 0, 0, 0], // Läsk cola
+  1831: [0, 0, 0.1, 0, 0, 0], // Läsk cola light
+  1919: [266, 0, 33, 0, 0, 0], // Likör söt vol. % 24
+  5916: [32, 1.9, 5.1, 0, 1.6, 1.6], // Tacosås
+  6384: [110, 0.6, 25.7, 0.1, 1.6, 0], // Mango chutney
+  7022: [146, 10.2, 2, 10.9, 0, 0.2], // Färskost ricotta fett ca 10%
 };
