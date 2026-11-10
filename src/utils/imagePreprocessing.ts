@@ -130,6 +130,15 @@ export async function preprocessImageForOcr(
     }
   }
 
+  // A small picture, such as a screenshot, is scaled up (at most twice): Tesseract reads small
+  // text and signs like ½ far better when the letters are bigger
+  const longest = Math.max(width, height);
+  if (longest < maxDimension * 0.8) {
+    const scale = Math.min(2, maxDimension / longest);
+    width = Math.round(width * scale);
+    height = Math.round(height * scale);
+  }
+
   const canvas = document.createElement('canvas');
   canvas.width = width;
   canvas.height = height;
@@ -196,6 +205,22 @@ export async function preprocessImageForOcr(
       norm = Math.round(128 + (norm - 128) * contrastBoost);
     }
     gray[i] = Math.max(0, Math.min(255, norm));
+  }
+
+  // Light text on a dark page: turned around, since Tesseract reads dark text on light best
+  const darkHistogram = new Uint32Array(256);
+  for (let i = 0; i < numPixels; i++) darkHistogram[gray[i]]++;
+  let below = 0;
+  let medianLum = 255;
+  for (let t = 0; t < 256; t++) {
+    below += darkHistogram[t];
+    if (below >= numPixels / 2) {
+      medianLum = t;
+      break;
+    }
+  }
+  if (medianLum < 100) {
+    for (let i = 0; i < numPixels; i++) gray[i] = 255 - gray[i];
   }
 
   // 3. Apply unsharp mask for crisper character edges (especially for blurry/curved pages)

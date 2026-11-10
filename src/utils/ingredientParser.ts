@@ -1868,7 +1868,8 @@ function splitTwoColumnLine(line: string): { ingredient: string; instruction: st
   if (line.length < 25) return null;
 
   // Pattern A: Instruction on left, separator (em-dash or 2+ spaces or period followed by quantity), Ingredient on right
-  const instLeftMatch = line.match(/^(.{15,}?)\s*(?:—|–|-|\.\s+)\s*(\d+[.,]?\d*\s*(?:g|kg|dl|ml|cl|l|liter|msk|tsk|krm|st|styck|burk|pkt|paket|påse|kruka|klyfta|klyftor|skiva|skivor|bit|näve|kvist|blad|port)?\s*[a-zA-ZåäöÅÄÖ].{2,40})$/i);
+  // Not a range between two numbers ("ca 8-10 minuter") and not a time or temperature after it
+  const instLeftMatch = line.match(/^(.{15,}?)(?<!\d)\s*(?:—|–|-|\.\s+)\s*(?!\d+\s*(?:min|minuter|minut|tim|timme|timmar|sek|grader|°))(\d+[.,]?\d*\s*(?:g|kg|dl|ml|cl|l|liter|msk|tsk|krm|st|styck|burk|pkt|paket|påse|kruka|klyfta|klyftor|skiva|skivor|bit|näve|kvist|blad|port)?\s*[a-zA-ZåäöÅÄÖ].{2,40})$/i);
   if (instLeftMatch) {
     return { instruction: instLeftMatch[1].trim(), ingredient: instLeftMatch[2].trim() };
   }
@@ -2200,8 +2201,14 @@ function splitSentences(text: string): string[] {
  * belong to the web page (Spara, Dela, Betyg …) are left out. Nothing is made up: when no
  * ingredients or steps are found, those lists are empty.
  */
-export function parseRawRecipeText(text: string, options: { fromOcr?: boolean } = {}): ParsedRecipeData {
+export function parseRawRecipeText(
+  text: string,
+  // linesDone: the text comes from reading a photo by its layout (ocrLayout), where each line is
+  // already one ingredient or one step, so lines are neither split nor joined here
+  options: { fromOcr?: boolean; linesDone?: boolean } = {}
+): ParsedRecipeData {
   const fromOcr = Boolean(options.fromOcr);
+  const linesDone = Boolean(options.linesDone);
   const cleaned = cleanOcrArtifacts(text, { ocr: fromOcr });
 
   let lines = cleaned
@@ -2241,7 +2248,7 @@ export function parseRawRecipeText(text: string, options: { fromOcr?: boolean } 
     .map((l) => l.replace(/^([^\d]{2,40}?)\s+[–—-]\s+(?:en|ett)\s+/i, '$1 – 1 '));
 
   // Two-column cookbook pages only come from photos
-  if (fromOcr) {
+  if (fromOcr && !linesDone) {
     const expanded: string[] = [];
     for (const l of lines) {
       const split = splitTwoColumnLine(l);
@@ -2436,7 +2443,9 @@ export function parseRawRecipeText(text: string, options: { fromOcr?: boolean } 
       // A short line without a full stop is an ingredient, even without an amount ("vispad grädde"),
       // unless it starts like a step ("Koka upp vattnet")
       const stepLike = !startsWithQuantity(line) && startsWithStepVerb(line) && line.split(/\s+/).length >= 2;
-      if (!stepLike && (looksLikeIngredient(line) || (line.length <= 45 && !/[.!?]$/.test(line) && !/^\d+[.)]\s/.test(line)))) {
+      // ("Dressing: äggula, senap, sardell, olja, citron" is long but has few words)
+      const shortLine = line.length <= 45 || (line.length <= 70 && line.split(/\s+/).length <= 8);
+      if (!stepLike && (looksLikeIngredient(line) || (shortLine && !/[.!?]$/.test(line) && !/^\d+[.)]\s/.test(line)))) {
         ingredientLines.push(line);
       } else {
         section = 'instructions';
@@ -2452,7 +2461,7 @@ export function parseRawRecipeText(text: string, options: { fromOcr?: boolean } 
 
   // Ingredients
   const ingredients: Ingredient[] = [];
-  for (const m of mergeIngredientLines(ingredientLines, fromOcr).flatMap(splitCombinedIngredientLine)) {
+  for (const m of (linesDone ? ingredientLines : mergeIngredientLines(ingredientLines, fromOcr)).flatMap(splitCombinedIngredientLine)) {
     const ing = parseIngredientLine(m);
     if (ing) {
       ing.name = ing.name.replace(/\(\s+/g, '(').replace(/\s+\)/g, ')').replace(/\s{2,}/g, ' ').trim();
