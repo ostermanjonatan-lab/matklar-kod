@@ -1363,6 +1363,9 @@ function parseIngredientLineInner(rawLine: string): Ingredient | null {
 
   // 4. Strip Swedish prefixes like "ca", "cirka", "drygt", "knappt", "ungefär"
   line = line.replace(/^(?:ca|cirka|drygt|knappt|ungefär)\.?\s+/i, '').trim();
+  // Less common fraction signs as ordinary fractions: "1⅖ kg" is 1 2/5 kg
+  const RARE_FRACTIONS: Record<string, string> = { '⅕': '1/5', '⅖': '2/5', '⅗': '3/5', '⅘': '4/5', '⅙': '1/6', '⅚': '5/6', '⅜': '3/8', '⅝': '5/8', '⅞': '7/8' };
+  line = line.replace(/(\d)?([⅕⅖⅗⅘⅙⅚⅜⅝⅞])/g, (_m, whole: string | undefined, f: string) => `${whole ? whole + ' ' : ''}${RARE_FRACTIONS[f]}`);
 
   // Convert Swedish words for single/half counts and number words: "en halv", "ett halvt", "två", "tre", etc.
   line = line

@@ -84,7 +84,7 @@ export const NutritionPanel: React.FC<{ recipe: Recipe; servings: number }> = ({
                       : nutrition.manual?.portion
                         ? 'Portion och hela rätten är inskrivna, 100 g är uppskattat från ingredienserna.'
                         : '100 g är inskrivet, portion och hela rätten är uppskattade från ingredienserna.'
-                    : 'Uppskattat från ingredienserna.'}
+                    : 'Uppskattat från ingredienserna med Livsmedelsverkets livsmedelsdatabas.'}
                 {` Hela rätten gäller ${servings} ${servings === 1 ? 'portion' : 'portioner'}.`}
                 {nutrition.missing.length > 0 && nutrition.source === 'calculated' && (
                   <> Inte med: {nutrition.missing.map((m) => formatIngredientName(m, null, '').toLowerCase()).join(', ')}.</>

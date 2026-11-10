@@ -9,6 +9,7 @@ Svensk app för recept, veckoplan och inköpslista. React, TypeScript och Vite, 
 - Typkontroll: `npx tsc -p tsconfig.app.json --noEmit`.
 - Tolkningen av inklistrad recepttext kontrolleras mot 26 recepttexter med `npx tsx scripts/check-recipe-parser.ts`. Kör den när `parseRawRecipeText` ändras, och lägg till nya texter i `scripts/recipe-parser-cases.ts` när ett recept tolkas fel.
 - Hämtning av recept från webblänk kontrolleras mot 11 testsidor med `npx tsx scripts/check-web-scraper.mts`. Kör den när `src/services/webRecipeScraper.ts` ändras. Sidorna finns i `scripts/web-recipe-pages.ts`, och sidor som läsartjänsten r.jina.ai ger tillbaka (som ICA:s, där appens egen server nekas) i `scripts/web-recipe-markdown.ts`.
+- Näringsvärden räknade från ingredienser kontrolleras mot 36 recept från Arla med `npx tsx scripts/check-nutrition.ts` (lägg till `-v` för varje recept). Kör den när `src/utils/nutrition.ts` ändras. Värdena per 100 g kommer från Livsmedelsverkets livsmedelsdatabas (`src/data/livsmedel.ts`, numret i `lmv`), och vikter per dl och styck från Livsmedelsverkets PM 2024 där det finns (märkt `PM 2024`).
 - Kör appen utan Supabase när du testar, så att riktiga hushållsdata inte ändras.
 - `.env.local` och `supabase-config.json` innehåller nycklar och ska inte läggas i Git.
 - Mörkt läge: `src/styles/dark.css` tas fram av `python3 scripts/build-dark-theme.py` ur färgerna i klassnamnen. Kör skriptet när en ny färg används, och lägg till en mörk motsvarighet i skriptet om den saknas.
