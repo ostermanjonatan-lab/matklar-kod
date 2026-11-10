@@ -11,6 +11,15 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.0.166',
+    date: '2026-11-10',
+    items: [
+      'Recept från ica.se går att läsa in via länk.',
+      'Recept från länk får med garnering utan mängd, som citronskivor, och tips blir inte ett eget steg.',
+      '1 purjolök (à ca 300 g) blir 1 purjolök i stället för 300 g.',
+    ],
+  },
+  {
     version: '1.0.165',
     date: '2026-11-10',
     items: [
