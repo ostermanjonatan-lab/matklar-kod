@@ -1,7 +1,6 @@
 ﻿import React, { useState, useMemo } from 'react';
 import { estimateDifficulty } from '../../utils/recipeDifficulty';
 import { isCommonPantryStaple } from '../../utils/ingredientParser';
-import { hasCoverImage } from '../../utils/coverImage';
 import { Toast } from '../layout/Toast';
 import { isRecipeLink, readRecipeLink } from '../../utils/recipeLink';
 import type { Recipe, Instruction, Ingredient, RecipeCategory, RecipeSourceType, RecipeDifficulty } from '../../types/recipe';
@@ -217,12 +216,9 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = ({ onClose, closeGu
 
     try {
       const persistentUrl = await persistRecipeDocument(file);
+      // The photo of the recipe is kept with it, but is not its picture: a photographed page
+      // looks odd as the picture of a dish
       setRecipeDocumentUrl(persistentUrl);
-
-      // With no picture chosen yet, the photographed recipe becomes the picture
-      if (!hasCoverImage(coverImageUrl)) {
-        setCoverImageUrl(persistentUrl);
-      }
     } catch (saveErr) {
       console.warn('Document persistence error:', saveErr);
     }
