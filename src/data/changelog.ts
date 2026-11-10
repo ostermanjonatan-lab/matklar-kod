@@ -11,6 +11,14 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.0.170',
+    date: '2026-11-10',
+    items: [
+      'Näringsvärden som räknas från ingredienserna använder nu Livsmedelsverkets livsmedelsdatabas och deras uppmätta vikter per dl och styck, och stämmer bättre.',
+      'Vikter som står i ingrediensen räknas med, som "à 0,5 g" och "(ca 300 g)".',
+    ],
+  },
+  {
     version: '1.0.169',
     date: '2026-11-10',
     items: [
