@@ -250,12 +250,14 @@ export function layoutBlocks(rawWords: OcrWord[], pageWidth: number): OcrRect[] 
 
 /** Boxes and lines around the recipe that are not part of it. */
 const NOISE_START =
-  /^(?:kapitel\b|sida\s+\d|redaktionens|krönika|milj[öo]|h[åa]llbarhet|k[öo]ksredskap|förvaring|dryckestips|vintips|dryck\s*tips|vinförslag|n[äa]ring|energi\s*(?:&|och)\s*näring|ener(?:g|a)i\b|[a-zåäö]{3,8}\s*(?:&|och)\s*n[äa]ring|ur boken|recept av|recept:\s|foto\b|styling|text och bild|isbn|copyright|©|källa\b|annons|redaktionens kommentar|visste du|om författaren|observera|s[äa]kerhet|obs!|notera:|\d\)\s)/i;
+  /^(?:kapitel\b|sida\s+\d|redaktionens|krönika|milj[öo]|h[åa]llbarhet|k[öo]ksredskap|förvaring|dryckestips|vintips|dryck\s*tips|vinförslag|n[äa]ring|energi\s*(?:&|och)\s*näring|ener(?:g|a)i\b|[a-zåäö]{3,8}\s*(?:&|och)\s*n[äa]ring|ur boken|recept av|recept:\s|foto\b|styling|text och bild|isbn|copyright|©|källa\b|annons|redaktionens kommentar|visste du|om författaren|observera|m[åa]ttomvandling|omvandlingstabell|omr[äa]kning|s[äa]kerhet|obs!|notera:|\d\)\s)/i;
 /** Lines that are the recipe's labels rather than its content, such as "0-5 MIN" in a timeline. */
 const LABEL_LINE = /^(?:\d+\s*[-–]\s*\d+\s*min|servering|förberedelse|\d+\s*min)\.?$/i;
 const INGREDIENT_HEADING =
   /ingrediens|r[åa]var|du behöver|det här behöver|kryddor|smaksätt|tillbehör|komponent|^del\s*\d|^till\s+\w+:?$|^sås:?$|^deg:?$|^fyllning|^topping|^garnering|^dressing:?$|ingredients/i;
 const STEP_HEADING = /g[öo]r s[åa] h[äa]r|s[åa] g[öo]r du|tillagning|tillredning|metod|arbets|moment(?!\s*\d)|instruktion|^steg(?!\s*\d)|method|instructions|directions|beredning/i;
+/** A column of tips or notes beside the recipe ("Anteckningar: Läs igenom hela receptet först") */
+const NOTES_HEADING = /^(?:anteckningar|tips|tips och råd|att tänka på|bra att veta|kockens tips|notera|obs)\b/i;
 const OTHER_LANGUAGE = /english|\(en\)|\bin english\b|\bmethod \(en\)/i;
 const STEP_VERB =
   /^(?:blanda|bryn|rulla|stek|koka|sätt|skala|skär|hacka|fräs|tillsätt|häll|vispa|rör|låt|lägg|servera|strö|toppa|fördela|grädda|gratinera|pudra|smält|sjud|mixa|vänd|dela|hetta|salta|krydda|smaka|ställ|ta\s|värm|ugnsbaka|baka|pensla|forma|knåda|jäs|riv|pressa|tvätta|skölj|rensa|blötlägg|marinera|grilla|vispa|klicka|garnera|sila|mosa|reducera|tina|kyl|frys|fyll|bred|vik|slå|smörj|bryt|skölj|förvälla|förväll|ansa|stek|kör|pürea|purea|mät|tärna|strimla|skiva)\b/i;
@@ -277,20 +279,25 @@ function stripMarker(text: string): string {
     .replace(/^[A-ZÅÄÖ]{2,6}[-\s]?\d{1,2}\s*:\s*/, '')
     // An amount in a box is an amount: "[150] g smör", "[2] ½ dl socker"
     .replace(/^\[\s*(\d+)\s*\]\s*([½¼¾⅓⅔])/, '$1 $2')
+    .replace(/^\[\s*(\d+)\s*\]\s*[%&¥]\s*/, '$1 ½ ')
     .replace(/^\[\s*([\d½¼¾⅓⅔]+(?:[.,]\d+)?)\s*\]\s*(?=(?:g|kg|hg|dl|cl|ml|l|liter|msk|tsk|krm|st|burk|burkar|klyftor|skivor|kruka|knippe|förp|pkt)\b)/i, '$1 ')
     // A timeline's label and the dots and lines read as signs before the text: "5-15 MIN = & Vispa"
     .replace(/^\d+\s*[-–]\s*\d+\s*min\b\s*/i, '')
     .replace(/^[^\p{L}\p{N}½¼¾⅓⅔(\[]+/u, '')
     // A checkbox read as letters before the amount: "[J 150 g", "Cd 1 flaska", "0 250 g"
     .replace(/^[\[\]()OoJjCcDdIl|0□■☐]{1,3}\s+(?=[\d½¼¾])/, '')
+    // ... or before a word: "[OJ Steg 1:", "[0 Timjan"
+    .replace(/^[\[(][\w\[\]()|]{0,2}\s+(?=[A-ZÅÄÖ])/, '')
     // "3 -> Grädda", an arrow before a step
     .replace(/^\d{1,2}\s*-+>\s*/, '')
     .replace(/^[•·*+«»\-–—]+\s*/, '')
     // "[3] 1 dl", which can be read as "[311 dl"
     .replace(/^\[\s*\d{1,2}?\s*[\]1lI|]\s*/, '')
-    .replace(/^(?:moment|steg|step|fas)\s*\d+\s*[:.)-]?\s*/i, '')
+    .replace(/^(?:moment|steg|step|fas)\s*\d+\s*[:.)>-]?\s*/i, '')
     .replace(/^\(\d{1,2}\)\s*/, '')
     .replace(/^\d{1,2}\s*[.)]\s+/, '')
+    // Signs left in front once the mark is gone ("STEP 1> Smula")
+    .replace(/^[^\p{L}\p{N}½¼¾⅓⅔(\[]+/u, '')
     .trim();
 }
 
@@ -304,13 +311,27 @@ function fixFraction(text: string): string {
   return text
     // "6 d1 mjölk"
     .replace(/^([\d½]+\s*)d1\b/i, '$1dl')
+    // "05 dl", where the comma of 0,5 was not read
+    .replace(/^0(\d)\s+(?=(?:dl|msk|tsk|krm|l|kg)\b)/i, '0,$1 ')
     // "132 dl" and "234 dl": 1 ½ and 2 ½, where ½ was read as 32 or 34
     .replace(/^([1-9])(?:32|34|72|74|12|14)\s+(dl|msk|tsk|krm)\b/i, '$1 ½ $2')
+    // "1% dl", "1 & DL": 1 ½
+    .replace(new RegExp(`^(\\d)\\s*[%&¥]\\s*(?=${unit})`, 'i'), '$1 ½ ')
+    // "| tsk", "l tsk": 1
+    .replace(new RegExp(`^[lI|]\\s+(?=${unit})`, 'i'), '1 ')
+    // "PA] tsk", what is left of "[½] tsk"
+    .replace(new RegExp(`^[A-Za-z]{1,3}\\]\\s*(?=${unit})`, 'i'), '½ ')
     .replace(/^(\d)\s*st(?=[a-zåäö])/i, '$1 st ')
     .replace(new RegExp(`^(\\d+\\s+)?(?:ve|vz|v2|ye|y2|ya|[¥%]{1,2}|vy|\\/2|1\\/2)\\s*(?=${unit})`, 'i'), (_m, whole?: string) => `${whole || ''}½ `)
     .replace(new RegExp(`^(?=${unit})`, 'i'), '½ ')
     .replace(/^(\d{2})\s+(dl|msk|tsk|krm)\b/i, (m, n: string, u: string) => (parseInt(n, 10) >= 20 ? `½ ${u}` : m));
 }
+
+/** Capitals only ("BRED ÖVER DEN SVALA KAKAN") as ordinary text */
+const sentenceCase = (text: string) =>
+  isAllCaps(text) && text.split(/\s+/).length >= 2
+    ? text.toLowerCase().replace(/^([^a-zåäö]*)([a-zåäö])/, (_m, pre: string, c: string) => pre + c.toUpperCase())
+    : text;
 
 type Kind = 'ingredient' | 'step' | 'unknown';
 
@@ -332,9 +353,14 @@ const isHeading = (line: string) => {
   const t = line.trim();
   if (t.length < 3 || t.length > 45) return false;
   if (NEW_ITEM.test(t) && !/^del\s*\d/i.test(t)) return false;
-  if (INGREDIENT_HEADING.test(t) || STEP_HEADING.test(t) || OTHER_LANGUAGE.test(t)) {
-    // "Dressing: äggula, senap" is an ingredient with its parts, not a heading
-    return !/:\s*\S+.*,/.test(t) && t.split(/\s+/).length <= 6;
+  // A sentence ("Bryn färsen och tillsätt kryddorna.") is not a heading, whatever words it has
+  if (/[.!?]$/.test(t) || STEP_VERB.test(t)) return false;
+  if (INGREDIENT_HEADING.test(t) || STEP_HEADING.test(t) || OTHER_LANGUAGE.test(t) || NOTES_HEADING.test(t)) {
+    // "Dressing: äggula, senap" is an ingredient with its parts, not a heading, and "råvaror (mise en"
+    // in the middle of a sentence is not one either: a heading is in capitals, ends with a colon, or
+    // is a few words starting with a capital
+    const words = t.split(/\s+/).length;
+    return !/:\s*\S+.*,/.test(t) && words <= 6 && (isAllCaps(t) || /:$/.test(t) || (/^[A-ZÅÄÖ]/.test(t) && words <= 4));
   }
   return (isAllCaps(t) || /:$/.test(t)) && !/\d/.test(t) && t.split(/\s+/).length <= 5;
 };
@@ -383,22 +409,23 @@ export function recipeTextFromBlocks(readBlocks: ReadBlock[], pageHeight: number
     const a = blocks[i];
     const b = blocks[i + 1];
     const tall = median(a.lines.map((l) => l.height)) || 12;
-    if (a.lines.length < 2 || !a.lines.every((l) => AMOUNT_ONLY.test(l.text))) continue;
+    const amounts = a.lines.filter((l) => AMOUNT_ONLY.test(l.text));
+    if (amounts.length < 3 || amounts.length < a.lines.length * 0.7) continue;
     if (b.rect.left <= a.rect.left) continue;
-    const pairs = a.lines.map((l) => b.lines.find((m) => Math.abs(m.top - l.top) < tall * 0.7));
-    if (pairs.filter(Boolean).length < a.lines.length * 0.7) continue;
-    const used = new Set(pairs);
+    const pairs = amounts.map((l) => b.lines.find((m) => Math.abs(m.top - l.top) < tall * 0.7));
+    if (pairs.filter(Boolean).length < amounts.length * 0.7) continue;
     const merged = b.lines.map((m) => {
       const k = pairs.indexOf(m);
-      return k >= 0 ? { ...m, left: a.lines[k].left, text: `${a.lines[k].text} ${m.text}` } : m;
+      return k >= 0 ? { ...m, left: amounts[k].left, text: `${amounts[k].text} ${m.text}` } : m;
     });
-    // An amount without a food beside it stays as it is
-    a.lines.forEach((l, k) => {
-      if (!pairs[k]) merged.push(l);
+    // Lines that are not amounts (portions and time above the table), and amounts without a food
+    // beside them, stay as they are
+    a.lines.forEach((l) => {
+      const k = amounts.indexOf(l);
+      if (k < 0 || !pairs[k]) merged.push(l);
     });
     merged.sort((x, y) => x.top - y.top);
     blocks.splice(i, 2, { rect: { ...b.rect, left: a.rect.left, width: b.rect.left + b.rect.width - a.rect.left }, lines: merged });
-    void used;
   }
 
   const allLines = blocks.flatMap((b) => b.lines.filter((l) => /[a-zåäö]{2,}|\d/i.test(l.text)));
@@ -459,7 +486,10 @@ export function recipeTextFromBlocks(readBlocks: ReadBlock[], pageHeight: number
         // ("tsk salt" whose ½ was not read is its own ingredient)
         (prev.right - prev.left > width * 0.5 || /\s(?:och|i|med|till|på|av|att|det|en|ett|som|för|tills|eller|om|under|över)$/i.test(prevText)) &&
         !(/^(?:dl|msk|tsk|krm|cl|ml|g|kg|st)\b/i.test(text) && !/\d$/.test(prevText)) &&
-        (/^[a-zåäö(]/.test(text) || (/^\d/.test(text) && prevText.split(' ').length >= 4));
+        (/^[a-zåäö(]/.test(text) ||
+          (/^\d/.test(text) && prevText.split(' ').length >= 4) ||
+          // Text in capitals only: a wrapped line starts with a capital too
+          (isAllCaps(text) && isAllCaps(prevText) && /[,a-zåäö]$/i.test(prevText) && !/^\d+\s*-+>/.test(text)));
       if (continues) {
         items[items.length - 1].text += ' ' + text;
         items[items.length - 1].bottom = line.bottom;
@@ -467,6 +497,11 @@ export function recipeTextFromBlocks(readBlocks: ReadBlock[], pageHeight: number
       prev = line;
     }
     blockItems.push({ block, items, hasTitle: block.lines.includes(title) });
+  }
+
+  // A step mark in the middle of a line starts a new item: "4 DL RIVNA MORÖTTER 5 -> BRED ÖVER"
+  for (const bi of blockItems) {
+    bi.items = bi.items.flatMap((it) => it.text.split(/\s+(?=\d{1,2}\s*-+>\s)/).map((text) => ({ ...it, text })));
   }
 
   // 4. The same note in brackets after most ingredients ("(ursprung Sverige, rekommenderas ...)")
@@ -527,7 +562,13 @@ export function recipeTextFromBlocks(readBlocks: ReadBlock[], pageHeight: number
         metaLines.push(text);
         continue;
       }
-      if (/\b\d+\s*(?:portion|portioner|personer|pers|bitar|st)\b/i.test(text) && /\b\d+\s*(?:min|tim)/i.test(text) && text.split(/\s+/).length <= 14) {
+      if (
+        (/\b\d+\s*(?:portion|portioner|personer|pers|bitar|st)\b/i.test(text) ||
+          // "Frukost | 4 scones 20 min" right under the name, not a step that mentions minutes
+          (nearTitle(top) && !NEW_ITEM.test(text) && !STEP_VERB.test(stripMarker(text)) && !/[.!?]$/.test(text) && text.split(/\s+/).length <= 10)) &&
+        /\b\d+\s*(?:min|tim)/i.test(text) &&
+        text.split(/\s+/).length <= 14
+      ) {
         metaLines.push(text);
         continue;
       }
@@ -537,7 +578,7 @@ export function recipeTextFromBlocks(readBlocks: ReadBlock[], pageHeight: number
       // An introduction in the first person ("Idag tänkte jag dela med mig ...")
       if (/\b(?:jag|mig|mitt|mina|oss)\b/i.test(text) && !STEP_VERB.test(stripMarker(text)) && text.split(/\s+/).length >= 8) continue;
       if (isHeading(text)) {
-        otherLanguage = OTHER_LANGUAGE.test(text);
+        otherLanguage = OTHER_LANGUAGE.test(text) || NOTES_HEADING.test(text.trim());
         current = STEP_HEADING.test(text) ? 'step' : INGREDIENT_HEADING.test(text) ? 'ingredient' : current;
         continue;
       }
@@ -551,7 +592,8 @@ export function recipeTextFromBlocks(readBlocks: ReadBlock[], pageHeight: number
       // Several ingredients on one line with bullets between them (bullets can be read as 0 or o):
       // "1 msk vaniljsocker 0 3 msk kakao 0 3 dl havregryn"
       const bulleted = text.split(/\s+[»•·+«0oO]\s+(?=[\d½¼¾]|[A-ZÅÄÖ])/);
-      if (bulleted.length >= 3 && bulleted.filter((p) => /^[\d½¼¾]/.test(p)).length >= 2) {
+      const amountParts = bulleted.filter((p) => /^[\d½¼¾]/.test(p)).length;
+      if ((bulleted.length >= 3 && amountParts >= 2) || (bulleted.length === 2 && amountParts === 2)) {
         for (const part of bulleted) found.push({ text: part, kind: 'ingredient' });
         continue;
       }
@@ -566,11 +608,21 @@ export function recipeTextFromBlocks(readBlocks: ReadBlock[], pageHeight: number
       // A short line among steps is usually a label, not an ingredient
       if (blockKind === 'step' && kind === 'ingredient' && counts.ingredient === 1 && counts.step >= 2) kind = 'step';
       if (blockKind === 'ingredient' && kind === 'step' && counts.step === 1 && counts.ingredient >= 3 && guessKind(it.text) !== 'step') kind = 'ingredient';
-      if (kind === 'step') steps.push(stripMarker(it.text));
+      if (kind === 'step') steps.push(sentenceCase(stripMarker(it.text)));
       else if (kind === 'ingredient') {
         // Several ingredients on one line with bullets between them: "500 g gröt » 2 dl grädde » ..."
         const parts = it.text.split(/\s+[»•·+«]\s+(?=[\d½¼¾]|[A-ZÅÄÖ])/);
-        for (const part of parts.length >= 3 ? parts : [it.text]) ingredients.push(fixFraction(stripMarker(part)));
+        for (const part of parts.length >= 3 ? parts : [it.text]) {
+          // Two ingredients run together: "50 g hackad sötmandel 2 st rivna bittermandlar"
+          const two = part.split(/\s+(?=\d+\s*(?:g|kg|dl|cl|ml|l|msk|tsk|krm|st|burk|burkar|klyftor|skivor)\s+[a-zåäö])/i);
+          const both = two.length === 2 && /^[\d½¼¾]+\s*\S*\s+[a-zåäö]{3,}/i.test(stripMarker(two[0]));
+          for (const one of both ? two : [part]) {
+            const clean = sentenceCase(fixFraction(stripMarker(one)));
+            // An amount with no food ("1 krm", "85 g") is left over from a box of measures
+            if (AMOUNT_ONLY.test(clean)) continue;
+            ingredients.push(clean);
+          }
+        }
       }
     }
   }
@@ -596,7 +648,7 @@ export function recipeTextFromBlocks(readBlocks: ReadBlock[], pageHeight: number
   if (ingredients.length === 0 && uniqueSteps.length === 0) return null;
   // Portions and time as the text reader expects them
   const meta = metaLines.join(' ');
-  const portions = meta.match(/(\d+)\s*(?:portioner|portion|port|personer|pers|st\b|bitar|[a-zåäö]{3,12}\s*[•·»|+])/i);
+  const portions = meta.match(/(\d+)\s*(?:portioner|portion|port|personer|pers|st\b|bitar|[a-zåäö]{3,12}\s*[•·»|+]|[a-zåäö]{3,12}\s+(?=\d+\s*(?:min|tim)))/i);
   const hours = meta.match(/(\d+(?:[.,]\d+)?)\s*(?:timmar|timme|tim|h)\b/i);
   const minutes = meta.match(/(\d+)\s*min/i);
   const time = (hours ? Math.round(parseFloat(hours[1].replace(',', '.')) * 60) : 0) + (minutes ? parseInt(minutes[1], 10) : 0);

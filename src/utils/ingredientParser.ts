@@ -2439,6 +2439,13 @@ export function parseRawRecipeText(
       continue;
     }
 
+    // From a photo read by its layout, the headings are already right: everything up to "Gör så här"
+    // is an ingredient
+    if (section === 'ingredients' && linesDone) {
+      ingredientLines.push(line);
+      continue;
+    }
+
     if (section === 'ingredients') {
       // A short line without a full stop is an ingredient, even without an amount ("vispad grädde"),
       // unless it starts like a step ("Koka upp vattnet")

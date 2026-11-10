@@ -1,5 +1,6 @@
 import { preprocessImageForOcr } from './imagePreprocessing';
 import { parseRawRecipeText, type ParsedRecipeData } from './ingredientParser';
+import { layoutBlocks, linesFromWords, recipeTextFromBlocks, wordsFromTsv, type ReadBlock } from './ocrLayout';
 
 // Re-export all parsing functions and types so backwards-compatibility is 100% preserved
 export * from './ingredientParser';
@@ -104,6 +105,8 @@ export async function performClientOCR(
 
   let bestDataUrl = '';
   let bestRawText = '';
+  // Set when the page was read by its layout: the text then has one ingredient or step per line
+  let readByLayout = false;
 
   try {
     const prep1 = await preprocessImageForOcr(imageSource, {
@@ -133,6 +136,9 @@ export async function performClientOCR(
 
     try {
       // ── Pass 1: Scan with TSV to analyze layout and detect columns ─────────
+      // Automatic page layout (Tesseract's own default here is one single block), so words in
+      // different columns are not run together into one line
+      await worker.setParameters({ tessedit_pageseg_mode: '3' as never });
       let ret1 = await worker.recognize(prep1.dataUrl, {}, { tsv: true });
       bestRawText = ret1.data.text || '';
 
@@ -155,11 +161,39 @@ export async function performClientOCR(
         } catch {}
       }
 
+      // ── Reading by layout ───────────────────────────────────────────────
+      // The page is cut into blocks along the empty space between them (columns, boxes), each
+      // block is read on its own, and the blocks are put together as a recipe. See ocrLayout.ts.
+      try {
+        const layout = wordsFromTsv(ret1.data.tsv);
+        const rects = layoutBlocks(layout.words, layout.pageWidth);
+        if (rects.length >= 2) {
+          if (onProgress) onProgress(82, 'Läser sidan del för del');
+          // Each block as one even block of text
+          await worker.setParameters({ tessedit_pageseg_mode: '6' as never });
+          const blocks: ReadBlock[] = [];
+          for (const rect of rects) {
+            const r = await worker.recognize(bestDataUrl, { rectangle: rect }, { tsv: true });
+            blocks.push({ rect, lines: linesFromWords(wordsFromTsv(r.data.tsv).words) });
+          }
+          const text = recipeTextFromBlocks(blocks, layout.pageHeight);
+          if (text) {
+            const check = parseRawRecipeText(text, { fromOcr: true, linesDone: true });
+            if (check.ingredients.length >= 2 || check.instructions.length >= 2) {
+              bestRawText = text;
+              readByLayout = true;
+            }
+          }
+        }
+      } catch (layoutErr) {
+        console.warn('Reading by layout failed, falling back to columns:', layoutErr);
+      }
+
       // ── Multi-Column Detection & Separate Column Scanning ─────────────────
       // If cookbook page has 2 columns (e.g. ingredients left, instructions right),
       // scan each column independently to eliminate horizontal line stitching.
       const { words, pageWidth, pageHeight } = parseTsvData(ret1.data.tsv);
-      const gutterX = findTwoColumnGutter(words, pageWidth);
+      const gutterX = readByLayout ? null : findTwoColumnGutter(words, pageWidth);
 
       if (gutterX && gutterX > 50 && gutterX < pageWidth - 50) {
         if (onProgress) onProgress(85, 'Två spalter upptäckta – läser kolumner var för sig...');
@@ -262,6 +296,6 @@ export async function performClientOCR(
 
   if (onProgress) onProgress(100, 'Strukturerar ingredienser och steg...');
 
-  const parsed = parseRawRecipeText(bestRawText, { fromOcr: true });
+  const parsed = parseRawRecipeText(bestRawText, { fromOcr: true, linesDone: readByLayout });
   return { rawText: bestRawText, parsed, preprocessedDataUrl: bestDataUrl };
 }
