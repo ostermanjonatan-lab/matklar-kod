@@ -11,6 +11,16 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.0.171',
+    date: '2026-11-10',
+    items: [
+      'Näringsvärdet känner igen många fler livsmedel, nästan 700 råvaror från Livsmedelsverket, och flera felaktiga träffar är rättade, som sockerfri läsk och ostsås.',
+      'Under näringstabellen står vilka ingredienser som inte räknats och varför. Saknas något med mängd syns en varning överst.',
+      'Ingredienser i äldre recept där mängden hamnat i namnet, som 400 g krossade tomater, rättas när receptet öppnas.',
+      'Ordet färg i ett steg markeras inte längre som färs.',
+    ],
+  },
+  {
     version: '1.0.170',
     date: '2026-11-10',
     items: [
