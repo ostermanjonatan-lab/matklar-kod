@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { FadeImage } from '../layout/FadeImage';
+import { NoImage } from '../layout/NoImage';
 import { categoryLabel } from '../../data/categories';
 import { Toast } from '../layout/Toast';
 import { ConfirmSheet } from '../layout/ConfirmSheet';
@@ -628,12 +629,9 @@ export const MealPlanView: React.FC = () => {
                         {recipe ? (
                           <FadeImage src={recipe.coverImageUrl} alt={recipe.title} className="absolute inset-0 w-full h-full object-cover" />
                         ) : hasCustomDinner ? (
-                          <div
-                            className="w-full h-full bg-amber-100 flex items-center justify-center text-amber-900"
-                            title={dayData?.customDinner}
-                          >
-                            <Utensils className="w-4 h-4 text-amber-800" />
-                          </div>
+                          <span title={dayData?.customDinner}>
+                            <NoImage />
+                          </span>
                         ) : (
                           <span className="text-base font-bold text-stone-300 group-hover:text-stone-400">
                             +
@@ -896,31 +894,40 @@ export const MealPlanView: React.FC = () => {
                   </div>
                 </div>
               ) : activeDayData.customDinner?.trim() ? (
-                /* Custom Dinner Card */
-                <div className="p-5 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="bg-amber-50 text-amber-900 border border-amber-200/80 text-xs font-bold px-3 py-1 rounded-full shadow-2xs">
-                      Middag
-                    </span>
-                    <div className="flex items-center gap-1">
+                /* Own meal: shaped like a recipe without a picture, the grey box with the name on it */
+                <div>
+                  <div
+                    onClick={() => openPickerModal(activeDayName, 'dinner')}
+                    className="relative aspect-16/10 rounded-t-3xl overflow-hidden cursor-pointer touch-manipulation"
+                  >
+                    <NoImage />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/35 via-45% to-black/20" />
+
+                    <div className="absolute top-3 left-3 right-3 flex items-center justify-between text-white z-10">
+                      <span className="bg-white/95 text-stone-900 text-[11px] font-bold px-2.5 py-1 rounded-full shadow-xs">
+                        Middag
+                      </span>
                       <button
                         type="button"
-                        onClick={() => handleClearMeal(activeDayName, 'dinner')}
-                        className="w-8 h-8 rounded-full bg-stone-100 hover:bg-rose-50 text-stone-400 hover:text-rose-600 flex items-center justify-center active:scale-90 transition-all touch-manipulation"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleClearMeal(activeDayName, 'dinner');
+                        }}
+                        className="w-8 h-8 rounded-full bg-black/50 backdrop-blur-md text-white hover:bg-rose-600/90 flex items-center justify-center active:scale-90 transition-all touch-manipulation"
                         title="Ta bort middag"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
+
+                    <div className="absolute bottom-3.5 left-3.5 right-3.5 text-white">
+                      <h3 className="font-serif font-bold text-xl leading-snug drop-shadow-md text-white">
+                        {activeDayData.customDinner}
+                      </h3>
+                    </div>
                   </div>
 
-                  <div className="py-2">
-                    <h3 className="font-serif font-bold text-2xl text-stone-900">
-                      {activeDayData.customDinner}
-                    </h3>
-                  </div>
-
-                  <div className="flex items-center justify-between gap-2 pt-2 border-t border-[#EBE7DF]">
+                  <div className="p-3.5 bg-white flex items-center justify-between gap-2">
                     <div className="flex items-center gap-1.5 min-[380px]:gap-2 min-w-0 bg-[#FCFAF5] border border-[#EBE7DF] rounded-2xl pl-2.5 pr-1.5 min-[380px]:px-3 py-1.5">
                       <Users className="w-4 h-4 text-stone-500 shrink-0 sm:hidden" aria-hidden="true" />
                         <span className="sr-only sm:not-sr-only text-xs font-semibold text-stone-700">Portioner</span>
@@ -1269,9 +1276,7 @@ export const MealPlanView: React.FC = () => {
                     {dRecipe ? (
                       <FadeImage src={dRecipe.coverImageUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
                     ) : hasCustomDinner ? (
-                      <div className="w-full h-full bg-amber-100 flex items-center justify-center">
-                        <Utensils className="w-5 h-5 text-amber-800" />
-                      </div>
+                      <NoImage />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-stone-400">
                         <Plus className="w-4 h-4" />
