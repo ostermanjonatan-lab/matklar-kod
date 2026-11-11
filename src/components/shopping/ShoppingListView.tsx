@@ -8,7 +8,6 @@ import { EditShoppingItemSheet } from './EditShoppingItemSheet';
 import { SwipeToDelete } from './SwipeToDelete';
 import { AisleIcon } from './AisleIcon';
 import { useStoredState } from '../../hooks/useStoredState';
-import { usePrices, estimateCost, formatCost, SHOW_COST_KEY } from '../../utils/prices';
 import { useModalBackHandler } from '../../hooks/useModalBackHandler';
 import { AlltidHemmaView } from './AlltidHemmaView';
 import { takeOpenStoreOrderFlag } from './storeOrderLink';
@@ -353,25 +352,6 @@ export const ShoppingListView: React.FC = () => {
   }, [shoppingList]);
   const remainingCount = totalCount - checkedCount;
 
-  // About what the list costs, from prices entered in Ändra vara. Turned off in Inställningar.
-  const [showCost] = useStoredState<boolean>(SHOW_COST_KEY, true);
-  const { prices } = usePrices();
-  const costText = useMemo(() => {
-    if (!showCost) return '';
-    let sum = 0;
-    let priced = 0;
-    shoppingList.forEach((item) => {
-      const cost = estimateCost(prices, item);
-      if (cost !== null) {
-        sum += cost;
-        priced++;
-      }
-    });
-    if (priced === 0) return '';
-    const missing = shoppingList.length - priced;
-    return missing > 0 ? `${formatCost(sum)}, ${missing} utan pris` : formatCost(sum);
-  }, [showCost, prices, shoppingList]);
-
   const handleCopyShoppingListText = async () => {
     if (shoppingList.length === 0) return;
 
@@ -490,7 +470,7 @@ export const ShoppingListView: React.FC = () => {
                 {/* Status badges placed AFTER the switcher so switcher never shifts */}
                 {activeSubTab === 'list' && totalCount > 0 && (
                   <span className="text-xs font-semibold text-[#284235] bg-[#284235]/10 px-2.5 py-1 rounded-full whitespace-nowrap shrink-0">
-                    {checkedCount} av {totalCount} klara{costText && ` · ${costText}`}
+                    {checkedCount} av {totalCount} klara
                   </span>
                 )}
 
@@ -673,7 +653,7 @@ export const ShoppingListView: React.FC = () => {
                   <div className="min-w-0 flex-1">
                     <h1 className="sr-only">{activeListName}</h1>
                     <p className="text-sm text-white/80 tabular-nums">
-                      {totalCount > 0 ? `${checkedCount} av ${totalCount} klara${costText ? ` · ${costText}` : ''}` : 'Listan är tom'}
+                      {totalCount > 0 ? `${checkedCount} av ${totalCount} klara` : 'Listan är tom'}
                     </p>
                   </div>
 
@@ -978,7 +958,6 @@ export const ShoppingListView: React.FC = () => {
                     <div className="divide-y divide-[#EBE7DF] w-full animate-fade-in">
                   {[...group.items].sort((a, b) => Number(a.checked) - Number(b.checked)).map((item) => {
                     const formattedAmt = formatShoppingAmount(item.amount);
-                    const itemCost = showCost ? estimateCost(prices, item) : null;
                     // Recipe names without the portion count, e.g. "Köttbullar (4 port)" -> "Köttbullar"
                     const sourceParts = (normalizeRecipeSource(item.recipeSource) || '')
                       .split(' + ')
@@ -1053,7 +1032,7 @@ export const ShoppingListView: React.FC = () => {
                             )}
                           </div>
 
-                          {(item.isPantryStaple || displaySource || item.comment || itemCost !== null) && (
+                          {(item.isPantryStaple || displaySource || item.comment) && (
                             <div className="flex items-center gap-1.5 mt-0.5 flex-wrap text-xs text-stone-400 min-w-0">
                               {item.comment && (
                                 <button
@@ -1069,7 +1048,6 @@ export const ShoppingListView: React.FC = () => {
                                   <span className="truncate">{item.comment}</span>
                                 </button>
                               )}
-                              {itemCost !== null && <span className="shrink-0 tabular-nums">{formatCost(itemCost)}</span>}
                               {item.isPantryStaple && <span className="shrink-0">Basvara</span>}
                               {displaySource && (
                                 <span className="truncate min-w-0" title={`Från ${displaySource}`}>
@@ -1276,7 +1254,6 @@ export const ShoppingListView: React.FC = () => {
 
       {itemToEdit && (
         <EditShoppingItemSheet
-          showCost={showCost}
           item={itemToEdit}
           onSave={(changes) => updateShoppingItem(itemToEdit.id, changes)}
           onClose={() => setItemToEdit(null)}

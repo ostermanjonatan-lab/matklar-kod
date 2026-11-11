@@ -121,10 +121,10 @@ export function clearAisleOverrides(): void {
 }
 
 // Units that can be counted into each other: volume in millilitres, weight in grams
-export const VOLUME_ML: Record<string, number> = { ml: 1, cl: 10, dl: 100, l: 1000, krm: 1, tsk: 5, msk: 15 };
-export const WEIGHT_G: Record<string, number> = { g: 1, hg: 100, kg: 1000 };
+const VOLUME_ML: Record<string, number> = { ml: 1, cl: 10, dl: 100, l: 1000, krm: 1, tsk: 5, msk: 15 };
+const WEIGHT_G: Record<string, number> = { g: 1, hg: 100, kg: 1000 };
 
-export function cleanUnitOf(unit?: string): string {
+function cleanUnitOf(unit?: string): string {
   const u = normalizeUnit(unit || '').toLowerCase().trim().replace(/\.$/, '');
   return !u || u === 'styck' || u === 'stycken' ? 'st' : u;
 }
