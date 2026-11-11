@@ -999,13 +999,21 @@ export const ShoppingListView: React.FC = () => {
                               {capitalizeFirst(stripPreparation(formatIngredientName(item.name, item.amount, item.unit)))}
                             </span>
                             {formattedAmt && (
-                              <span
-                                className={`text-sm tabular-nums whitespace-nowrap shrink-0 ${
+                              // Tapping the amount opens Ändra vara, without checking the item off
+                              <button
+                                type="button"
+                                onPointerDown={(e) => e.stopPropagation()}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setItemToEdit(item);
+                                }}
+                                className={`text-sm tabular-nums whitespace-nowrap shrink-0 -my-2 py-2 -mx-1 px-1 rounded-lg active:bg-stone-200/70 touch-manipulation ${
                                   item.checked ? 'text-stone-400 line-through' : 'text-stone-600'
                                 }`}
+                                aria-label={`Ändra mängd för ${item.name}`}
                               >
                                 {formattedAmt} {formatUnit(item.unit, item.amount)}
-                              </span>
+                              </button>
                             )}
                           </div>
 
