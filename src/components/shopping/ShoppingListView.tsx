@@ -21,7 +21,6 @@ import {
   CheckCircle2,
   Circle,
   Share2,
-  ShoppingCart,
   MessageSquare,
   Pencil,
   X,
@@ -73,6 +72,12 @@ export const ShoppingListView: React.FC = () => {
 
   // Sub-tab: 'list' (Inköpslista) | 'pantry' (Alltid ha hemma)
   const [activeSubTab, setActiveSubTab] = useState<'list' | 'pantry'>('list');
+
+  // The list tab is named after the open list. Tapped again when it is already open, it opens Listor.
+  const handleListTabClick = () => {
+    if (activeSubTab === 'list') setShowListsSheet(true);
+    else setActiveSubTab('list');
+  };
 
   const pantryOutOfStockCount = useMemo(() => {
     return pantryItems.filter((i) => i.isOutOfStock).length;
@@ -415,20 +420,20 @@ export const ShoppingListView: React.FC = () => {
                 <div className="flex bg-[#F0ECE1] p-0.5 rounded-xl border border-[#EBE7DF]/80 text-xs shrink-0">
                   <button
                     type="button"
-                    onClick={() => setActiveSubTab('list')}
-                    className={`py-1.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                    onClick={handleListTabClick}
+                    aria-label={activeSubTab === 'list' ? `${activeListName}, byt lista` : activeListName}
+                    className={`py-1.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer min-w-0 ${
                       activeSubTab === 'list'
                         ? 'bg-white text-stone-900 shadow-xs'
                         : 'text-stone-600 hover:text-stone-900'
                     }`}
                   >
-                    <ShoppingCart className="w-3.5 h-3.5" />
-                    <span>Inköpslista</span>
-                    {remainingCount > 0 && (
+                    <ListTodo className="w-3.5 h-3.5 shrink-0" />
+                    <span className="max-w-[160px] truncate">{activeListName}</span>
+                    {activeSubTab === 'list' && <ChevronDown className="w-3 h-3 text-stone-500 shrink-0" />}
+                    {activeSubTab !== 'list' && remainingCount > 0 && (
                       <span
-                        className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
-                          activeSubTab === 'list' ? 'bg-[#FCFAF5] text-stone-700' : 'bg-stone-300/80 text-stone-700'
-                        }`}
+                        className="text-[10px] px-1.5 py-0.2 rounded-full font-bold bg-stone-300/80 text-stone-700"
                       >
                         {remainingCount}
                       </span>
@@ -479,18 +484,6 @@ export const ShoppingListView: React.FC = () => {
               {/* Right side: Store selector & Tools (only for list) */}
               {activeSubTab === 'list' && (
                 <div className="flex items-center gap-2 shrink-0">
-                  {/* Which list is shown */}
-                  <button
-                    type="button"
-                    onClick={() => setShowListsSheet(true)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-stone-50 text-stone-800 font-semibold text-xs transition-colors border border-[#EBE7DF] cursor-pointer h-9 shadow-2xs"
-                    aria-label={`${activeListName}, byt lista`}
-                  >
-                    <ListTodo className="w-3.5 h-3.5 text-[#284235]" />
-                    <span className="max-w-[160px] truncate">{activeListName}</span>
-                    <ChevronDown className="w-3 h-3 text-stone-500" />
-                  </button>
-
                   {/* Store Dropdown */}
                   <div className="relative">
                     <button
@@ -607,20 +600,20 @@ export const ShoppingListView: React.FC = () => {
             <div className="flex bg-[#FFFFFF]/15 p-1 rounded-2xl mb-2.5">
               <button
                 type="button"
-                onClick={() => setActiveSubTab('list')}
-                className={`flex-1 py-1.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 touch-manipulation min-h-[36px] ${
+                onClick={handleListTabClick}
+                aria-label={activeSubTab === 'list' ? `${activeListName}, byt lista` : activeListName}
+                className={`flex-1 min-w-0 py-1.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 touch-manipulation min-h-[36px] ${
                   activeSubTab === 'list'
                     ? 'bg-white text-stone-900 shadow-xs'
                     : 'text-white/80'
                 }`}
               >
-                <ShoppingCart className="w-3.5 h-3.5" />
-                <span>Inköpslista</span>
-                {remainingCount > 0 && (
+                <ListTodo className="w-3.5 h-3.5 shrink-0" />
+                <span className="min-w-0 truncate">{activeListName}</span>
+                {activeSubTab === 'list' && <ChevronDown className="w-3.5 h-3.5 text-stone-500 shrink-0" />}
+                {activeSubTab !== 'list' && remainingCount > 0 && (
                   <span
-                    className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
-                      activeSubTab === 'list' ? 'bg-[#FCFAF5] text-stone-700' : 'bg-[#FFFFFF]/20 text-white'
-                    }`}
+                    className="text-[10px] px-1.5 py-0.2 rounded-full font-bold bg-[#FFFFFF]/20 text-white"
                   >
                     {remainingCount}
                   </span>
@@ -659,18 +652,7 @@ export const ShoppingListView: React.FC = () => {
                 <div className="flex flex-wrap items-center justify-between mb-2.5 gap-2 min-w-0">
                   <div className="min-w-0 flex-1">
                     <h1 className="sr-only">{activeListName}</h1>
-                    {/* Which list is shown. Opens Listor, where another list is chosen or made. */}
-                    <button
-                      type="button"
-                      onClick={() => setShowListsSheet(true)}
-                      className="flex items-center gap-2 max-w-full min-h-[38px] px-3 rounded-xl bg-white text-stone-900 text-sm font-bold shadow-xs active:scale-95 transition-transform touch-manipulation"
-                      aria-label={`${activeListName}, byt lista`}
-                    >
-                      <ListTodo className="w-4 h-4 text-[#284235] shrink-0" />
-                      <span className="min-w-0 truncate">{activeListName}</span>
-                      <ChevronDown className="w-4 h-4 text-stone-500 shrink-0" />
-                    </button>
-                    <p className="text-xs text-white/80 tabular-nums mt-1">
+                    <p className="text-sm text-white/80 tabular-nums">
                       {totalCount > 0 ? `${checkedCount} av ${totalCount} klara` : 'Listan är tom'}
                     </p>
                   </div>
