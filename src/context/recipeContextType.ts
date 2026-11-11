@@ -68,7 +68,9 @@ export interface RecipeContextType {
   addIngredientsToShoppingList: (
     ingredients: Array<{ name: string; amount: number | null; unit: string; aisle: string; isPantryStaple: boolean }>,
     recipeTitle?: string,
-    skipPantryStaples?: boolean
+    skipPantryStaples?: boolean,
+    /** A saved list to add to. The main list when not given. */
+    listId?: string | null
   ) => number;
   /** Puts back a list as it was (for Ångra). Replaces only that list: the main list unless listId is given. */
   restoreShoppingList: (items: ShoppingItem[], listId?: string | null) => void;

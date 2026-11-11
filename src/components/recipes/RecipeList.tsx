@@ -61,6 +61,9 @@ export const RecipeList: React.FC = () => {
     restoreShoppingList,
     setActiveTab,
     shoppingList,
+    allShoppingItems,
+    shoppingLists,
+    setActiveShoppingListId,
     searchQuery,
     setSearchQuery,
   } = useRecipes();
@@ -140,24 +143,32 @@ export const RecipeList: React.FC = () => {
   const [shoppingToast, setShoppingToast] = useState<{
     title: string;
     count: number;
+    /** The list added to, null for the main list */
+    listId: string | null;
     undoSnapshot: typeof shoppingList;
   } | null>(null);
   const [undoToastMessage, setUndoToastMessage] = useState<string | null>(null);
   const shoppingToastTimeoutRef = useRef<any>(null);
   const undoToastTimeoutRef = useRef<any>(null);
 
+  const listNameOf = useCallback(
+    (listId: string | null) => shoppingLists.find((l) => l.id === listId)?.name || 'inköpslistan',
+    [shoppingLists]
+  );
+
   const [recipeForPantryChoice, setRecipeForPantryChoice] = useState<Recipe | null>(null);
   useModalBackHandler(Boolean(recipeForPantryChoice), () => setRecipeForPantryChoice(null), 'pantry-choice');
 
   const addRecipeToShoppingList = useCallback(
-    (recipe: Recipe, skipPantryStaples: boolean) => {
-      // Snapshot prior shopping list state before adding
-      const snapshot = [...shoppingList];
+    (recipe: Recipe, skipPantryStaples: boolean, listId: string | null = null) => {
+      // Snapshot prior state of the list added to, for Ångra
+      const snapshot = allShoppingItems.filter((item) => (item.listId || null) === listId);
 
       const count = addIngredientsToShoppingList(
         recipe.ingredients,
         recipe.title,
-        skipPantryStaples
+        skipPantryStaples,
+        listId
       );
 
       if (shoppingToastTimeoutRef.current) {
@@ -171,6 +182,7 @@ export const RecipeList: React.FC = () => {
       setShoppingToast({
         title: formatRecipeTitle(recipe.title),
         count,
+        listId,
         undoSnapshot: snapshot,
       });
 
@@ -179,7 +191,7 @@ export const RecipeList: React.FC = () => {
         setShoppingToast(null);
       }, 5000);
     },
-    [addIngredientsToShoppingList, shoppingList]
+    [addIngredientsToShoppingList, allShoppingItems]
   );
 
   const handleAddToShoppingList = useCallback(
@@ -200,18 +212,18 @@ export const RecipeList: React.FC = () => {
   const handleUndoAddToShoppingList = useCallback(() => {
     if (!shoppingToast) return;
     const recipeTitle = shoppingToast.title;
-    restoreShoppingList(shoppingToast.undoSnapshot);
+    restoreShoppingList(shoppingToast.undoSnapshot, shoppingToast.listId);
 
     if (shoppingToastTimeoutRef.current) {
       clearTimeout(shoppingToastTimeoutRef.current);
     }
     setShoppingToast(null);
 
-    setUndoToastMessage(`Varorna från ${recipeTitle} togs bort från inköpslistan`);
+    setUndoToastMessage(`Varorna från ${recipeTitle} togs bort från ${listNameOf(shoppingToast.listId)}`);
     undoToastTimeoutRef.current = setTimeout(() => {
       setUndoToastMessage(null);
     }, 3000);
-  }, [shoppingToast, restoreShoppingList]);
+  }, [shoppingToast, restoreShoppingList, listNameOf]);
 
   useEffect(() => {
     return () => {
@@ -499,8 +511,8 @@ export const RecipeList: React.FC = () => {
       {recipeForPantryChoice && (
         <PantryChoiceDialog
           recipe={recipeForPantryChoice}
-          onChoose={(skipPantryStaples) => {
-            addRecipeToShoppingList(recipeForPantryChoice, skipPantryStaples);
+          onChoose={(skipPantryStaples, listId) => {
+            addRecipeToShoppingList(recipeForPantryChoice, skipPantryStaples, listId);
             setRecipeForPantryChoice(null);
           }}
           onClose={() => setRecipeForPantryChoice(null)}
@@ -510,12 +522,13 @@ export const RecipeList: React.FC = () => {
       {/* Toast Notification when adding recipe to shopping list with Undo button */}
       {shoppingToast && (
         <Toast
-          message={`${shoppingToast.title}: ${shoppingToast.count} ${shoppingToast.count === 1 ? 'vara' : 'varor'} i inköpslistan`}
+          message={`${shoppingToast.title}: ${shoppingToast.count} ${shoppingToast.count === 1 ? 'vara' : 'varor'} i ${listNameOf(shoppingToast.listId)}`}
           actions={[
             { label: 'Ångra', onClick: handleUndoAddToShoppingList },
             {
               label: 'Visa',
               onClick: () => {
+                setActiveShoppingListId(shoppingToast.listId);
                 setShoppingToast(null);
                 setActiveTab('shopping');
               },

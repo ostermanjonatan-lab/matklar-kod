@@ -174,6 +174,8 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
     deleteRecipe,
     updateNotes,
     addIngredientsToShoppingList,
+    shoppingLists,
+    setActiveShoppingListId,
     setMealPlanForDate,
     getMealPlanForDate,
     setActiveTab,
@@ -191,6 +193,8 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
   const [notesDraft, setNotesDraft] = useState<string>(recipe.notes || '');
   const [showNotesSavedToast, setShowNotesSavedToast] = useState<boolean>(false);
   const [shoppingToast, setShoppingToast] = useState<string | null>(null);
+  // The list the recipe was just added to, so Visa listan opens it
+  const [addedToListId, setAddedToListId] = useState<string | null>(null);
   const [addedToCart, setAddedToCart] = useState<boolean>(false);
   const [showPantryChoice, setShowPantryChoice] = useState<boolean>(false);
   const [showMealPlanPicker, setShowMealPlanPicker] = useState<boolean>(false);
@@ -423,13 +427,15 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
   };
 
   // Add Ingredients to Shopping List
-  const handleAddToShoppingList = (excludePantry: boolean = true) => {
+  const handleAddToShoppingList = (excludePantry: boolean = true, listId: string | null = null) => {
     const scaledIngredients = recipe.ingredients.map((ing) => ({
       ...ing,
       amount: scaleIngredientAmount(ing.amount, recipe.servings, servings),
     }));
-    addIngredientsToShoppingList(scaledIngredients, recipe.title, excludePantry);
-    setShoppingToast('Tillagt i inköpslistan');
+    addIngredientsToShoppingList(scaledIngredients, recipe.title, excludePantry, listId);
+    const listName = shoppingLists.find((l) => l.id === listId)?.name;
+    setAddedToListId(listId);
+    setShoppingToast(listName ? `Tillagt i ${listName}` : 'Tillagt i inköpslistan');
     setAddedToCart(true);
     setTimeout(() => setAddedToCart(false), 2000);
     setTimeout(() => setShoppingToast(null), 4000);
@@ -613,6 +619,7 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
               {
                 label: 'Visa listan',
                 onClick: () => {
+                  setActiveShoppingListId(addedToListId);
                   setShoppingToast(null);
                   onBack();
                   setActiveTab('shopping');
@@ -951,9 +958,9 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
       {showPantryChoice && (
         <PantryChoiceDialog
           recipe={recipe}
-          onChoose={(skipPantryStaples) => {
+          onChoose={(skipPantryStaples, listId) => {
             setShowPantryChoice(false);
-            handleAddToShoppingList(skipPantryStaples);
+            handleAddToShoppingList(skipPantryStaples, listId);
           }}
           onClose={() => setShowPantryChoice(false)}
         />

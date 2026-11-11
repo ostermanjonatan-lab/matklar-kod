@@ -938,7 +938,8 @@ export const RecipeProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   const addIngredientsToShoppingList = useCallback((
     ingredients: Array<{ name: string; amount: number | null; unit: string; aisle: string; isPantryStaple: boolean }>,
     recipeTitle?: string,
-    skipPantryStaples: boolean = true
+    skipPantryStaples: boolean = true,
+    listId: string | null = null
   ): number => {
     const validIngredients = ingredients.filter((ing) => {
       if (!skipPantryStaples) return true;
@@ -953,6 +954,7 @@ export const RecipeProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       aisle: (ing.aisle && ing.aisle !== 'Övrigt') ? ing.aisle : detectAisle(ing.name),
       isPantryStaple: ing.isPantryStaple,
       recipeTitle,
+      listId: listId || undefined,
     }));
 
     setShoppingList((prev) => {

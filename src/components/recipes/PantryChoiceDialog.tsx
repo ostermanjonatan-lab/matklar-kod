@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { X } from 'lucide-react';
 import type { Recipe } from '../../types/recipe';
 import { capitalizeFirst, formatRecipeTitle } from '../../utils/formatters';
+import { useRecipes } from '../../context/RecipeContext';
+import { MAIN_LIST_NAME } from '../shopping/ShoppingListsSheet';
 
 /** Whether adding the recipe needs a choice about pantry staples at all. */
 export function hasPantryStaples(recipe: Recipe): boolean {
@@ -44,12 +46,17 @@ export function uniqueStaples(names: string[]): string[] {
 
 interface PantryChoiceDialogProps {
   recipe: Recipe;
-  onChoose: (skipPantryStaples: boolean) => void;
+  /** listId is the saved list chosen, null for the main list */
+  onChoose: (skipPantryStaples: boolean, listId: string | null) => void;
   onClose: () => void;
 }
 
 export const PantryChoiceDialog: React.FC<PantryChoiceDialogProps> = ({ recipe, onChoose, onClose }) => {
   const staples = uniqueStaples(recipe.ingredients.filter((ing) => ing.isPantryStaple).map((ing) => ing.name));
+  const { shoppingLists } = useRecipes();
+  // The main list unless another is chosen
+  const [listId, setListId] = useState<string | null>(null);
+  const listName = shoppingLists.find((l) => l.id === listId)?.name || 'inköpslistan';
 
   return (
     <div
@@ -83,21 +90,39 @@ export const PantryChoiceDialog: React.FC<PantryChoiceDialogProps> = ({ recipe, 
           ))}
         </ul>
 
+        {shoppingLists.length > 0 && (
+          <label className="flex items-center gap-3 text-sm text-stone-700">
+            <span className="shrink-0">Lägg i</span>
+            <select
+              value={listId || ''}
+              onChange={(e) => setListId(e.target.value || null)}
+              className="flex-1 min-w-0 h-11 bg-[#FCFAF5] border border-[#EBE7DF] rounded-xl px-3 text-base sm:text-sm text-stone-900 focus:outline-none focus:ring-2 focus:ring-[#284235]"
+            >
+              <option value="">{MAIN_LIST_NAME}</option>
+              {shoppingLists.map((l) => (
+                <option key={l.id} value={l.id}>
+                  {l.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+
         <p className="text-xs text-stone-500">
-          Resten av {formatRecipeTitle(recipe.title) || 'receptet'} läggs i inköpslistan.
+          Resten av {formatRecipeTitle(recipe.title) || 'receptet'} läggs i {listName}.
         </p>
 
         <div className="grid grid-cols-2 gap-2">
           <button
             type="button"
-            onClick={() => onChoose(false)}
+            onClick={() => onChoose(false, listId)}
             className="py-3 px-2 bg-[#FCFAF5] hover:bg-stone-100 border border-[#EBE7DF] active:scale-95 text-stone-800 font-semibold rounded-2xl text-sm touch-manipulation min-h-[48px] transition-all"
           >
             Köp det också
           </button>
           <button
             type="button"
-            onClick={() => onChoose(true)}
+            onClick={() => onChoose(true, listId)}
             className="py-3 px-2 bg-[#284235] hover:bg-black active:scale-95 text-white font-bold rounded-2xl text-sm touch-manipulation min-h-[48px] shadow-sm transition-all"
           >
             Har det hemma
