@@ -345,8 +345,13 @@ export const ShoppingListView: React.FC = () => {
       ? `INKÖPSLISTA (${checkedCount}/${totalCount} klart):\n\n`
       : `INKÖPSLISTA:\n\n`;
 
-    groupedByAisle.forEach((group) => {
-      text += `${group.aisleName}:\n`;
+    // Utan kategorier: one list without aisle headings, in the same order as on screen
+    const groups = flatList
+      ? [{ aisleName: '', items: groupedByAisle.flatMap((g) => g.items) }]
+      : groupedByAisle;
+
+    groups.forEach((group) => {
+      if (group.aisleName) text += `${group.aisleName}:\n`;
       group.items.forEach((item) => {
         const checkMark = item.checked ? '✓ ' : '• ';
         const amtStr = formatShoppingAmount(item.amount);
