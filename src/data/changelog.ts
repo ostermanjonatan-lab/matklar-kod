@@ -11,6 +11,13 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.0.175',
+    date: '2026-11-11',
+    items: [
+      'Trycker du på Recept när du redan är i recepten hoppar sidan till sökfältet och tangentbordet öppnas.',
+    ],
+  },
+  {
     version: '1.0.174',
     date: '2026-11-10',
     items: [
