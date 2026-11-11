@@ -7,7 +7,7 @@ import type { Recipe, RecipeDifficulty } from '../../types/recipe';
 import { matchesDifficulty } from './DifficultyPicker';
 import { getRecipeSubcategories, getRecipeTimestamp } from '../../types/recipe';
 import { RecipeCard } from './RecipeCard';
-import { PantryChoiceDialog, hasPantryStaples } from './PantryChoiceDialog';
+import { PantryChoiceDialog, needsAddChoice } from './PantryChoiceDialog';
 import { RecipeFilterModal } from './RecipeFilterModal';
 import { STANDARD_CATEGORIES } from '../../data/categories';
 import { useModalBackHandler } from '../../hooks/useModalBackHandler';
@@ -198,7 +198,7 @@ export const RecipeList: React.FC = () => {
     (recipe: Recipe) => {
       if (!recipe.ingredients || recipe.ingredients.length === 0) return false;
 
-      if (hasPantryStaples(recipe)) {
+      if (needsAddChoice(recipe, shoppingLists.length)) {
         setRecipeForPantryChoice(recipe);
         return false;
       }
@@ -206,7 +206,7 @@ export const RecipeList: React.FC = () => {
       addRecipeToShoppingList(recipe, true);
       return true;
     },
-    [addRecipeToShoppingList]
+    [addRecipeToShoppingList, shoppingLists.length]
   );
 
   const handleUndoAddToShoppingList = useCallback(() => {

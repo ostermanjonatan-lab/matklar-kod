@@ -10,6 +10,11 @@ export function hasPantryStaples(recipe: Recipe): boolean {
   return (recipe.ingredients || []).some((ing) => ing.isPantryStaple);
 }
 
+/** Whether to ask before adding: about staples, or which list when there are saved lists */
+export function needsAddChoice(recipe: Recipe, savedListCount: number): boolean {
+  return hasPantryStaples(recipe) || savedListCount > 0;
+}
+
 /** The things a staple is, by their last word: "Salt och peppar" -> salt, peppar. */
 export function stapleKeys(name: string): string[] {
   const core = name
@@ -51,19 +56,25 @@ interface PantryChoiceDialogProps {
   onClose: () => void;
 }
 
+/**
+ * Asked before a recipe goes to the shopping list: whether the staples are at home, and which
+ * list it goes to when there are saved lists. Without staples only the list is chosen.
+ */
 export const PantryChoiceDialog: React.FC<PantryChoiceDialogProps> = ({ recipe, onChoose, onClose }) => {
   const staples = uniqueStaples(recipe.ingredients.filter((ing) => ing.isPantryStaple).map((ing) => ing.name));
   const { shoppingLists } = useRecipes();
   // The main list unless another is chosen
   const [listId, setListId] = useState<string | null>(null);
   const listName = shoppingLists.find((l) => l.id === listId)?.name || 'inköpslistan';
+  const onlyList = staples.length === 0;
+  const title = onlyList ? 'Vilken lista?' : 'Har du det här hemma?';
 
   return (
     <div
       className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 backdrop-blur-xs p-4 animate-fade-in font-sans"
       role="dialog"
       aria-modal="true"
-      aria-label="Har du det här hemma?"
+      aria-label={title}
       onClick={(e) => {
         e.stopPropagation();
         if (e.target === e.currentTarget) onClose();
@@ -81,14 +92,16 @@ export const PantryChoiceDialog: React.FC<PantryChoiceDialogProps> = ({ recipe, 
         </button>
 
         <h3 className="font-serif font-bold text-lg text-stone-900 pr-8">
-          Har du det här hemma?
+          {title}
         </h3>
 
-        <ul className="max-h-40 overflow-y-auto space-y-1 text-sm font-medium text-stone-800">
-          {staples.map((name) => (
-            <li key={name}>{capitalizeFirst(name)}</li>
-          ))}
-        </ul>
+        {!onlyList && (
+          <ul className="max-h-40 overflow-y-auto space-y-1 text-sm font-medium text-stone-800">
+            {staples.map((name) => (
+              <li key={name}>{capitalizeFirst(name)}</li>
+            ))}
+          </ul>
+        )}
 
         {shoppingLists.length > 0 && (
           <label className="flex items-center gap-3 text-sm text-stone-700">
@@ -108,10 +121,21 @@ export const PantryChoiceDialog: React.FC<PantryChoiceDialogProps> = ({ recipe, 
           </label>
         )}
 
-        <p className="text-xs text-stone-500">
-          Resten av {formatRecipeTitle(recipe.title) || 'receptet'} läggs i {listName}.
-        </p>
+        {!onlyList && (
+          <p className="text-xs text-stone-500">
+            Resten av {formatRecipeTitle(recipe.title) || 'receptet'} läggs i {listName}.
+          </p>
+        )}
 
+        {onlyList ? (
+          <button
+            type="button"
+            onClick={() => onChoose(true, listId)}
+            className="w-full py-3 px-2 bg-[#284235] hover:bg-black active:scale-95 text-white font-bold rounded-2xl text-sm touch-manipulation min-h-[48px] shadow-sm transition-all"
+          >
+            Lägg i {listId ? listName : MAIN_LIST_NAME}
+          </button>
+        ) : (
         <div className="grid grid-cols-2 gap-2">
           <button
             type="button"
@@ -128,6 +152,7 @@ export const PantryChoiceDialog: React.FC<PantryChoiceDialogProps> = ({ recipe, 
             Har det hemma
           </button>
         </div>
+        )}
       </div>
     </div>
   );

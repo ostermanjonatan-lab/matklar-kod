@@ -38,7 +38,7 @@ import { NutritionPanel } from './NutritionPanel';
 import { findIngredientMentions, type IngredientMention } from '../../utils/stepIngredients';
 import { EditRecipeModal } from './EditRecipeModal';
 import { useModalBackHandler } from '../../hooks/useModalBackHandler';
-import { PantryChoiceDialog, hasPantryStaples } from './PantryChoiceDialog';
+import { PantryChoiceDialog, needsAddChoice } from './PantryChoiceDialog';
 import { scaleIngredientAmount, formatAmount, formatCookingTime, capitalizeFirst, formatUnit, formatIngredientName, formatRecipeTitle } from '../../utils/formatters';
 import { splitTextIntoTimerSegments } from '../../utils/timerParser';
 import { ShareRecipeSheet } from '../share/ShareRecipeSheet';
@@ -255,7 +255,7 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
     shoppingTouchPosRef.current = null;
 
     if (recipe.ingredients && recipe.ingredients.length > 0) {
-      if (hasPantryStaples(recipe)) {
+      if (needsAddChoice(recipe, shoppingLists.length)) {
         setShowPantryChoice(true);
       } else {
         handleAddToShoppingList(true);
