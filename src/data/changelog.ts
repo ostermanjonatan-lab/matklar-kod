@@ -11,6 +11,13 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.0.181',
+    date: '2026-11-11',
+    items: [
+      'Ungefärlig kostnad är borttagen.',
+    ],
+  },
+  {
     version: '1.0.180',
     date: '2026-11-11',
     items: [
