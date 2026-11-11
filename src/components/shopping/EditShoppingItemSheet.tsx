@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import type { ShoppingItem } from '../../types/recipe';
+import { usePrices, estimateCost } from '../../utils/prices';
 
 /** The amount as it is written in Swedish: 1,5 rather than 1.5 */
 function amountText(amount: number | null): string {
@@ -14,19 +15,30 @@ export const EditShoppingItemSheet: React.FC<{
   item: ShoppingItem;
   onSave: (changes: Pick<ShoppingItem, 'name' | 'amount' | 'unit'>) => void;
   onClose: () => void;
-}> = ({ item, onSave, onClose }) => {
+  /** Shows the price field, for the cost of the list */
+  showCost?: boolean;
+}> = ({ item, onSave, onClose, showCost = false }) => {
   const [name, setName] = useState(item.name);
   const [amount, setAmount] = useState(amountText(item.amount));
   const [unit, setUnit] = useState(item.unit || '');
+  const { prices, setPrice } = usePrices();
+  const knownCost = estimateCost(prices, item);
+  const initialPrice = knownCost === null ? '' : amountText(knownCost < 10 ? Math.round(knownCost * 10) / 10 : Math.round(knownCost));
+  const [price, setPriceText] = useState(initialPrice);
+  const parsedPrice = price.trim() === '' ? null : Number(price.trim().replace(',', '.'));
+  const priceValid = parsedPrice === null || (Number.isFinite(parsedPrice) && parsedPrice >= 0);
 
   const parsedAmount = amount.trim() === '' ? null : Number(amount.trim().replace(',', '.'));
   const amountValid = parsedAmount === null || (Number.isFinite(parsedAmount) && parsedAmount > 0);
-  const canSave = name.trim() !== '' && amountValid;
+  const canSave = name.trim() !== '' && amountValid && priceValid;
 
   const save = (e: React.FormEvent) => {
     e.preventDefault();
     if (!canSave) return;
-    onSave({ name: name.trim(), amount: parsedAmount, unit: unit.trim() });
+    const changes = { name: name.trim(), amount: parsedAmount, unit: unit.trim() };
+    onSave(changes);
+    // The price is for the amount as saved: 30 kr for 2 l
+    if (showCost && price.trim() !== initialPrice) setPrice(changes, parsedPrice);
     onClose();
   };
 
@@ -77,6 +89,26 @@ export const EditShoppingItemSheet: React.FC<{
             />
           </label>
         </div>
+
+        {showCost && (
+          <label className="block">
+            <span className="text-xs text-stone-500">
+              Pris, ungefär{parsedAmount !== null ? ` för ${amount.trim()} ${unit.trim()}`.trimEnd() : ''}
+            </span>
+            <div className="relative mt-1">
+              <input
+                type="text"
+                inputMode="decimal"
+                value={price}
+                onChange={(e) => setPriceText(e.target.value)}
+                placeholder="Vet inte"
+                className={`${field} pr-10 ${priceValid ? '' : 'border-rose-300'}`}
+                aria-invalid={!priceValid}
+              />
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-stone-500 pointer-events-none">kr</span>
+            </div>
+          </label>
+        )}
 
         <div className="flex gap-2 pt-1">
           <button

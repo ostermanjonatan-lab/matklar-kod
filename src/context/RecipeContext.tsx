@@ -17,6 +17,7 @@ import { emptyPlanDay, normalizeMealPlan, buildWeek, sanitizeRecipe } from './re
 import type { RecipeContextType } from './recipeContextType';
 import { useHouseholdSync } from './useHouseholdSync';
 import { useShoppingLists } from './useShoppingLists';
+import { withStoredSwaps } from '../utils/ingredientSwaps';
 import {
   RECIPES_STORAGE_KEY,
   STARTER_SEEDED_KEY,
@@ -917,7 +918,8 @@ export const RecipeProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         dinnerRecipeId: d.dinnerRecipeId && inList.has(plannedMealKey(titleOf(d.dinnerRecipeId), d.dayName, 'dinner')) ? null : d.dinnerRecipeId,
         lunchRecipeId: d.lunchRecipeId && inList.has(plannedMealKey(titleOf(d.lunchRecipeId), d.dayName, 'lunch')) ? null : d.lunchRecipeId,
       }));
-    const { items } = generateShoppingListFromMealPlan(upcoming, recipes, {
+    // With the ingredients swapped on this phone
+    const { items } = generateShoppingListFromMealPlan(upcoming, recipes.map(withStoredSwaps), {
       skipPantryStaples,
     });
 

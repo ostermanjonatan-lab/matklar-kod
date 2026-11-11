@@ -39,6 +39,8 @@ import { findIngredientMentions, type IngredientMention } from '../../utils/step
 import { EditRecipeModal } from './EditRecipeModal';
 import { useModalBackHandler } from '../../hooks/useModalBackHandler';
 import { PantryChoiceDialog, needsAddChoice } from './PantryChoiceDialog';
+import { SwapIngredientSheet } from './SwapIngredientSheet';
+import { useIngredientSwaps, applySwaps } from '../../utils/ingredientSwaps';
 import { scaleIngredientAmount, formatAmount, formatCookingTime, capitalizeFirst, formatUnit, formatIngredientName, formatRecipeTitle } from '../../utils/formatters';
 import { splitTextIntoTimerSegments } from '../../utils/timerParser';
 import { ShareRecipeSheet } from '../share/ShareRecipeSheet';
@@ -183,6 +185,39 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
 
   // Always bind to the live recipe from state
   const recipe = recipes.find((r) => r.id === initialRecipe.id) || initialRecipe;
+  // Ingredients swapped on this phone: shown, cooked with and bought instead of the recipe's own
+  const { swaps, setSwap, removeSwap } = useIngredientSwaps(recipe);
+  const shownRecipe = useMemo(() => applySwaps(recipe, swaps), [recipe, swaps]);
+  const swappedIndexes = useMemo(() => new Set(swaps.map((sw) => sw.index)), [swaps]);
+  // The ingredient being swapped: a row's index, 'pick' to choose one first, or null
+  const [swapTarget, setSwapTarget] = useState<number | 'pick' | null>(null);
+  useModalBackHandler(swapTarget !== null, () => setSwapTarget(null), 'swap-ingredient');
+  // Long press on an ingredient row opens Byt ut for it
+  const ingredientPressRef = useRef<{ timer: number; x: number; y: number; fired: boolean } | null>(null);
+  const startIngredientPress = (idx: number, e: React.PointerEvent) => {
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    const state = { timer: 0, x: e.clientX, y: e.clientY, fired: false };
+    state.timer = window.setTimeout(() => {
+      state.fired = true;
+      if (navigator.vibrate) navigator.vibrate(10);
+      setSwapTarget(idx);
+    }, 500);
+    ingredientPressRef.current = state;
+  };
+  const moveIngredientPress = (e: React.PointerEvent) => {
+    const state = ingredientPressRef.current;
+    if (state && !state.fired && Math.hypot(e.clientX - state.x, e.clientY - state.y) > 10) {
+      window.clearTimeout(state.timer);
+      ingredientPressRef.current = null;
+    }
+  };
+  const endIngredientPress = () => {
+    const state = ingredientPressRef.current;
+    if (state && !state.fired) {
+      window.clearTimeout(state.timer);
+      ingredientPressRef.current = null;
+    }
+  };
 
   // Local interactive state
   const [servings, setServings] = useState<number>(recipe.servings || 4);
@@ -254,8 +289,8 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
     }
     shoppingTouchPosRef.current = null;
 
-    if (recipe.ingredients && recipe.ingredients.length > 0) {
-      if (needsAddChoice(recipe, shoppingLists.length)) {
+    if (shownRecipe.ingredients && shownRecipe.ingredients.length > 0) {
+      if (needsAddChoice(shownRecipe, shoppingLists.length)) {
         setShowPantryChoice(true);
       } else {
         handleAddToShoppingList(true);
@@ -376,27 +411,27 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
   // Words in each step that name an ingredient with an amount. The amount is shown after the word.
   const stepMentions = useMemo(() => {
     const hasAmount = (idx: number) =>
-      typeof recipe.ingredients[idx].amount === 'number' && recipe.ingredients[idx].amount! > 0;
+      typeof shownRecipe.ingredients[idx].amount === 'number' && shownRecipe.ingredients[idx].amount! > 0;
     const result: Record<number, IngredientMention[]> = {};
     for (const inst of recipe.instructions) {
-      result[inst.stepNumber] = findIngredientMentions(inst.text, recipe.ingredients)
+      result[inst.stepNumber] = findIngredientMentions(inst.text, shownRecipe.ingredients)
         .map((m) => ({ ...m, ingredients: m.ingredients.filter(hasAmount) }))
         .filter((m) => m.ingredients.length > 0);
     }
     return result;
-  }, [recipe.instructions, recipe.ingredients]);
+  }, [recipe.instructions, shownRecipe.ingredients]);
   // "400 g", or "80 g pecorino romano · 50 g parmesan" when the word fits several ingredients
   // One of something ("ägget", "löken") needs no "(1 st)": the word already says it
   const mentionAmount = (indexes: number[]) => {
     if (indexes.length === 1) {
-      const ing = recipe.ingredients[indexes[0]];
+      const ing = shownRecipe.ingredients[indexes[0]];
       const scaled = scaleIngredientAmount(ing.amount, recipe.servings, servings);
       const unit = (ing.unit || '').trim().toLowerCase().replace(/\.$/, '');
       if (scaled === 1 && ['', 'st', 'styck', 'stycken'].includes(unit)) return '';
     }
     return indexes
       .map((idx) => {
-        const ing = recipe.ingredients[idx];
+        const ing = shownRecipe.ingredients[idx];
         const scaled = scaleIngredientAmount(ing.amount, recipe.servings, servings);
         // A non-breaking space keeps "810 g" on one line
         const amount = `${formatAmount(scaled)}\u00a0${formatUnit(ing.unit, scaled)}`.trim();
@@ -428,7 +463,7 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
 
   // Add Ingredients to Shopping List
   const handleAddToShoppingList = (excludePantry: boolean = true, listId: string | null = null) => {
-    const scaledIngredients = recipe.ingredients.map((ing) => ({
+    const scaledIngredients = shownRecipe.ingredients.map((ing) => ({
       ...ing,
       amount: scaleIngredientAmount(ing.amount, recipe.servings, servings),
     }));
@@ -660,9 +695,13 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
                 <h2 className="font-serif text-lg font-bold text-stone-900">
                   Ingredienser
                 </h2>
-                <span className="text-xs font-semibold text-stone-500">
-                  {recipe.ingredients.length} st
-                </span>
+                <button
+                  type="button"
+                  onClick={() => setSwapTarget('pick')}
+                  className="text-xs font-semibold text-[#284235] min-h-[36px] px-1 touch-manipulation"
+                >
+                  Byt ut ingrediens
+                </button>
               </div>
 
               <PortionScaler
@@ -674,15 +713,31 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
 
             {/* Ingredients List (Touch-Friendly Checkable Rows) */}
         <div className="bg-white rounded-3xl border border-[#EBE7DF] shadow-xs overflow-hidden divide-y divide-[#EBE7DF]/70 w-full">
-          {recipe.ingredients.map((ing, idx) => {
+          {shownRecipe.ingredients.map((ing, idx) => {
             const isChecked = !!checkedIngredients[idx];
+            const swappedFrom = swappedIndexes.has(idx) ? recipe.ingredients[idx].name : null;
             const scaledAmount = scaleIngredientAmount(ing.amount, recipe.servings, servings);
             const formattedAmountStr = formatAmount(scaledAmount);
 
             return (
               <div
                 key={idx}
-                onClick={() => toggleIngredientCheck(idx)}
+                onClick={() => {
+                  if (ingredientPressRef.current?.fired) {
+                    ingredientPressRef.current = null;
+                    return;
+                  }
+                  toggleIngredientCheck(idx);
+                }}
+                onPointerDown={(e) => startIngredientPress(idx, e)}
+                onPointerMove={moveIngredientPress}
+                onPointerUp={endIngredientPress}
+                onPointerCancel={endIngredientPress}
+                onContextMenu={(e) => {
+                  e.preventDefault();
+                  endIngredientPress();
+                  setSwapTarget(idx);
+                }}
                 className={`px-4 py-3.5 flex items-center justify-between cursor-pointer transition-colors active:bg-stone-50 touch-manipulation w-full gap-3 ${
                   isChecked ? 'bg-stone-50/60 text-stone-400' : 'text-stone-900 hover:bg-stone-50/40'
                 }`}
@@ -709,6 +764,22 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
                     >
                       {capitalizeFirst(formatIngredientName(ing.name, scaledAmount, ing.unit))}
                     </span>
+                    {swappedFrom && (
+                      <span className="flex items-center gap-2 text-xs text-stone-500 mt-0.5 min-w-0">
+                        <span className="truncate">I stället för {swappedFrom.toLowerCase()}</span>
+                        <button
+                          type="button"
+                          onPointerDown={(e) => e.stopPropagation()}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removeSwap(idx);
+                          }}
+                          className="font-semibold text-[#284235] shrink-0 touch-manipulation"
+                        >
+                          Ångra
+                        </button>
+                      </span>
+                    )}
                   </div>
                 </div>
 
@@ -889,7 +960,7 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
         </div>
 
         {/* Nutrition, a row that opens and closes */}
-        <NutritionPanel recipe={recipe} servings={servings} />
+        <NutritionPanel recipe={shownRecipe} servings={servings} />
 
         {/* Quick Add to Meal Plan & Edit Recipe Footer Actions */}
         <div className="pt-2 space-y-2.5 w-full">
@@ -954,10 +1025,33 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
         <PhotoViewer src={recipe.coverImageUrl} alt={formatRecipeTitle(recipe.title)} onClose={() => setShowPhoto(false)} />
       )}
 
+      {/* Swap an ingredient for something else, without changing the recipe */}
+      {swapTarget !== null && (
+        <SwapIngredientSheet
+          ingredients={shownRecipe.ingredients.map((ing) => ({
+            ...ing,
+            amount: scaleIngredientAmount(ing.amount, recipe.servings, servings),
+          }))}
+          originals={recipe.ingredients}
+          initialIndex={swapTarget === 'pick' ? null : swapTarget}
+          onSave={(index, replacement) =>
+            setSwap(index, {
+              ...replacement,
+              // Kept for the recipe's own servings, like the recipe's amounts
+              amount:
+                replacement.amount === null || !servings
+                  ? replacement.amount
+                  : Math.round(((replacement.amount * (recipe.servings || servings)) / servings) * 1000) / 1000,
+            })
+          }
+          onClose={() => setSwapTarget(null)}
+        />
+      )}
+
       {/* Ask whether pantry staples should be included */}
       {showPantryChoice && (
         <PantryChoiceDialog
-          recipe={recipe}
+          recipe={shownRecipe}
           onChoose={(skipPantryStaples, listId) => {
             setShowPantryChoice(false);
             handleAddToShoppingList(skipPantryStaples, listId);

@@ -12,6 +12,8 @@ import { ChangelogSheet } from './ChangelogSheet';
 import { eraseThisDevice } from '../../utils/eraseAll';
 import { getThemeChoice, setThemeChoice, type ThemeChoice } from '../../utils/theme';
 import { OPEN_STORE_ORDER_KEY } from '../shopping/storeOrderLink';
+import { useStoredState } from '../../hooks/useStoredState';
+import { SHOW_COST_KEY } from '../../utils/prices';
 import { saveRecipeBackup, readRecipeBackup } from '../../utils/recipeBackup';
 import { Check, Copy, ChevronRight, ChevronDown, Clock, ShieldAlert } from 'lucide-react';
 
@@ -30,6 +32,22 @@ const Row: React.FC<{
     <span className={`flex-1 min-w-0 text-sm ${danger ? 'text-rose-700' : 'text-stone-900'}`}>{label}</span>
     {detail && <span className="text-xs text-stone-500 truncate max-w-[45%]">{detail}</span>}
     <ChevronRight className="w-4 h-4 text-stone-300 shrink-0" />
+  </button>
+);
+
+/** A row with an on/off switch */
+const SwitchRow: React.FC<{ label: string; checked: boolean; onChange: (checked: boolean) => void }> = ({ label, checked, onChange }) => (
+  <button
+    type="button"
+    role="switch"
+    aria-checked={checked}
+    onClick={() => onChange(!checked)}
+    className="w-full min-h-[52px] py-3 flex items-center gap-3 text-left touch-manipulation active:bg-stone-100/70"
+  >
+    <span className="flex-1 min-w-0 text-sm text-stone-900">{label}</span>
+    <span className={`relative w-11 h-6 rounded-full transition-colors shrink-0 ${checked ? 'bg-[#284235]' : 'bg-stone-300'}`}>
+      <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${checked ? 'translate-x-5' : ''}`} />
+    </span>
   </button>
 );
 
@@ -84,6 +102,8 @@ export const SettingsView: React.FC = () => {
     addCustomSubcategory,
     leaveHousehold,
   } = useRecipes();
+  // The cost of the shopping list, from prices entered in Ändra vara
+  const [showCost, setShowCost] = useStoredState<boolean>(SHOW_COST_KEY, true);
 
   const [theme, setTheme] = useState<ThemeChoice>(getThemeChoice);
   const [showShareModal, setShowShareModal] = useState<boolean>(false);
@@ -432,6 +452,7 @@ export const SettingsView: React.FC = () => {
         <h2 className={sectionHeading}>Inköpslistan</h2>
         <div className="divide-y divide-[#EBE7DF] border-y border-[#EBE7DF]">
           <Row label="Butiker och avdelningarnas ordning" onClick={openStoreOrder} />
+          <SwitchRow label="Visa ungefärlig kostnad" checked={showCost} onChange={setShowCost} />
         </div>
 
         {/* Backup of the recipes */}

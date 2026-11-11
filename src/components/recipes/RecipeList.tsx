@@ -8,6 +8,7 @@ import { matchesDifficulty } from './DifficultyPicker';
 import { getRecipeSubcategories, getRecipeTimestamp } from '../../types/recipe';
 import { RecipeCard } from './RecipeCard';
 import { PantryChoiceDialog, needsAddChoice } from './PantryChoiceDialog';
+import { withStoredSwaps } from '../../utils/ingredientSwaps';
 import { RecipeFilterModal } from './RecipeFilterModal';
 import { STANDARD_CATEGORIES } from '../../data/categories';
 import { useModalBackHandler } from '../../hooks/useModalBackHandler';
@@ -165,7 +166,8 @@ export const RecipeList: React.FC = () => {
       const snapshot = allShoppingItems.filter((item) => (item.listId || null) === listId);
 
       const count = addIngredientsToShoppingList(
-        recipe.ingredients,
+        // With the ingredients swapped on this phone
+        withStoredSwaps(recipe).ingredients,
         recipe.title,
         skipPantryStaples,
         listId
@@ -198,7 +200,7 @@ export const RecipeList: React.FC = () => {
     (recipe: Recipe) => {
       if (!recipe.ingredients || recipe.ingredients.length === 0) return false;
 
-      if (needsAddChoice(recipe, shoppingLists.length)) {
+      if (needsAddChoice(withStoredSwaps(recipe), shoppingLists.length)) {
         setRecipeForPantryChoice(recipe);
         return false;
       }
@@ -510,7 +512,7 @@ export const RecipeList: React.FC = () => {
       {/* Ask whether pantry staples should be included */}
       {recipeForPantryChoice && (
         <PantryChoiceDialog
-          recipe={recipeForPantryChoice}
+          recipe={withStoredSwaps(recipeForPantryChoice)}
           onChoose={(skipPantryStaples, listId) => {
             addRecipeToShoppingList(recipeForPantryChoice, skipPantryStaples, listId);
             setRecipeForPantryChoice(null);
