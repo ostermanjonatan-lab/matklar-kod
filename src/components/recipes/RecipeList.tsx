@@ -595,6 +595,7 @@ export const RecipeList: React.FC = () => {
             <div className="relative flex-1 min-w-0 flex items-center">
               <Search className="w-5 h-5 text-stone-400 absolute left-3.5 pointer-events-none stroke-[2]" />
               <input
+                data-recipe-search
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}

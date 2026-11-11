@@ -39,6 +39,11 @@ export const BottomNav: React.FC<BottomNavProps> = ({ onAddRecipeClick, onAddSho
       if (document.body) document.body.scrollTo({ top: 0, behavior: 'smooth' });
       const mainEl = document.querySelector('main');
       if (mainEl) mainEl.scrollTo({ top: 0, behavior: 'smooth' });
+      // Recept igen: sökfältet får fokus (i klicket, så att tangentbordet öppnas på telefonen)
+      if (tab === 'recipes') {
+        const search = Array.from(document.querySelectorAll<HTMLInputElement>('input[data-recipe-search]')).find((el) => el.offsetParent !== null);
+        search?.focus({ preventScroll: true });
+      }
     } else {
       window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
       if (document.documentElement) document.documentElement.scrollTop = 0;

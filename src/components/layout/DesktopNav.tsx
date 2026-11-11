@@ -44,6 +44,11 @@ export const DesktopNav: React.FC<DesktopNavProps> = ({
       if (document.body) document.body.scrollTo({ top: 0, behavior: 'smooth' });
       const mainEl = document.querySelector('main');
       if (mainEl) mainEl.scrollTo({ top: 0, behavior: 'smooth' });
+      // Recept igen: sökfältet får fokus (i klicket, så att tangentbordet öppnas på telefonen)
+      if (tab === 'recipes') {
+        const search = Array.from(document.querySelectorAll<HTMLInputElement>('input[data-recipe-search]')).find((el) => el.offsetParent !== null);
+        search?.focus({ preventScroll: true });
+      }
     } else {
       window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
       if (document.documentElement) document.documentElement.scrollTop = 0;
@@ -162,6 +167,7 @@ export const DesktopNav: React.FC<DesktopNavProps> = ({
           <div className="relative w-48 lg:w-72 flex items-center">
             <Search className="w-4 h-4 text-stone-400 absolute left-3.5 pointer-events-none stroke-[2]" />
             <input
+              data-recipe-search
               type="text"
               value={searchQuery}
               onChange={(e) => {
