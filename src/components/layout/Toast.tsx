@@ -17,13 +17,13 @@ interface ToastProps {
  * A short message that floats at the top of the screen, above everything else, without
  * moving anything. Plain text, and at most a couple of text buttons such as Ångra.
  * Rendered at the end of the page so it floats the same way inside an open recipe.
- * It can be swiped away upwards or to the side.
+ * It can be swiped away upwards or to the side, one of them: the first clear move decides which.
  */
 export const Toast: React.FC<ToastProps> = ({ message, actions, onDismiss }) => {
   const [dismissed, setDismissed] = useState(false);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [leaving, setLeaving] = useState<null | 'up' | 'left' | 'right'>(null);
-  const start = useRef<{ x: number; y: number; id: number } | null>(null);
+  const start = useRef<{ x: number; y: number; id: number; axis: null | 'x' | 'y' } | null>(null);
 
   // A new message shows again even if the previous one was swiped away
   const messageKey = typeof message === 'string' ? message : '';
@@ -38,7 +38,7 @@ export const Toast: React.FC<ToastProps> = ({ message, actions, onDismiss }) => 
   const onPointerDown = (e: React.PointerEvent) => {
     // Swiping starts anywhere except on the buttons
     if ((e.target as HTMLElement).closest('button')) return;
-    start.current = { x: e.clientX, y: e.clientY, id: e.pointerId };
+    start.current = { x: e.clientX, y: e.clientY, id: e.pointerId, axis: null };
     (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
   };
 
@@ -47,8 +47,13 @@ export const Toast: React.FC<ToastProps> = ({ message, actions, onDismiss }) => 
     if (!s || s.id !== e.pointerId) return;
     const dx = e.clientX - s.x;
     const dy = e.clientY - s.y;
-    // Upwards and sideways follow the finger, downwards only a little
-    setOffset({ x: dx, y: dy < 0 ? dy : dy / 4 });
+    // Once the finger has moved a little the direction is locked: sideways or up and down
+    if (!s.axis) {
+      if (Math.max(Math.abs(dx), Math.abs(dy)) < 8) return;
+      s.axis = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y';
+    }
+    // Upwards follows the finger, downwards only a little
+    setOffset(s.axis === 'x' ? { x: dx, y: 0 } : { x: 0, y: dy < 0 ? dy : dy / 4 });
   };
 
   const onPointerEnd = (e: React.PointerEvent) => {
@@ -57,7 +62,8 @@ export const Toast: React.FC<ToastProps> = ({ message, actions, onDismiss }) => 
     start.current = null;
     const dx = e.clientX - s.x;
     const dy = e.clientY - s.y;
-    const direction = dy < -30 && Math.abs(dy) > Math.abs(dx) ? 'up' : Math.abs(dx) > 70 ? (dx < 0 ? 'left' : 'right') : null;
+    const direction =
+      s.axis === 'y' && dy < -30 ? 'up' : s.axis === 'x' && Math.abs(dx) > 70 ? (dx < 0 ? 'left' : 'right') : null;
     if (!direction) {
       setOffset({ x: 0, y: 0 });
       return;
