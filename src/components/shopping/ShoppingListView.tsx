@@ -27,6 +27,7 @@ import {
   X,
   ChevronDown,
   ChevronsUpDown,
+  ListTodo,
   ArrowUpDown,
   Store,
   Home,
@@ -485,6 +486,7 @@ export const ShoppingListView: React.FC = () => {
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-stone-50 text-stone-800 font-semibold text-xs transition-colors border border-[#EBE7DF] cursor-pointer h-9 shadow-2xs"
                     aria-label={`${activeListName}, byt lista`}
                   >
+                    <ListTodo className="w-3.5 h-3.5 text-[#284235]" />
                     <span className="max-w-[160px] truncate">{activeListName}</span>
                     <ChevronDown className="w-3 h-3 text-stone-500" />
                   </button>
@@ -661,13 +663,14 @@ export const ShoppingListView: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setShowListsSheet(true)}
-                      className="flex items-center gap-1 max-w-full min-h-[32px] text-[15px] font-semibold text-white touch-manipulation"
+                      className="flex items-center gap-2 max-w-full min-h-[38px] px-3 rounded-xl bg-white text-stone-900 text-sm font-bold shadow-xs active:scale-95 transition-transform touch-manipulation"
                       aria-label={`${activeListName}, byt lista`}
                     >
+                      <ListTodo className="w-4 h-4 text-[#284235] shrink-0" />
                       <span className="min-w-0 truncate">{activeListName}</span>
-                      <ChevronDown className="w-4 h-4 text-white/80 shrink-0" />
+                      <ChevronDown className="w-4 h-4 text-stone-500 shrink-0" />
                     </button>
-                    <p className="text-xs text-white/80 tabular-nums">
+                    <p className="text-xs text-white/80 tabular-nums mt-1">
                       {totalCount > 0 ? `${checkedCount} av ${totalCount} klara` : 'Listan är tom'}
                     </p>
                   </div>
