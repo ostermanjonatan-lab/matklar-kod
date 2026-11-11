@@ -41,6 +41,8 @@ import { useModalBackHandler } from '../../hooks/useModalBackHandler';
 import { PantryChoiceDialog, needsAddChoice } from './PantryChoiceDialog';
 import { SwapIngredientSheet } from './SwapIngredientSheet';
 import { useIngredientSwaps, applySwaps } from '../../utils/ingredientSwaps';
+import { usePrices, estimateCost, formatCost, SHOW_COST_KEY } from '../../utils/prices';
+import { useStoredState } from '../../hooks/useStoredState';
 import { scaleIngredientAmount, formatAmount, formatCookingTime, capitalizeFirst, formatUnit, formatIngredientName, formatRecipeTitle } from '../../utils/formatters';
 import { splitTextIntoTimerSegments } from '../../utils/timerParser';
 import { ShareRecipeSheet } from '../share/ShareRecipeSheet';
@@ -221,6 +223,33 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
 
   // Local interactive state
   const [servings, setServings] = useState<number>(recipe.servings || 4);
+  // About what the dish costs for the chosen servings, from the prices entered in Inköp
+  const [showCost] = useStoredState<boolean>(SHOW_COST_KEY, true);
+  const { prices } = usePrices();
+  const costText = useMemo(() => {
+    if (!showCost) return '';
+    let sum = 0;
+    let priced = 0;
+    let missing = 0;
+    shownRecipe.ingredients.forEach((ing) => {
+      const cost = estimateCost(prices, {
+        name: ing.name,
+        amount: scaleIngredientAmount(ing.amount, recipe.servings, servings),
+        unit: ing.unit,
+      });
+      if (cost !== null) {
+        sum += cost;
+        priced++;
+      } else if (!ing.isPantryStaple) {
+        // Salt and the like are not counted as missing
+        missing++;
+      }
+    });
+    if (priced === 0) return '';
+    const perPortion = servings > 0 ? `, ${formatCost(sum / servings).replace(/^ca /, '')} per portion` : '';
+    return `${formatCost(sum)}${perPortion}${missing > 0 ? `. ${missing} ${missing === 1 ? 'ingrediens' : 'ingredienser'} utan pris` : ''}`;
+  }, [showCost, prices, shownRecipe.ingredients, recipe.servings, servings]);
+
   const [checkedIngredients, setCheckedIngredients] = useState<Record<number, boolean>>({});
   const [completedSteps, setCompletedSteps] = useState<Record<number, boolean>>({});
   const [isEditingRecipe, setIsEditingRecipe] = useState<boolean>(false);
@@ -709,6 +738,7 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
                 baseServings={recipe.servings}
                 onServingsChange={setServings}
               />
+              {costText && <p className="text-sm text-stone-600 tabular-nums">Kostar {costText}</p>}
             </div>
 
             {/* Ingredients List (Touch-Friendly Checkable Rows) */}
