@@ -11,6 +11,14 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.0.176',
+    date: '2026-11-11',
+    items: [
+      'Tryck på mängden på en rad i inköpslistan för att ändra vara, mängd och enhet.',
+      'Visas inköpslistan utan kategorier blir den också utan kategorier när du kopierar eller delar den.',
+    ],
+  },
+  {
     version: '1.0.175',
     date: '2026-11-11',
     items: [
