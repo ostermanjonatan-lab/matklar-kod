@@ -11,6 +11,13 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.0.178',
+    date: '2026-11-11',
+    items: [
+      'Har du sparade inköpslistor väljer du vilken lista ett recept ska läggas i när du lägger till det. Inköpslista är förvald.',
+    ],
+  },
+  {
     version: '1.0.177',
     date: '2026-11-11',
     items: [
