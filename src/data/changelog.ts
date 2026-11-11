@@ -11,6 +11,14 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.0.180',
+    date: '2026-11-11',
+    items: [
+      'Ungefärlig kostnad: tryck på mängden i inköpslistan och skriv vad varan kostar. Listan och recepten visar sedan ungefär vad allt kostar. Det går att stänga av i Inställningar.',
+      'Byt ut en ingrediens i ett recept, till exempel grädde mot havregrädde, utan att receptet ändras. Inköpslistan och näringsvärdet räknar med bytet.',
+    ],
+  },
+  {
     version: '1.0.179',
     date: '2026-11-11',
     items: [
