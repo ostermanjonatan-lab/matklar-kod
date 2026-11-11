@@ -11,6 +11,13 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.0.177',
+    date: '2026-11-11',
+    items: [
+      'Du kan ha flera inköpslistor, till exempel en till stugan. Tryck på listans namn högst upp i Inköp för att byta lista eller skapa en ny. Recept och planeraren lägger fortfarande i Inköpslista.',
+    ],
+  },
+  {
     version: '1.0.176',
     date: '2026-11-11',
     items: [
