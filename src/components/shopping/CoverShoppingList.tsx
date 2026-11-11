@@ -47,7 +47,7 @@ function amountOf(item: ShoppingItem): string {
  * top, the aisles with their icons, rings to tick off. The screen is kept awake while it is open.
  */
 export const CoverShoppingList: React.FC = () => {
-  const { shoppingList, toggleShoppingItem, deleteShoppingItem, restoreShoppingList, updateShoppingItem } = useRecipes();
+  const { activeShoppingList: shoppingList, activeShoppingListId, toggleShoppingItem, deleteShoppingItem, restoreShoppingList, updateShoppingItem } = useRecipes();
 
   // Removed by a swipe or from the menu: Ångra for a few seconds, as in the ordinary list
   const [removed, setRemoved] = useState<{ item: ShoppingItem; index: number } | null>(null);
@@ -63,7 +63,7 @@ export const CoverShoppingList: React.FC = () => {
     if (!removed) return;
     const list = shoppingList.filter((i) => i.id !== removed.item.id);
     list.splice(Math.min(Math.max(removed.index, 0), list.length), 0, removed.item);
-    restoreShoppingList(list);
+    restoreShoppingList(list, activeShoppingListId);
     window.clearTimeout(removedTimer.current);
     setRemoved(null);
   };

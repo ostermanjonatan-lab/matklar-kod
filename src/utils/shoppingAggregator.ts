@@ -187,6 +187,14 @@ export interface RawIngredientInput {
   recipeSource?: string;
   mergedSources?: string[];
   comment?: string;
+  /** The saved list the item goes to. Not set for the main shopping list. */
+  listId?: string;
+}
+
+/** Items are only merged with items in the same list */
+function listKey(item: { name: string; unit: string; listId?: string }): string {
+  const key = normalizeIngredientKey(item.name, item.unit);
+  return item.listId ? `${item.listId}|${key}` : key;
 }
 
 export interface MergeShoppingListResult {
@@ -249,7 +257,7 @@ export function mergeIngredientsIntoShoppingList(
   // 1. Seed with existing items, preserving their original IDs and state
   for (const item of currentList) {
     if (!item.name || !item.name.trim()) continue;
-    const key = normalizeIngredientKey(item.name, item.unit);
+    const key = listKey(item);
 
     if (!keyMap.has(key)) {
       const rawSources = item.mergedSources || (item.recipeSource ? [item.recipeSource] : []);
@@ -294,7 +302,7 @@ export function mergeIngredientsIntoShoppingList(
   for (const item of newItems) {
     if (!item.name || !item.name.trim()) continue;
 
-    const key = normalizeIngredientKey(item.name, item.unit);
+    const key = listKey(item);
     const sourceTitle = item.recipeTitle || item.recipeSource;
 
     if (!item.checked && keyMap.has(key) && keyMap.get(key)!.checked) {
@@ -365,6 +373,7 @@ export function mergeIngredientsIntoShoppingList(
         recipeSource: normalizedSource || (normalizedMerged.length > 0 ? normalizedMerged.join(' + ') : undefined),
         mergedSources: normalizedMerged,
         comment: item.comment,
+        ...(item.listId ? { listId: item.listId } : {}),
       };
       keyMap.set(key, newItem);
       result.push(newItem);

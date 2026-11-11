@@ -13,6 +13,7 @@ import { AlltidHemmaView } from './AlltidHemmaView';
 import { takeOpenStoreOrderFlag } from './storeOrderLink';
 import { FrequentItems } from './FrequentItems';
 import { StoreOrderSheet } from './StoreOrderSheet';
+import { ShoppingListsSheet, MAIN_LIST_NAME } from './ShoppingListsSheet';
 import {
   Plus,
   Trash2,
@@ -49,7 +50,10 @@ import {
 
 export const ShoppingListView: React.FC = () => {
   const {
-    shoppingList,
+    // The list open in Inköp: the main list or a saved one
+    activeShoppingList: shoppingList,
+    shoppingLists,
+    activeShoppingListId,
     pantryItems,
     toggleShoppingItem,
     clearCheckedShoppingItems,
@@ -61,6 +65,10 @@ export const ShoppingListView: React.FC = () => {
     updateShoppingItem,
     restoreShoppingList,
   } = useRecipes();
+
+  const activeListName = shoppingLists.find((l) => l.id === activeShoppingListId)?.name || MAIN_LIST_NAME;
+  const [showListsSheet, setShowListsSheet] = useState(false);
+  useModalBackHandler(showListsSheet, () => setShowListsSheet(false), 'shopping-lists');
 
   // Sub-tab: 'list' (Inköpslista) | 'pantry' (Alltid ha hemma)
   const [activeSubTab, setActiveSubTab] = useState<'list' | 'pantry'>('list');
@@ -170,7 +178,7 @@ export const ShoppingListView: React.FC = () => {
     if (!removedItem) return;
     const list = shoppingList.filter((i) => i.id !== removedItem.item.id);
     list.splice(Math.min(Math.max(removedItem.index, 0), list.length), 0, removedItem.item);
-    restoreShoppingList(list);
+    restoreShoppingList(list, activeShoppingListId);
     window.clearTimeout(removedTimerRef.current);
     setRemovedItem(null);
   };
@@ -341,9 +349,10 @@ export const ShoppingListView: React.FC = () => {
   const handleCopyShoppingListText = async () => {
     if (shoppingList.length === 0) return;
 
+    const title = activeListName.toUpperCase();
     let text = checkedCount > 0
-      ? `INKÖPSLISTA (${checkedCount}/${totalCount} klart):\n\n`
-      : `INKÖPSLISTA:\n\n`;
+      ? `${title} (${checkedCount}/${totalCount} klart):\n\n`
+      : `${title}:\n\n`;
 
     // Utan kategorier: one list without aisle headings, in the same order as on screen
     const groups = flatList
@@ -372,7 +381,7 @@ export const ShoppingListView: React.FC = () => {
 
     if (navigator.share) {
       navigator.share({
-        title: 'Inköpslista',
+        title: activeListName,
         text: text,
       }).catch(() => {});
     }
@@ -469,6 +478,17 @@ export const ShoppingListView: React.FC = () => {
               {/* Right side: Store selector & Tools (only for list) */}
               {activeSubTab === 'list' && (
                 <div className="flex items-center gap-2 shrink-0">
+                  {/* Which list is shown */}
+                  <button
+                    type="button"
+                    onClick={() => setShowListsSheet(true)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-stone-50 text-stone-800 font-semibold text-xs transition-colors border border-[#EBE7DF] cursor-pointer h-9 shadow-2xs"
+                    aria-label={`${activeListName}, byt lista`}
+                  >
+                    <span className="max-w-[160px] truncate">{activeListName}</span>
+                    <ChevronDown className="w-3 h-3 text-stone-500" />
+                  </button>
+
                   {/* Store Dropdown */}
                   <div className="relative">
                     <button
@@ -635,9 +655,19 @@ export const ShoppingListView: React.FC = () => {
             {activeSubTab === 'list' && (
               <>
                 <div className="flex flex-wrap items-center justify-between mb-2.5 gap-2 min-w-0">
-                  <div className="min-w-fit flex-1">
-                    <h1 className="sr-only">Inköpslista</h1>
-                    <p className="text-sm text-white/80 tabular-nums">
+                  <div className="min-w-0 flex-1">
+                    <h1 className="sr-only">{activeListName}</h1>
+                    {/* Which list is shown. Opens Listor, where another list is chosen or made. */}
+                    <button
+                      type="button"
+                      onClick={() => setShowListsSheet(true)}
+                      className="flex items-center gap-1 max-w-full min-h-[32px] text-[15px] font-semibold text-white touch-manipulation"
+                      aria-label={`${activeListName}, byt lista`}
+                    >
+                      <span className="min-w-0 truncate">{activeListName}</span>
+                      <ChevronDown className="w-4 h-4 text-white/80 shrink-0" />
+                    </button>
+                    <p className="text-xs text-white/80 tabular-nums">
                       {totalCount > 0 ? `${checkedCount} av ${totalCount} klara` : 'Listan är tom'}
                     </p>
                   </div>
@@ -1090,8 +1120,12 @@ export const ShoppingListView: React.FC = () => {
           </>
         ) : (
           <div className="py-8 space-y-2">
-            <h3 className="font-serif text-lg font-bold text-stone-900">Inköpslistan är tom</h3>
-            <p className="text-sm text-stone-600">Lägg till varor här, eller ingredienser från ett recept eller planeraren.</p>
+            <h3 className="font-serif text-lg font-bold text-stone-900">{activeShoppingListId ? `${activeListName} är tom` : 'Inköpslistan är tom'}</h3>
+            <p className="text-sm text-stone-600">
+              {activeShoppingListId
+                ? 'Recept och planeraren lägger sina varor i Inköpslista, inte här.'
+                : 'Lägg till varor här, eller ingredienser från ett recept eller planeraren.'}
+            </p>
             <div className="pt-2">
               <button
                 type="button"
@@ -1292,9 +1326,11 @@ export const ShoppingListView: React.FC = () => {
         </div>
       )}
 
+      {showListsSheet && <ShoppingListsSheet onClose={() => setShowListsSheet(false)} />}
+
       {itemToDelete && (
         <ConfirmSheet
-          title={itemToDelete === 'all' ? 'Töm inköpslistan?' : `Ta bort ${capitalizeFirst(itemToDelete.name).toLowerCase()}?`}
+          title={itemToDelete === 'all' ? (activeShoppingListId ? `Töm ${activeListName}?` : 'Töm inköpslistan?') : `Ta bort ${capitalizeFirst(itemToDelete.name).toLowerCase()}?`}
           text={itemToDelete === 'all' ? `Alla ${shoppingList.length} varor tas bort.` : undefined}
           confirmLabel={itemToDelete === 'all' ? 'Töm listan' : 'Ta bort'}
           onCancel={() => setItemToDelete(null)}

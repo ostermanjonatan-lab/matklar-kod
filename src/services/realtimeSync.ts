@@ -1,6 +1,6 @@
 import { cleanLeadingStepNumber } from '../utils/formatters';
 import { getSupabase } from './supabaseClient';
-import type { Recipe, MealPlanDay, ShoppingItem, Household, UserProfile, PantryItem, HouseholdJoinRequest } from '../types/recipe';
+import type { Recipe, MealPlanDay, ShoppingItem, ShoppingListInfo, Household, UserProfile, PantryItem, HouseholdJoinRequest } from '../types/recipe';
 import { WEEKDAY_NAMES, getWeekDates, getWeekStart, isISODate } from '../utils/mealPlanDates';
 import { splitDifficultyTag, withDifficultyTag, estimateDifficulty } from '../utils/recipeDifficulty';
 import { splitNutritionTag, withNutritionTag, splitProductTags, withProductTags } from '../utils/nutrition';
@@ -22,6 +22,7 @@ export type SyncMessageType =
   | { type: 'RECIPES_SYNC'; payload: Recipe[] }
   | { type: 'MEALPLAN_UPDATE'; payload: MealPlanDay[] }
   | { type: 'SHOPPING_UPDATE'; payload: ShoppingItem[] }
+  | { type: 'SHOPPING_LISTS_UPDATE'; payload: ShoppingListInfo[] }
   | { type: 'PANTRY_UPDATE'; payload: PantryItem[] }
   | { type: 'HOUSEHOLD_UPDATE'; payload: { id: string; name: string; joinCode: string; creatorId?: string; members?: UserProfile[] } }
   | { type: 'JOIN_REQUEST'; payload: HouseholdJoinRequest }
@@ -303,10 +304,19 @@ export async function pushShoppingItemsToSupabase(items: ShoppingItem[], househo
         checked: Boolean(item.checked),
         recipe_source: combinedSource,
         updated_at: new Date().toISOString(),
+        ...(item.listId ? { list_id: item.listId } : {}),
       };
     });
 
-    await supabase.from('shopping_items').upsert(rows);
+    // Items in the main list are sent without list_id, so they still sync if the column
+    // has not been added in Supabase yet
+    const mainRows = rows.filter((row) => !('list_id' in row));
+    const savedListRows = rows.filter((row) => 'list_id' in row);
+    if (mainRows.length > 0) await supabase.from('shopping_items').upsert(mainRows);
+    if (savedListRows.length > 0) {
+      const { error } = await supabase.from('shopping_items').upsert(savedListRows);
+      if (error) console.warn('Could not share items in saved shopping lists:', error.message);
+    }
   } catch (err) {
     console.warn('Failed to push shopping items to Supabase:', err);
   }
@@ -434,6 +444,67 @@ export function subscribeToAisleOverrides(householdId: string, onChange: () => v
   };
 }
 
+function mapRowToShoppingList(row: any): ShoppingListInfo {
+  return { id: row.id, name: row.name || 'Lista', createdAt: row.created_at || new Date().toISOString() };
+}
+
+/** The household's saved shopping lists, or null if they could not be fetched (e.g. no table yet) */
+export async function fetchShoppingListsFromSupabase(householdId: string): Promise<ShoppingListInfo[] | null> {
+  const supabase = getSupabase();
+  if (!supabase || !householdId) return null;
+  const { data, error } = await supabase
+    .from('shopping_lists')
+    .select('*')
+    .eq('household_id', householdId)
+    .order('created_at', { ascending: true });
+  if (error) {
+    console.warn('Could not fetch saved shopping lists:', error.message);
+    return null;
+  }
+  return (data || []).map(mapRowToShoppingList);
+}
+
+export async function pushShoppingListsToSupabase(lists: ShoppingListInfo[], householdId: string) {
+  const supabase = getSupabase();
+  if (!supabase || !householdId || lists.length === 0) return;
+  const { error } = await supabase.from('shopping_lists').upsert(
+    lists.map((list) => ({
+      id: list.id,
+      household_id: householdId,
+      name: list.name,
+      created_at: list.createdAt,
+      updated_at: new Date().toISOString(),
+    }))
+  );
+  if (error) console.warn('Could not share saved shopping lists:', error.message);
+}
+
+export async function deleteShoppingListFromSupabase(listId: string) {
+  const supabase = getSupabase();
+  if (!supabase) return;
+  const { error } = await supabase.from('shopping_lists').delete().eq('id', listId);
+  if (error) console.warn('Could not delete saved shopping list:', error.message);
+}
+
+// Uses its own channel so a missing table can't break realtime for the other tables
+export function subscribeToShoppingLists(householdId: string, onChange: () => void) {
+  const supabase = getSupabase();
+  if (!supabase || !householdId) return () => {};
+
+  const channel = supabase
+    .channel(`shopping-lists-${householdId}`)
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'shopping_lists', filter: `household_id=eq.${householdId}` },
+      () => onChange()
+    )
+    .subscribe();
+
+  return () => {
+    supabase.removeChannel(channel);
+  };
+}
+
 export async function updateShoppingItemCommentInSupabase(item: ShoppingItem) {
   const supabase = getSupabase();
   if (!supabase) return;
@@ -489,6 +560,7 @@ export function mapRowToShoppingItem(row: any): ShoppingItem {
     checked: Boolean(row.checked),
     recipeSource,
     comment,
+    ...(row.list_id ? { listId: row.list_id } : {}),
   };
 }
 
@@ -615,7 +687,7 @@ export async function fetchHouseholdDataFromSupabase(householdId: string): Promi
       for (const row of shoppingRes.data) {
         const item = mapRowToShoppingItem(row);
 
-        const key = normalizeIngredientKey(item.name, item.unit);
+        const key = `${item.listId || ''}|${normalizeIngredientKey(item.name, item.unit)}`;
         if (seen.has(key)) {
           // Preexisting duplicate in Supabase from prior sessions: merge amounts & remove duplicate ID
           const existing = seen.get(key)!;

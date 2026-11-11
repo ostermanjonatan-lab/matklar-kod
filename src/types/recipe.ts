@@ -198,6 +198,15 @@ export interface ShoppingItem {
   recipeSource?: string;
   mergedSources?: string[];
   comment?: string;
+  /** The saved list the item belongs to. Not set for the main shopping list. */
+  listId?: string;
+}
+
+/** A shopping list besides the main one, with its own name. Its items carry its id as listId. */
+export interface ShoppingListInfo {
+  id: string;
+  name: string;
+  createdAt: string;
 }
 
 export interface HouseholdJoinRequest {

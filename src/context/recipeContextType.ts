@@ -1,5 +1,5 @@
 /** Everything RecipeContext gives the app: the data and the actions on it. */
-import type { Recipe, MealPlanDay, ShoppingItem, TabType, UserProfile, Household, PantryItem, HouseholdJoinRequest, PendingJoinState } from '../types/recipe';
+import type { Recipe, MealPlanDay, ShoppingItem, ShoppingListInfo, TabType, UserProfile, Household, PantryItem, HouseholdJoinRequest, PendingJoinState } from '../types/recipe';
 
 export interface RecipeContextType {
   recipes: Recipe[];
@@ -15,7 +15,22 @@ export interface RecipeContextType {
   today: string;
   setPlanWeekStart: (weekStart: string) => void;
   getMealPlanForDate: (dateStr: string) => MealPlanDay | undefined;
+  /** The main shopping list: what recipes, the meal plan and Hemmet add to */
   shoppingList: ShoppingItem[];
+  /** The items in every list */
+  allShoppingItems: ShoppingItem[];
+  /** The items in the list open in Inköp */
+  activeShoppingList: ShoppingItem[];
+  /** The lists besides the main one */
+  shoppingLists: ShoppingListInfo[];
+  /** The list open in Inköp on this phone, null for the main list */
+  activeShoppingListId: string | null;
+  setActiveShoppingListId: (id: string | null) => void;
+  /** Makes a new, empty list and opens it */
+  createShoppingList: (name: string) => string;
+  renameShoppingList: (id: string, name: string) => void;
+  /** Removes a saved list and everything in it */
+  deleteShoppingList: (id: string) => void;
   household: Household | null;
   households: Household[];
   currentUser: UserProfile;
@@ -55,7 +70,8 @@ export interface RecipeContextType {
     recipeTitle?: string,
     skipPantryStaples?: boolean
   ) => number;
-  restoreShoppingList: (items: ShoppingItem[]) => void;
+  /** Puts back a list as it was (for Ångra). Replaces only that list: the main list unless listId is given. */
+  restoreShoppingList: (items: ShoppingItem[], listId?: string | null) => void;
   toggleShoppingItem: (id: string) => void;
   deleteShoppingItem: (id: string) => void;
   clearCheckedShoppingItems: () => void;

@@ -83,6 +83,17 @@ CREATE TABLE IF NOT EXISTS public.shopping_items (
   updated_at TIMESTAMPTZ DEFAULT now()
 );
 
+-- 5b. Sparade inköpslistor utöver huvudlistan. Varorna i dem har listans id i list_id.
+ALTER TABLE public.shopping_items ADD COLUMN IF NOT EXISTS list_id TEXT;
+
+CREATE TABLE IF NOT EXISTS public.shopping_lists (
+  id TEXT PRIMARY KEY,
+  household_id TEXT REFERENCES public.households(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
 -- 6. Skapa tabell för Alltid ha hemma (Pantry Items)
 CREATE TABLE IF NOT EXISTS public.pantry_items (
   id TEXT PRIMARY KEY,
@@ -125,6 +136,7 @@ ALTER TABLE public.meal_plans ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.shopping_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.pantry_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.aisle_overrides ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.shopping_lists ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.household_join_requests ENABLE ROW LEVEL SECURITY;
 
 -- Tillåt läsning och skrivning för hushållsmedlemmar
@@ -135,6 +147,7 @@ CREATE POLICY "Allow access to meal plans" ON public.meal_plans FOR ALL USING (t
 CREATE POLICY "Allow access to shopping items" ON public.shopping_items FOR ALL USING (true);
 CREATE POLICY "Allow access to pantry items" ON public.pantry_items FOR ALL USING (true);
 CREATE POLICY "Allow access to aisle overrides" ON public.aisle_overrides FOR ALL USING (true);
+CREATE POLICY "Allow access to shopping lists" ON public.shopping_lists FOR ALL USING (true);
 CREATE POLICY "Allow access to join requests" ON public.household_join_requests FOR ALL USING (true);
 
 -- Aktivera Realtid (Supabase Realtime) för direkt synk över WebSockets
@@ -143,6 +156,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.meal_plans;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.shopping_items;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.pantry_items;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.aisle_overrides;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.shopping_lists;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.households;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.profiles;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.household_join_requests;

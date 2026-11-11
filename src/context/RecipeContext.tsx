@@ -16,6 +16,7 @@ import { isCommonPantryStaple, detectAisle, resolveSavedAisle } from '../utils/i
 import { emptyPlanDay, normalizeMealPlan, buildWeek, sanitizeRecipe } from './recipeData';
 import type { RecipeContextType } from './recipeContextType';
 import { useHouseholdSync } from './useHouseholdSync';
+import { useShoppingLists } from './useShoppingLists';
 import {
   RECIPES_STORAGE_KEY,
   STARTER_SEEDED_KEY,
@@ -534,6 +535,26 @@ export const RecipeProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     });
   }, [isLiveSupabase, household?.id, household?.joinCode, household?.name, household?.creatorId]);
 
+  // Shopping lists besides the main one, and which list is open in Inköp
+  const {
+    lists: shoppingLists,
+    activeListId: activeShoppingListId,
+    setActiveListId: setActiveShoppingListId,
+    createList,
+    renameList: renameShoppingList,
+    removeList,
+    resetLists: resetShoppingLists,
+  } = useShoppingLists(household?.id, isLiveSupabase);
+  const activeShoppingListIdRef = useRef(activeShoppingListId);
+  activeShoppingListIdRef.current = activeShoppingListId;
+
+  // Recipes, the meal plan and Hemmet work with the main list. Inköp shows the open list.
+  const mainShoppingList = useMemo(() => shoppingList.filter((item) => !item.listId), [shoppingList]);
+  const activeShoppingList = useMemo(
+    () => (activeShoppingListId ? shoppingList.filter((item) => item.listId === activeShoppingListId) : mainShoppingList),
+    [shoppingList, activeShoppingListId, mainShoppingList]
+  );
+
   // Realtime sync, join requests and shared aisle choices: see useHouseholdSync
   useHouseholdSync({
     households,
@@ -887,7 +908,7 @@ export const RecipeProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     // Dinners that also become leftover lunches are bought for the extra portions.
     // Days before today are already eaten, so only today and later are bought for.
     // Meals already in the list (added before, bought or not) are not added a second time
-    const inList = mealsInShoppingList(shoppingListRef.current);
+    const inList = mealsInShoppingList(shoppingListRef.current.filter((item) => !item.listId));
     const titleOf = (id?: string | null) => recipes.find((r) => r.id === id)?.title || '';
     const upcoming = withLeftoverPortions(weekMealPlan)
       .filter((d) => !d.dateStr || d.dateStr >= today)
@@ -1018,10 +1039,13 @@ export const RecipeProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   }, [isLiveSupabase]);
 
   const clearCheckedShoppingItems = useCallback(() => {
+    // Only in the list that is open
+    const listId = activeShoppingListIdRef.current;
     setShoppingList((prev) => {
-      const checkedItems = prev.filter((item) => item.checked);
+      const checkedItems = prev.filter((item) => item.checked && (item.listId || null) === listId);
       const checkedIds = checkedItems.map((item) => item.id);
-      const updated = prev.filter((item) => !item.checked);
+      const checkedIdSet = new Set(checkedIds);
+      const updated = prev.filter((item) => !checkedIdSet.has(item.id));
 
       if (checkedItems.length > 0) {
         const checkedKeys = new Set(
@@ -1052,18 +1076,27 @@ export const RecipeProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     });
   }, [isLiveSupabase, household?.id]);
 
-  const restoreShoppingList = useCallback((items: ShoppingItem[]) => {
+  const restoreShoppingList = useCallback((items: ShoppingItem[], listId: string | null = null) => {
     setShoppingList((prev) => {
-      broadcastLocalChange({ type: 'SHOPPING_UPDATE', payload: items });
+      // Only the given list is replaced. The other lists stay as they are.
+      const inList = (i: ShoppingItem) => (i.listId || null) === listId;
+      const restored = items.map((i) => {
+        const copy = { ...i };
+        if (listId) copy.listId = listId;
+        else delete copy.listId;
+        return copy;
+      });
+      const next = [...prev.filter((i) => !inList(i)), ...restored];
+      broadcastLocalChange({ type: 'SHOPPING_UPDATE', payload: next });
       if (isLiveSupabase && household?.id) {
-        const nextIds = new Set(items.map((i) => i.id));
-        const removedIds = prev.filter((i) => !nextIds.has(i.id)).map((i) => i.id);
+        const nextIds = new Set(restored.map((i) => i.id));
+        const removedIds = prev.filter((i) => inList(i) && !nextIds.has(i.id)).map((i) => i.id);
         if (removedIds.length > 0) {
           deleteShoppingItemsFromSupabase(removedIds);
         }
-        pushShoppingItemsToSupabase(items, household.id);
+        pushShoppingItemsToSupabase(restored, household.id);
       }
-      return items;
+      return next;
     });
   }, [isLiveSupabase, household?.id]);
 
@@ -1091,6 +1124,8 @@ export const RecipeProvider: React.FC<{ children: ReactNode }> = ({ children }) 
           isPantryStaple: item.isPantryStaple,
           checked: false,
           comment: item.comment,
+          // Added by hand: to the list that is open in Inköp
+          listId: activeShoppingListIdRef.current || undefined,
         },
       ]);
       broadcastLocalChange({ type: 'SHOPPING_UPDATE', payload: mergedList });
@@ -1175,6 +1210,25 @@ export const RecipeProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       changedIds.forEach((changedId) => updateShoppingItemAisleInSupabase(changedId, aisle));
     }
   }, [shoppingList, isLiveSupabase, household?.id, rememberShoppingAisle]);
+
+  /** Makes a new, empty list and opens it */
+  const createShoppingList = useCallback((name: string): string => {
+    const id = createList(name);
+    setActiveShoppingListId(id);
+    return id;
+  }, [createList, setActiveShoppingListId]);
+
+  /** Removes a saved list and everything in it */
+  const deleteShoppingList = useCallback((listId: string) => {
+    const itemIds = shoppingListRef.current.filter((item) => item.listId === listId).map((item) => item.id);
+    const updated = shoppingListRef.current.filter((item) => item.listId !== listId);
+    shoppingListRef.current = updated;
+    setShoppingList(updated);
+    broadcastLocalChange({ type: 'SHOPPING_UPDATE', payload: updated });
+    if (isLiveSupabase && itemIds.length > 0) deleteShoppingItemsFromSupabase(itemIds);
+    removeList(listId);
+    if (activeShoppingListIdRef.current === listId) setActiveShoppingListId(null);
+  }, [isLiveSupabase, removeList, setActiveShoppingListId]);
 
   const setHouseholdName = useCallback((name: string) => {
     const trimmed = name.trim();
@@ -2017,7 +2071,7 @@ export const RecipeProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         let changed = false;
         const updated = prev.map((shopItem) => {
           const sKey = normalizeIngredientKey(shopItem.name, shopItem.unit);
-          if (sKey === key && !shopItem.checked) {
+          if (sKey === key && !shopItem.checked && !shopItem.listId) {
             changed = true;
             return { ...shopItem, checked: true };
           }
@@ -2049,10 +2103,11 @@ export const RecipeProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     localStorage.removeItem(PANTRY_STORAGE_KEY);
     localStorage.removeItem(CUSTOM_SUBCATEGORIES_STORAGE_KEY);
     clearAisleOverrides();
+    resetShoppingLists();
     broadcastLocalChange({ type: 'RECIPES_SYNC', payload: cleanRecs });
     broadcastLocalChange({ type: 'MEALPLAN_UPDATE', payload: cleanPlan });
     broadcastLocalChange({ type: 'PANTRY_UPDATE', payload: [] });
-  }, []);
+  }, [resetShoppingLists]);
 
   return (
     <RecipeContext.Provider
@@ -2066,7 +2121,15 @@ export const RecipeProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         setPlanWeekStart,
         today,
         getMealPlanForDate,
-        shoppingList,
+        shoppingList: mainShoppingList,
+        allShoppingItems: shoppingList,
+        activeShoppingList,
+        shoppingLists,
+        activeShoppingListId,
+        setActiveShoppingListId,
+        createShoppingList,
+        renameShoppingList,
+        deleteShoppingList,
         household,
         households,
         currentUser,

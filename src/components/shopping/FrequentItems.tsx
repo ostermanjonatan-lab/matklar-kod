@@ -6,7 +6,7 @@ import { getFrequentItems } from '../../utils/frequentItems';
 
 /** Quick choices for items you often buy. One tap adds the item to the list. */
 export const FrequentItems: React.FC<{ limit?: number }> = ({ limit = 8 }) => {
-  const { shoppingList, addCustomShoppingItem } = useRecipes();
+  const { activeShoppingList: shoppingList, addCustomShoppingItem } = useRecipes();
   const [justAdded, setJustAdded] = useState<string | null>(null);
 
   const onList = useMemo(() => shoppingList.filter((i) => !i.checked).map((i) => i.name), [shoppingList]);
