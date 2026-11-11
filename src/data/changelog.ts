@@ -11,6 +11,14 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.0.179',
+    date: '2026-11-11',
+    items: [
+      'Fliken högst upp i Inköp heter som listan du har öppen. Tryck på den igen för att byta lista eller skapa en ny.',
+      'Meddelanden högst upp sveps bort antingen uppåt eller åt sidan, inte snett.',
+    ],
+  },
+  {
     version: '1.0.178',
     date: '2026-11-11',
     items: [
