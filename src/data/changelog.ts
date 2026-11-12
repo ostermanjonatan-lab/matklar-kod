@@ -11,6 +11,16 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.0.186',
+    date: '2026-11-12',
+    items: [
+      'Nya underkategorier: Pizza, Paj, Wraps & Bröd, Bowls, Medelhav & Mellanöstern, Grill, Bröd, Yoghurt & Fil, Marinader & Rubs, Proteinrikt och Barnvänligt.',
+      'Några underkategorier har fått samma namn överallt, till exempel Sallader och Smoothies & Bowls. Kladdkaka ingår nu i Bakverk & Kakor.',
+      'Ett öppnat recept visar kategori och underkategorier under bilden.',
+      'Egna inköpslistor tas bort med papperskorgen på listans rad i Listor.',
+    ],
+  },
+  {
     version: '1.0.185',
     date: '2026-11-12',
     items: [
