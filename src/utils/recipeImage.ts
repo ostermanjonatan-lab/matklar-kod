@@ -24,6 +24,9 @@ const WIDTH = 1080;
 const HEIGHT = Math.round((WIDTH * 297) / 210);
 const RESOLUTION = 2;
 const PAD = 64;
+// The left margin is wider, 25 mm on paper, so holes from a hole punch (about 12 mm in from
+// the edge) never go through the text
+const LEFT = Math.round((WIDTH * 25) / 210);
 const COLORS = {
   background: '#FCFAF5',
   text: '#1C1917',
@@ -105,7 +108,7 @@ function layout(
   photoHeight: number
 ): Layout {
   const ops: ((c: CanvasRenderingContext2D) => void)[] = [];
-  const inner = WIDTH - PAD * 2;
+  const inner = WIDTH - LEFT - PAD;
   const px = (n: number) => Math.round(n * scale);
   const text = (font: string, color: string, value: string, x: number, y: number, align: CanvasTextAlign = 'left') =>
     ops.push((c) => {
@@ -144,7 +147,7 @@ function layout(
   ctx.font = titleFont;
   for (const line of wrap(ctx, formatRecipeTitle(recipe.title), inner)) {
     y += px(62);
-    text(titleFont, COLORS.text, line, PAD, y);
+    text(titleFont, COLORS.text, line, LEFT, y);
   }
 
   // Time, portions and difficulty. The difficulty has the app's three bars before it.
@@ -156,11 +159,11 @@ function layout(
     .filter(Boolean)
     .join('  ·  ');
   y += px(44);
-  text(metaFont, COLORS.muted, meta, PAD, y);
+  text(metaFont, COLORS.muted, meta, LEFT, y);
   if (recipe.difficulty) {
     const level = recipe.difficulty;
     ctx.font = metaFont;
-    let x = PAD + ctx.measureText(`${meta}  ·  `).width;
+    let x = LEFT + ctx.measureText(`${meta}  ·  `).width;
     text(metaFont, COLORS.muted, '·', x - ctx.measureText('·  ').width, y);
     // Three bars, rising, filled up to the level: one for Lätt, three for Avancerad
     const barW = px(6);
@@ -183,7 +186,7 @@ function layout(
   // Two columns: ingredients to the left, steps to the right
   const gap = px(44);
   const leftW = Math.round((inner - gap) * 0.4);
-  const rightX = PAD + leftW + gap;
+  const rightX = LEFT + leftW + gap;
   const rightW = WIDTH - PAD - rightX;
   const columnTop = y + px(40);
   const headingFont = `700 ${px(36)}px ${SERIF}`;
@@ -194,9 +197,9 @@ function layout(
 
   // Ingredients: "400 g Spaghetti" with the amount in green
   let ly = columnTop + px(36);
-  text(headingFont, COLORS.text, 'Ingredienser', PAD, ly);
+  text(headingFont, COLORS.text, 'Ingredienser', LEFT, ly);
   ly += px(20);
-  rule(PAD, ly, leftW);
+  rule(LEFT, ly, leftW);
   for (const ing of recipe.ingredients) {
     const scaled = scaleIngredientAmount(ing.amount, recipe.servings, servings);
     const amount = scaled !== null ? `${formatAmount(scaled)} ${formatUnit(ing.unit, scaled)}`.trim() : ing.unit || '';
@@ -208,13 +211,13 @@ function layout(
     const firstLines = wrap(ctx, name, leftW - amountW);
     const lines = firstLines.length > 1 ? [firstLines[0], ...wrap(ctx, firstLines.slice(1).join(' '), leftW)] : firstLines;
     let row = ly + px(14) + bodySize;
-    if (amount) text(boldFont, COLORS.green, amount, PAD, row);
+    if (amount) text(boldFont, COLORS.green, amount, LEFT, row);
     lines.forEach((line, i) => {
-      text(bodyFont, COLORS.text, line, PAD + (i === 0 ? amountW : 0), row);
+      text(bodyFont, COLORS.text, line, LEFT + (i === 0 ? amountW : 0), row);
       if (i < lines.length - 1) row += lineHeight;
     });
     ly = row + px(16);
-    rule(PAD, ly, leftW);
+    rule(LEFT, ly, leftW);
   }
 
   // Steps, numbered
@@ -236,7 +239,7 @@ function layout(
     rule(rightX, ry, rightW);
   }
 
-  text(`500 24px ${SANS}`, COLORS.faint, 'Från MatKlar', PAD, HEIGHT - 40);
+  text(`500 24px ${SANS}`, COLORS.faint, 'Från MatKlar', LEFT, HEIGHT - 40);
 
   return {
     bottom: Math.max(ly, ry),
