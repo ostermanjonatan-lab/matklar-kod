@@ -7,6 +7,8 @@ import { ConfirmSheet } from '../layout/ConfirmSheet';
 import { DifficultyDots } from './DifficultyPicker';
 import { DIFFICULTY_LABELS } from '../../utils/recipeDifficulty';
 import type { Recipe } from '../../types/recipe';
+import { getRecipeSubcategories } from '../../types/recipe';
+import { categoryLabel } from '../../data/categories';
 import { addDaysISO, dayNameForDate, formatDayMonth, todayISO } from '../../utils/mealPlanDates';
 
 /** "I dag", "I morgon" or "Lördag 7 nov" */
@@ -678,6 +680,13 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
             {/* Cover image: in the left column on a wide screen */}
             {renderCover('hidden lg:block aspect-[4/3] rounded-2xl')}
 
+            <div className="space-y-2 lg:mb-4">
+            {/* What kind of dish: the category and its subcategories, as plain text */}
+            {(() => {
+              const kinds = [categoryLabel(recipe.category), ...getRecipeSubcategories(recipe)].filter(Boolean);
+              return kinds.length > 0 ? <p className="text-sm text-stone-500 leading-snug">{kinds.join(' · ')}</p> : null;
+            })()}
+
             {/* Cooking time */}
             <div className="flex items-center gap-2 text-sm text-stone-600">
               <Clock className="w-4 h-4 text-stone-500" />
@@ -688,6 +697,7 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
                   {DIFFICULTY_LABELS[recipe.difficulty]}
                 </span>
               )}
+            </div>
             </div>
 
             {/* Ingredients Section */}
