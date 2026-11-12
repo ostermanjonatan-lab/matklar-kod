@@ -18,7 +18,6 @@ import type { RecipeContextType } from './recipeContextType';
 import { useHouseholdSync } from './useHouseholdSync';
 import { useShoppingLists } from './useShoppingLists';
 import { withStoredSwaps } from '../utils/ingredientSwaps';
-import { recordRemoved } from '../utils/removedItems';
 import {
   RECIPES_STORAGE_KEY,
   STARTER_SEEDED_KEY,
@@ -557,39 +556,6 @@ export const RecipeProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     [shoppingList, activeShoppingListId, mainShoppingList]
   );
 
-  // Nothing should leave the list unnoticed. Every change of the list is compared with the one
-  // before: an item that is gone, was not bought (ticked) and was not merged into another row is
-  // noted (see removedItems), as removed here or on another phone. Removals made here are marked
-  // before they happen; a whole list that is deleted is not noted.
-  const localRemovalRef = useRef(new Map<string, 'here' | 'skip'>());
-  const prevShoppingRef = useRef<ShoppingItem[] | null>(null);
-  const prevHouseholdIdRef = useRef(household?.id);
-  useEffect(() => {
-    const prev = prevShoppingRef.current;
-    prevShoppingRef.current = shoppingList;
-    // Another household: a different list, not removals
-    if (prevHouseholdIdRef.current !== household?.id) {
-      prevHouseholdIdRef.current = household?.id;
-      localRemovalRef.current.clear();
-      return;
-    }
-    if (!prev) return;
-    const ids = new Set(shoppingList.map((i) => i.id));
-    const keyOf = (i: ShoppingItem) => `${i.listId || ''}|${normalizeIngredientKey(i.name, i.unit)}`;
-    const keys = new Set(shoppingList.map(keyOf));
-    const removed: { item: ShoppingItem; byOther: boolean }[] = [];
-    for (const item of prev) {
-      if (ids.has(item.id)) continue;
-      const mark = localRemovalRef.current.get(item.id);
-      localRemovalRef.current.delete(item.id);
-      if (mark === 'skip' || item.checked || keys.has(keyOf(item))) continue;
-      removed.push({ item, byOther: mark !== 'here' });
-    }
-    if (removed.length > 0) recordRemoved(removed);
-  }, [shoppingList, household?.id]);
-  const markRemovedHere = (ids: string[], mark: 'here' | 'skip' = 'here') =>
-    ids.forEach((id) => localRemovalRef.current.set(id, mark));
-
   // Realtime sync, join requests and shared aisle choices: see useHouseholdSync
   useHouseholdSync({
     households,
@@ -1066,7 +1032,6 @@ export const RecipeProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   }, [isLiveSupabase, household?.id]);
 
   const deleteShoppingItem = useCallback((id: string) => {
-    markRemovedHere([id]);
     setShoppingList((prev) => {
       const updated = prev.filter((item) => item.id !== id);
       broadcastLocalChange({ type: 'SHOPPING_UPDATE', payload: updated });
@@ -1130,7 +1095,6 @@ export const RecipeProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       if (isLiveSupabase && household?.id) {
         const nextIds = new Set(restored.map((i) => i.id));
         const removedIds = prev.filter((i) => inList(i) && !nextIds.has(i.id)).map((i) => i.id);
-        markRemovedHere(removedIds);
         if (removedIds.length > 0) {
           deleteShoppingItemsFromSupabase(removedIds);
         }
@@ -1261,7 +1225,6 @@ export const RecipeProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   /** Removes a saved list and everything in it */
   const deleteShoppingList = useCallback((listId: string) => {
     const itemIds = shoppingListRef.current.filter((item) => item.listId === listId).map((item) => item.id);
-    markRemovedHere(itemIds, 'skip');
     const updated = shoppingListRef.current.filter((item) => item.listId !== listId);
     shoppingListRef.current = updated;
     setShoppingList(updated);
@@ -1270,22 +1233,6 @@ export const RecipeProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     removeList(listId);
     if (activeShoppingListIdRef.current === listId) setActiveShoppingListId(null);
   }, [isLiveSupabase, removeList, setActiveShoppingListId]);
-
-  /** Puts a removed item back in its list (the main list if its list is gone), not ticked */
-  const restoreRemovedShoppingItem = useCallback((item: ShoppingItem) => {
-    const listExists = !item.listId || shoppingLists.some((l) => l.id === item.listId);
-    const back: ShoppingItem = { ...item, checked: false, listId: listExists ? item.listId : undefined };
-    recentLocalShoppingUpdatesRef.current.set(item.id, Date.now());
-    setShoppingList((prev) => {
-      const { mergedList } = mergeIngredientsIntoShoppingList(prev, [back]);
-      broadcastLocalChange({ type: 'SHOPPING_UPDATE', payload: mergedList });
-      if (isLiveSupabase && household?.id) {
-        const pushed = mergedList.find((i) => i.id === item.id) || mergedList.find((i) => i.name === item.name);
-        if (pushed) pushShoppingItemsToSupabase([pushed], household.id);
-      }
-      return mergedList;
-    });
-  }, [shoppingLists, isLiveSupabase, household?.id]);
 
   const setHouseholdName = useCallback((name: string) => {
     const trimmed = name.trim();
@@ -2187,7 +2134,6 @@ export const RecipeProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         createShoppingList,
         renameShoppingList,
         deleteShoppingList,
-        restoreRemovedShoppingItem,
         household,
         households,
         currentUser,
