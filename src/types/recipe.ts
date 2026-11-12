@@ -1,5 +1,6 @@
 import type { PageNutrition, ProductLink } from '../utils/nutrition';
 import { detectMeatKinds, OLD_MEAT_SUBCATEGORY } from '../utils/meatKinds';
+import { RENAMED_SUBCATEGORIES } from '../data/categories';
 export type RecipeSourceType = 'manual' | 'url' | 'pdf' | 'recipe_image';
 
 export type RecipeCategory = 'Middag' | 'Förrätt' | 'Efterrätt' | 'Såser' | 'Dryck' | 'Frukost' | 'Mellanmål' | string;
@@ -126,7 +127,8 @@ export function getRecipeSubcategories(recipe?: Partial<Recipe> | null): string[
       .map((s) => s.trim())
       .filter(Boolean);
   }
-  const clean = subcats.filter((s) => !NON_FOOD_SUBCATEGORIES.has(s));
+  // Old names are shown as their new ones: Kladdkaka as Bakverk & Kakor, Sallad as Sallader
+  const clean = subcats.filter((s) => !NON_FOOD_SUBCATEGORIES.has(s)).map((s) => RENAMED_SUBCATEGORIES[s] || s);
   const result: string[] = [];
   const text = `${recipe.title || ''} ${recipe.description || ''} ${recipe.notes || ''} ${(recipe.ingredients || []).map((i) => i.name || '').join(' ')}`.toLowerCase();
   clean.forEach((s) => {

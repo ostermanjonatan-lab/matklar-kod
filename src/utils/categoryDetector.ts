@@ -1,6 +1,14 @@
 import type { RecipeCategory, Ingredient } from '../types/recipe';
 import { detectMeatKinds } from './meatKinds';
 
+/** Bread you bake: not "pitabröd" or "naanbröd", which go with a dish */
+const BREAD =
+  /(^|[^a-zåäö])bröd([^a-zåäö]|$)|limpa|fralla|frallor|focaccia|surdeg|baguette|ciabatta|tunnbröd|knäckebröd|formbröd|grovbröd|rågbröd|lantbröd|levain|brioche|kavring/;
+
+/** Words that make a name a sauce, dressing or dip */
+const SAUCE_WORDS =
+  /sås|sauce|dressing|vinaigrette|vinägrett|majonnäs|mayo|pesto|tzatziki|aioli|guacamole|hummus|bearnaise|béarnaise|hollandaise|remoulad|dipp|chutney|marinad/;
+
 /**
  * Automatically maps a raw category string or recipe title to one of the 5 main Matklar categories.
  */
@@ -73,6 +81,12 @@ export function detectCategory(rawText?: string): RecipeCategory {
     return 'Efterrätt';
   }
 
+  // Bread is filed under breakfast: "Lantbröd", "Focaccia", "Frallor med frön". Only when the
+  // dish itself is bread, not "Soppa med bröd"
+  if (BREAD.test(c.split(/\s(?:med|och|i|till)\s/)[0])) {
+    return 'Frukost';
+  }
+
   if (
     c.includes('dryck') ||
     c.includes('drink') ||
@@ -102,9 +116,14 @@ export function detectCategory(rawText?: string): RecipeCategory {
   // Check for sauces/dressings/dips:
   // Avoid matching meals like "lax med dillsås", "fiskbullar i hummersås", "köttbullar med gräddsås", "köttfärssås"
   const isMealWithSauce = /med.*sås|\si\s.*sås|köttfärssås|bolognese|lasagne|stek.*sås/i.test(c);
+  // "Falafel med tzatziki" is a dish with a sauce on the side: the name before "med" decides
+  const lead = c.split(/\s(?:med|och)\s/)[0];
+  const isDishWithSide = lead !== c && !SAUCE_WORDS.test(lead);
   if (
     !isMealWithSauce &&
+    !isDishWithSide &&
     (c.includes('sås') ||
+      c.includes('marinad') ||
       c.includes('sauce') ||
       c.includes('dressing') ||
       c.includes('vinaigrette') ||
@@ -158,13 +177,12 @@ export function detectSubcategories(
 
   // 1. Efterrätt
   if (category === 'Efterrätt') {
-    if (titleLower.includes('kladdkaka')) matches.push('Kladdkaka');
     if (/pannkak|våffl|crepe/i.test(titleLower)) matches.push('Pannkakor & Våfflor');
     if (/paj|tårta|cheesecake|rulltårta/i.test(titleLower)) matches.push('Pajer & Tårtor');
     if (/glass|sorbet|parfait|semifreddo/i.test(titleLower)) matches.push('Glass & Sorbet');
     if (/choklad|kola|tryffel|pralin|knäck|fudge|chokladboll|godis/i.test(titleLower)) matches.push('Choklad & Godis');
     if (/mousse|pannacotta|tiramisu|kräm|kompott|dessert i glas/i.test(titleLower)) matches.push('Dessert i glas');
-    if (/kaka|kakor|bulle|bullar|muffins|cupcakes|sockerkaka|semla|bakat|bakverk/i.test(titleLower)) matches.push('Bakverk & Kakor');
+    if (/kaka|kakor|bulle|bullar|muffins|cupcakes|sockerkaka|semla|bakat|bakverk|kladdkaka/i.test(titleLower)) matches.push('Bakverk & Kakor');
     if (matches.length === 0) matches.push('Bakverk & Kakor');
   }
 
@@ -173,8 +191,10 @@ export function detectSubcategories(
     if (/gröt|oats|müsli|granola/i.test(titleLower)) matches.push('Gröt & Müsli');
     if (/ägg|omelett|scrambled|äggröra|frittata/i.test(titleLower)) matches.push('Ägg & Omelett');
     if (/pannkak|våffl/i.test(titleLower)) matches.push('Pannkakor & Våfflor');
-    if (/macka|smörgås|toast|bagel|fralla|scones/i.test(titleLower)) matches.push('Smörgåsar & Mackor');
-    if (/smoothie|juice/i.test(titleLower)) matches.push('Smoothies');
+    if (/macka|smörgås|toast|bagel/i.test(titleLower)) matches.push('Smörgåsar & Mackor');
+    if (BREAD.test(titleLower) || /scones/i.test(titleLower)) matches.push('Bröd');
+    if (/yoghurt|fil([^a-zåäö]|$)|kvarg|skyr/i.test(titleLower)) matches.push('Yoghurt & Fil');
+    if (/smoothie|juice|bowl/i.test(titleLower)) matches.push('Smoothies & Bowls');
     if (matches.length === 0) matches.push('Gröt & Müsli');
   }
 
@@ -182,7 +202,8 @@ export function detectSubcategories(
   else if (category === 'Dryck') {
     if (/smoothie|juice|shake|bowl/i.test(titleLower)) matches.push('Smoothies & Bowls');
     if (/kaffe|cappuccino|espresso|(^|[^a-zåäöé])(te|latte|chai)([^a-zåäöé]|$)/i.test(titleLower)) matches.push('Kaffe & Te');
-    if (/mocktail|alkoholfritt|lemonad|saft/i.test(titleLower)) matches.push('Mocktails (Alkoholfritt)');
+    if (/saft|lemonad/i.test(titleLower)) matches.push('Saft & Lemonad');
+    if (/mocktail|alkoholfri/i.test(titleLower)) matches.push('Alkoholfritt');
     if (/drink|cocktail|spritz|mojito|gin|vodka|rom/i.test(titleLower)) matches.push('Drinkar & Cocktails');
     if (matches.length === 0) matches.push('Måltidsdryck');
   }
@@ -200,10 +221,10 @@ export function detectSubcategories(
 
   // 5. Mellanmål
   else if (category === 'Mellanmål') {
-    if (/smoothie|shake|bowl/i.test(titleLower)) matches.push('Smoothies');
+    if (/smoothie|shake|bowl/i.test(titleLower)) matches.push('Smoothies & Bowls');
     if (/bar|boll|chokladboll|energiboll/i.test(titleLower)) matches.push('Bars & Bollar');
     if (/bär|frukt|äpple|banan/i.test(titleLower)) matches.push('Bär & Frukt');
-    if (matches.length === 0) matches.push('Mellanmål & Snacks');
+    if (matches.length === 0) matches.push('Snacks');
   }
 
   // 6. Såser
@@ -212,6 +233,7 @@ export function detectSubcategories(
     if (/pesto|chimichurri|örtsås|gremolata/i.test(combined)) matches.push('Pesto & Örtsås');
     if (/dressing|vinägrett|vinaigrette|senap/i.test(combined)) matches.push('Dressing & Vinägrett');
     if (/dipp|dip|hummus|röra|guacamole|salsa|chutney/i.test(combined)) matches.push('Dipp & Röror');
+    if (/marinad|(^|[^a-zåäö])rub([^a-zåäö]|$)|kryddmix|glaze|glasyr till/i.test(combined)) matches.push('Marinader & Rubs');
     if (/vanilj|choklad|kola|karamell|bärsås/i.test(combined)) matches.push('Söta såser');
     if (/brunsås|gräddsås|pepparsås|rödvin|svampsås|béchamel|bechamel|ostsås|varm/i.test(combined)) matches.push('Varma såser');
     if (/tzatziki|aioli|remoulad|romsås|dillsås|majonnäs|kall/i.test(combined)) matches.push('Kalla såser');
@@ -251,20 +273,38 @@ export function detectSubcategories(
       if (/taco|fajita|enchilada|quesadilla|burrito|nacho|texmex/i.test(mText)) {
         matches.push('Tacos & Texmex');
       }
+      if (/shakshuka|falafel|moussaka|souvlaki|gyros|shawarma|kebab|halloumi|hummus|couscous|bulgur|tabbouleh|za.?atar|grekisk sallad|libanesisk|marockansk|persisk|tagine|dolmar|spanakopita|börek/i.test(mText)) {
+        matches.push('Medelhav & Mellanöstern');
+      }
+      if (/pizza|calzone/i.test(mText)) {
+        matches.push('Pizza');
+      }
+      if (/(^|[^a-zåäö])pajer?([^a-zåäö]|$)|[a-zåäö]paj([^a-zåäö]|$)|quiche|pirog/i.test(mText)) {
+        matches.push('Paj');
+      }
+      if (/wrap|pitabröd|(^|[^a-zåäö])pita([^a-zåäö]|$)|tortilla|panini|smörgås|toast|piadina|flatbröd|tunnbrödsrulle/i.test(mText)) {
+        matches.push('Wraps & Bröd');
+      }
+      if (/(^|[^a-zåäö])bowls?([^a-zåäö]|$)|poke/i.test(mText)) {
+        matches.push('Bowls');
+      }
+      if (/grill|bbq|barbecue|spett/i.test(mText)) {
+        matches.push('Grill');
+      }
       if (/soppa|gazpacho|buljong|minestrone|ramen|nudelsoppa/i.test(mText)) {
         matches.push('Soppor');
       }
       if (/gryta|chili con carne|gulasch|kalops|stroganoff|boeuf|currygryta|daal|tagine|dillkött/i.test(mText)) {
         matches.push('Grytor');
       }
-      if (/gratäng|i ugn|ugnsbakad|ugnsstekt|ugnsrost|paj|låda|ugnsform/i.test(mText)) {
+      if (/gratäng|i ugn|ugnsbakad|ugnsstekt|ugnsrost|låda|ugnsform/i.test(mText)) {
         matches.push('Ugn & Gratäng');
       }
       if (/kåldolmar|raggmunk|stekt fläsk|pyttipanna|ärtsoppa|kroppkakor|rotmos|blodpudding|pannbiff|janssons|husman/i.test(mText)) {
         matches.push('Husmanskost');
       }
-      if (/sallad|caesar|poke bowl/i.test(mText)) {
-        matches.push('Sallad');
+      if (/sallad|caesar/i.test(mText)) {
+        matches.push('Sallader');
       }
       if (matches.length > 0) break;
     }
@@ -300,6 +340,12 @@ export function detectSubcategories(
   }
   if (/nötfri|nötfritt|utan nötter/i.test(combined)) {
     if (!matches.includes('Nötfri')) matches.push('Nötfri');
+  }
+  if (/proteinrik|proteinbomb|high protein|extra protein|mycket protein/i.test(combined)) {
+    if (!matches.includes('Proteinrikt')) matches.push('Proteinrikt');
+  }
+  if (/barnvänlig|barnfavorit|för barn|barnens|kids/i.test(combined)) {
+    if (!matches.includes('Barnvänligt')) matches.push('Barnvänligt');
   }
 
   return matches;

@@ -25,11 +25,17 @@ export const DEFAULT_SUBCATEGORIES: Record<string, string[]> = {
     'Skaldjur',
     'Asiatiskt',
     'Tacos & Texmex',
+    'Medelhav & Mellanöstern',
+    'Pizza',
+    'Paj',
+    'Wraps & Bröd',
+    'Bowls',
+    'Grill',
     'Grytor',
     'Soppor',
     'Ugn & Gratäng',
     'Husmanskost',
-    'Sallad',
+    'Sallader',
     'Burgare',
   ],
   Förrätt: [
@@ -43,7 +49,6 @@ export const DEFAULT_SUBCATEGORIES: Record<string, string[]> = {
   ],
   Efterrätt: [
     'Bakverk & Kakor',
-    'Kladdkaka',
     'Pajer & Tårtor',
     'Glass & Sorbet',
     'Pannkakor & Våfflor',
@@ -58,12 +63,13 @@ export const DEFAULT_SUBCATEGORIES: Record<string, string[]> = {
     'Dressing & Vinägrett',
     'Pesto & Örtsås',
     'Salsa & Chutney',
+    'Marinader & Rubs',
     'Söta såser',
   ],
   Dryck: [
     'Smoothies & Bowls',
     'Drinkar & Cocktails',
-    'Mocktails (Alkoholfritt)',
+    'Alkoholfritt',
     'Kaffe & Te',
     'Saft & Lemonad',
     'Måltidsdryck',
@@ -72,15 +78,29 @@ export const DEFAULT_SUBCATEGORIES: Record<string, string[]> = {
     'Gröt & Müsli',
     'Ägg & Omelett',
     'Smörgåsar & Mackor',
+    'Bröd',
+    'Yoghurt & Fil',
     'Pannkakor & Våfflor',
-    'Smoothies',
+    'Smoothies & Bowls',
   ],
   Mellanmål: [
-    'Mellanmål & Snacks',
+    'Snacks',
     'Bars & Bollar',
-    'Smoothies',
+    'Smoothies & Bowls',
     'Bär & Frukt',
   ],
+};
+
+/**
+ * Subcategories that have been renamed or merged, by their old name. Recipes saved with the old
+ * name are shown with the new one.
+ */
+export const RENAMED_SUBCATEGORIES: Record<string, string> = {
+  Kladdkaka: 'Bakverk & Kakor',
+  Sallad: 'Sallader',
+  Smoothies: 'Smoothies & Bowls',
+  'Mellanmål & Snacks': 'Snacks',
+  'Mocktails (Alkoholfritt)': 'Alkoholfritt',
 };
 
 /**
@@ -94,6 +114,8 @@ export const DIETARY_SUBCATEGORIES: string[] = [
   'Veganskt',
   'Sockerfri',
   'Nötfri',
+  'Proteinrikt',
+  'Barnvänligt',
 ];
 
 /**
