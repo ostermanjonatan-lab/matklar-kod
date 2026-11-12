@@ -14,6 +14,8 @@ import { takeOpenStoreOrderFlag } from './storeOrderLink';
 import { FrequentItems } from './FrequentItems';
 import { StoreOrderSheet } from './StoreOrderSheet';
 import { ShoppingListsSheet, MAIN_LIST_NAME } from './ShoppingListsSheet';
+import { ShareShoppingListSheet } from './ShareShoppingListSheet';
+import type { ShoppingImageGroup } from '../../utils/shoppingListImage';
 import {
   Plus,
   Trash2,
@@ -196,6 +198,10 @@ export const ShoppingListView: React.FC = () => {
 
   // Copy toast
   const [copyToast, setCopyToast] = useState<boolean>(false);
+  // Dela: as a picture or as text
+  const [showShareSheet, setShowShareSheet] = useState(false);
+  useModalBackHandler(showShareSheet, () => setShowShareSheet(false), 'share-shopping-list');
+  const [shareMessage, setShareMessage] = useState<string | null>(null);
 
   const renderAisleIcon = (aisle: string, className: string = 'w-4 h-4 text-stone-500') => (
     <AisleIcon aisle={aisle} className={className} />
@@ -352,6 +358,34 @@ export const ShoppingListView: React.FC = () => {
   }, [shoppingList]);
   const remainingCount = totalCount - checkedCount;
 
+  // The list as a picture: what is left to buy, by aisle or as one list as on screen. When
+  // everything is ticked off, all of it.
+  const imageGroups = useMemo((): ShoppingImageGroup[] => {
+    const anyLeft = shoppingList.some((i) => !i.checked);
+    const groups = flatList ? [{ aisleName: '', items: groupedByAisle.flatMap((g) => g.items) }] : groupedByAisle;
+    return groups
+      .map((group) => ({
+        heading: group.aisleName,
+        items: group.items
+          .filter((item) => !anyLeft || !item.checked)
+          .map((item) => {
+            const amtStr = formatShoppingAmount(item.amount);
+            const unit = formatUnit(item.unit || '', item.amount).trim();
+            return {
+              amount: amtStr ? (unit ? `${amtStr} ${unit}` : amtStr) : unit,
+              name: capitalizeFirst(formatIngredientName((item.name || '').trim(), item.amount, item.unit)).trim(),
+              comment: item.comment || undefined,
+            };
+          }),
+      }))
+      .filter((group) => group.items.length > 0);
+  }, [shoppingList, groupedByAisle, flatList]);
+  const imageSubtitle = useMemo(() => {
+    const day = new Date().toLocaleDateString('sv-SE', { weekday: 'long', day: 'numeric', month: 'long' });
+    const count = imageGroups.reduce((n, g) => n + g.items.length, 0);
+    return `${capitalizeFirst(day)}  ·  ${count} ${count === 1 ? 'vara' : 'varor'}`;
+  }, [imageGroups]);
+
   const handleCopyShoppingListText = async () => {
     if (shoppingList.length === 0) return;
 
@@ -397,6 +431,20 @@ export const ShoppingListView: React.FC = () => {
     <div className="min-h-screen bg-[#FCFAF5] pb-32 md:pb-16 w-full max-w-full overflow-x-clip font-sans">
       {/* Toast Notification */}
       {copyToast && <Toast message="Inköpslistan är kopierad" />}
+      {shareMessage && <Toast message={shareMessage} onDismiss={() => setShareMessage(null)} />}
+      {showShareSheet && (
+        <ShareShoppingListSheet
+          title={activeListName}
+          subtitle={imageSubtitle}
+          groups={imageGroups}
+          onCopyText={handleCopyShoppingListText}
+          onClose={() => setShowShareSheet(false)}
+          onDone={(message) => {
+            setShareMessage(message);
+            setTimeout(() => setShareMessage(null), 2500);
+          }}
+        />
+      )}
       {removedItem && (
         <Toast
           message={`${capitalizeFirst(stripPreparation(removedItem.item.name))} är borttagen`}
@@ -562,11 +610,11 @@ export const ShoppingListView: React.FC = () => {
                   {/* Share / Copy button */}
                   <button
                     type="button"
-                    onClick={handleCopyShoppingListText}
+                    onClick={() => setShowShareSheet(true)}
                     disabled={totalCount === 0}
                     className="w-9 h-9 rounded-xl bg-white border border-[#EBE7DF] text-stone-700 flex items-center justify-center hover:bg-stone-50 active:scale-95 disabled:opacity-40 transition-all cursor-pointer shadow-2xs"
-                    title="Kopiera lista som text"
-                    aria-label="Kopiera eller dela lista"
+                    title="Dela listan som bild eller text"
+                    aria-label="Dela listan"
                   >
                     <Share2 className="w-4 h-4" />
                   </button>
@@ -660,11 +708,11 @@ export const ShoppingListView: React.FC = () => {
                   <div className="flex items-center gap-1.5 shrink-0">
                     <button
                       type="button"
-                      onClick={handleCopyShoppingListText}
+                      onClick={() => setShowShareSheet(true)}
                       disabled={totalCount === 0}
                       className="w-10 h-10 rounded-full bg-white border border-[#EBE7DF] text-stone-700 flex items-center justify-center hover:bg-stone-50 active:scale-95 disabled:opacity-40 transition-all touch-manipulation shrink-0 shadow-xs"
-                      title="Kopiera lista som text"
-                      aria-label="Kopiera eller dela lista"
+                      title="Dela listan som bild eller text"
+                      aria-label="Dela listan"
                     >
                       <Share2 className="w-4 h-4" />
                     </button>

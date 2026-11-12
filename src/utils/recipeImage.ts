@@ -1,4 +1,5 @@
 import { hasCoverImage } from './coverImage';
+import { imageFileName } from './shareImage';
 import type { Recipe } from '../types/recipe';
 import { DIFFICULTY_LABELS } from './recipeDifficulty';
 import {
@@ -20,14 +21,14 @@ import {
 
 // Laid out on 1080 × 1527 (A4 is 210 × 297 mm), drawn at twice that: 2160 × 3054 px, about
 // 260 dots per inch on paper
-const WIDTH = 1080;
-const HEIGHT = Math.round((WIDTH * 297) / 210);
-const RESOLUTION = 2;
-const PAD = 64;
+export const WIDTH = 1080;
+export const HEIGHT = Math.round((WIDTH * 297) / 210);
+export const RESOLUTION = 2;
+export const PAD = 64;
 // The left margin is wider, 25 mm on paper, so holes from a hole punch (about 12 mm in from
 // the edge) never go through the text
-const LEFT = Math.round((WIDTH * 25) / 210);
-const COLORS = {
+export const LEFT = Math.round((WIDTH * 25) / 210);
+export const COLORS = {
   background: '#FCFAF5',
   text: '#1C1917',
   muted: '#78716C',
@@ -35,11 +36,11 @@ const COLORS = {
   line: '#E7E2D9',
   green: '#284235',
 };
-const SERIF = '"Fraunces Variable", Georgia, serif';
-const SANS = '"Plus Jakarta Sans Variable", system-ui, -apple-system, sans-serif';
+export const SERIF = '"Fraunces Variable", Georgia, serif';
+export const SANS = '"Plus Jakarta Sans Variable", system-ui, -apple-system, sans-serif';
 
 /** Splits text into lines that fit the width. Very long words are cut. */
-function wrap(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
+export function wrap(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
   const lines: string[] = [];
   let line = '';
   for (const word of text.split(/\s+/).filter(Boolean)) {
@@ -264,9 +265,8 @@ function fitLayout(ctx: CanvasRenderingContext2D, recipe: Recipe, servings: numb
   return last!;
 }
 
-/** Makes the picture of the recipe, with the amounts for the given number of portions. */
-export async function createRecipeImage(recipe: Recipe, servings: number): Promise<Blob> {
-  // The fonts must be loaded before anything is measured
+/** The fonts must be loaded before anything is measured */
+export async function loadImageFonts() {
   try {
     await Promise.all([
       document.fonts.load(`700 68px "Fraunces Variable"`),
@@ -277,6 +277,11 @@ export async function createRecipeImage(recipe: Recipe, servings: number): Promi
   } catch {
     // Fall back to the system fonts
   }
+}
+
+/** Makes the picture of the recipe, with the amounts for the given number of portions. */
+export async function createRecipeImage(recipe: Recipe, servings: number): Promise<Blob> {
+  await loadImageFonts();
   const photo = hasCoverImage(recipe.coverImageUrl) ? await loadPhoto(recipe.coverImageUrl) : null;
 
   const canvas = document.createElement('canvas');
@@ -304,12 +309,5 @@ export async function createRecipeImage(recipe: Recipe, servings: number): Promi
 
 /** A file name like "klassisk-kramig-pasta-carbonara.png". */
 export function recipeImageFileName(recipe: Recipe): string {
-  const slug = recipe.title
-    .toLowerCase()
-    .replace(/[åä]/g, 'a')
-    .replace(/ö/g, 'o')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 60);
-  return `${slug || 'recept'}.png`;
+  return imageFileName(recipe.title, 'recept');
 }

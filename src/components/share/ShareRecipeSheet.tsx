@@ -3,6 +3,7 @@ import type { Recipe } from '../../types/recipe';
 import { createRecipeLink } from '../../utils/recipeLink';
 import { copyTextToClipboard, shareRecipeAsText } from '../../utils/recipeShare';
 import { createRecipeImage, recipeImageFileName } from '../../utils/recipeImage';
+import { shareImageFile, saveImageFile } from '../../utils/shareImage';
 
 interface ShareRecipeSheetProps {
   recipe: Recipe;
@@ -39,42 +40,18 @@ export const ShareRecipeSheet: React.FC<ShareRecipeSheetProps> = ({ recipe, serv
 
   const shareImage = async () => {
     if (!image) return;
-    if (navigator.canShare?.({ files: [image] })) {
-      try {
-        await navigator.share({ files: [image], title: recipe.title });
-        onClose();
-        return;
-      } catch (err) {
-        if (err instanceof DOMException && err.name === 'AbortError') return;
-      }
-    }
-    // No share menu with files (a computer): save the picture instead
-    saveImage();
+    const result = await shareImageFile(image, recipe.title);
+    if (result === 'cancelled') return;
+    onClose();
+    if (result === 'saved') onDone('Bilden är sparad');
   };
 
-  // On iPhone the share menu is the way to save to Bilder, so it opens there. Elsewhere the
-  // picture is downloaded and ends up among the phone's downloads and in the photo gallery.
   const saveImage = async () => {
     if (!image) return;
-    if (/iPhone|iPad|iPod/.test(navigator.userAgent) && navigator.canShare?.({ files: [image] })) {
-      try {
-        await navigator.share({ files: [image] });
-        onClose();
-      } catch {
-        // Cancelled
-      }
-      return;
-    }
-    const url = URL.createObjectURL(image);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = image.name;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    const result = await saveImageFile(image);
+    if (result === 'cancelled') return;
     onClose();
-    onDone('Bilden är sparad');
+    if (result === 'saved') onDone('Bilden är sparad');
   };
 
   const sendLink = async () => {
