@@ -1,11 +1,14 @@
-import { WIDTH, HEIGHT, RESOLUTION, PAD, LEFT, COLORS, SERIF, SANS, wrap, loadImageFonts } from './recipeImage';
+import { WIDTH, HEIGHT, RESOLUTION, PAD, COLORS, SERIF, SANS, wrap, loadImageFonts } from './recipeImage';
+
+// The same margin on both sides: a shopping list is not kept in a binder
+const LEFT = PAD;
 import { imageFileName } from './shareImage';
 import { loadAisleIconImages } from './aisleIconImages';
 
 /**
  * Draws a shopping list as one picture the shape of a standing A4 page, like the recipe picture,
  * to save, send or print: the list's name and the date at the top, then the items in two columns,
- * by aisle with the aisle's icon, each with a box to tick on paper. The left margin leaves room for a hole punch.
+ * by aisle with the aisle's icon, each with a box to tick on paper.
  * A long list gets smaller text so everything fits.
  */
 
