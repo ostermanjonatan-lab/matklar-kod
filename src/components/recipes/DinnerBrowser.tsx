@@ -60,7 +60,7 @@ const SlideshowThumb: React.FC<{ images: string[] }> = ({ images }) => {
     next.src = images[(idx + 1) % images.length];
   }, [idx, images]);
 
-  const frame = 'relative w-full aspect-[3/2] rounded-xl overflow-hidden bg-stone-200';
+  const frame = 'absolute inset-0 overflow-hidden bg-stone-200';
   if (images.length === 0) {
     return (
       <span className={`block ${frame}`}>
@@ -224,20 +224,24 @@ export const DinnerBrowser: React.FC<DinnerBrowserProps> = ({ recipes, mealLabel
             ))
           )
         ) : (
-          // The categories as a grid: a picture with the name and the number of recipes below
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-3 gap-y-4 pt-1 pb-3">
+          // The categories as a grid of square pictures side by side, with the name and the number
+          // of recipes on the picture
+          <div className="grid grid-cols-3 pt-1 pb-3">
             {[{ name: allLabel, value: ALL, count: dinners.length, images: allDinnerImages }, ...subcategories.map((sub) => ({ ...sub, value: sub.name }))].map(
               (tile) => (
                 <button
                   key={tile.value}
                   type="button"
                   onClick={() => setSubcategory(tile.value)}
-                  className="text-left touch-manipulation active:opacity-80 min-w-0"
+                  className="relative aspect-square text-left touch-manipulation active:opacity-80 min-w-0 overflow-hidden"
                 >
                   <SlideshowThumb images={tile.images} />
-                  <span className="mt-1.5 flex items-baseline gap-2 min-w-0">
-                    <span className="flex-1 min-w-0 text-sm font-semibold text-stone-900 truncate">{tile.name}</span>
-                    <span className="text-xs text-stone-500 tabular-nums shrink-0">{tile.count}</span>
+                  <span className="absolute inset-x-0 bottom-0 h-3/5 bg-gradient-to-t from-black/70 to-transparent pointer-events-none" />
+                  <span className="absolute inset-x-0 bottom-0 px-2 pb-1.5 flex items-end gap-1.5 min-w-0">
+                    <span className="flex-1 min-w-0 text-[13px] font-semibold text-white leading-tight line-clamp-2 drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]">
+                      {tile.name}
+                    </span>
+                    <span className="text-[11px] text-white/80 tabular-nums shrink-0">{tile.count}</span>
                   </span>
                 </button>
               )
