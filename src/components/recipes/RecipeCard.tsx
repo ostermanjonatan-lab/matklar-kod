@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { FadeImage } from '../layout/FadeImage';
 import { categoryLabel } from '../../data/categories';
 import { DIFFICULTY_LABELS } from '../../utils/recipeDifficulty';
+import { DifficultyDots } from './DifficultyPicker';
 import type { Recipe } from '../../types/recipe';
 import { isRecipeNew } from '../../types/recipe';
 import { useRecipes } from '../../context/RecipeContext';
@@ -88,14 +89,26 @@ export const RecipeCard = React.memo<RecipeCardProps>(
       setTimeout(() => setAddedToCart(false), 2000);
     };
 
-    const meta = [
-      categoryLabel(recipe.category),
-      formatCookingTime(recipe.prepTimeMinutes, recipe.cookTimeMinutes),
-      recipe.difficulty ? DIFFICULTY_LABELS[recipe.difficulty] : '',
-      recipe.sourceType === 'recipe_image' ? 'Foto' : recipe.sourceType === 'pdf' || recipe.recipeDocumentUrl ? 'PDF' : '',
-    ]
-      .filter(Boolean)
-      .join(' · ');
+    // One line: category · time · difficulty (with its bars) · source
+    const renderMeta = (onPhoto: boolean) => {
+      const parts: React.ReactNode[] = [
+        categoryLabel(recipe.category),
+        formatCookingTime(recipe.prepTimeMinutes, recipe.cookTimeMinutes),
+        recipe.difficulty ? (
+          <span className="inline-flex items-baseline gap-1">
+            <DifficultyDots level={recipe.difficulty} light={onPhoto} />
+            {DIFFICULTY_LABELS[recipe.difficulty]}
+          </span>
+        ) : '',
+        recipe.sourceType === 'recipe_image' ? 'Foto' : recipe.sourceType === 'pdf' || recipe.recipeDocumentUrl ? 'PDF' : '',
+      ].filter(Boolean);
+      return parts.map((part, i) => (
+        <React.Fragment key={i}>
+          {i > 0 && ' · '}
+          {part}
+        </React.Fragment>
+      ));
+    };
 
     const cartLabel = addedToCart
       ? 'Receptet tillagt i inköpslistan'
@@ -123,7 +136,7 @@ export const RecipeCard = React.memo<RecipeCardProps>(
               {formatRecipeTitle(recipe.title)}
             </h3>
             <p className="mt-0.5 text-xs text-stone-500 truncate">
-              {meta}
+              {renderMeta(false)}
               {isRecipeNew(recipe) && <span className="text-emerald-700"> · Ny</span>}
             </p>
           </div>
@@ -187,7 +200,7 @@ export const RecipeCard = React.memo<RecipeCardProps>(
             {formatRecipeTitle(recipe.title)}
           </h3>
           <p className="mt-1 text-[13px] text-white/85 drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)] truncate">
-            {meta}
+            {renderMeta(true)}
             {isRecipeNew(recipe) && <span className="text-emerald-200"> · Ny</span>}
           </p>
         </div>
