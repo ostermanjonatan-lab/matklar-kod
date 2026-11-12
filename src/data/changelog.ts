@@ -11,6 +11,13 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.0.187',
+    date: '2026-11-12',
+    items: [
+      'Under Inställningar, Nya underkategorier, finns förslag på de nya underkategorierna för recept som sparades innan de fanns. Du väljer vilka som ska sparas.',
+    ],
+  },
+  {
     version: '1.0.186',
     date: '2026-11-12',
     items: [
