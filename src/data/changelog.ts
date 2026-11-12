@@ -11,6 +11,13 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.0.194',
+    date: '2026-11-12',
+    items: [
+      'En sparad lista som bild eller text har rubriken Inköpslista och listans namn, till exempel Inköpslista - Stugan. Under rubriken står bara datumet.',
+    ],
+  },
+  {
     version: '1.0.193',
     date: '2026-11-12',
     items: [
