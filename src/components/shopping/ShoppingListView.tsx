@@ -15,6 +15,7 @@ import { FrequentItems } from './FrequentItems';
 import { StoreOrderSheet } from './StoreOrderSheet';
 import { ShoppingListsSheet, MAIN_LIST_NAME } from './ShoppingListsSheet';
 import { ShareShoppingListSheet } from './ShareShoppingListSheet';
+import { RemovedNotice, RemovedList } from './RemovedItems';
 import type { ShoppingImageGroup } from '../../utils/shoppingListImage';
 import {
   Plus,
@@ -835,6 +836,9 @@ export const ShoppingListView: React.FC = () => {
           <AlltidHemmaView onNavigateToShoppingList={() => setActiveSubTab('list')} />
         ) : (
           <>
+            {/* Removed on another phone and not seen here yet */}
+            <RemovedNotice listId={activeShoppingListId} />
+
             {/* ADD MANUAL EXTRA ITEM DRAWER / FORM */}
             {showAddForm && (
               <form
@@ -1152,6 +1156,10 @@ export const ShoppingListView: React.FC = () => {
                 <span>Töm hela listan</span>
               </button>
             </div>
+
+            <div className="max-w-md mx-auto w-full">
+              <RemovedList listId={activeShoppingListId} />
+            </div>
           </>
         ) : (
           <div className="py-8 space-y-2">
@@ -1170,6 +1178,7 @@ export const ShoppingListView: React.FC = () => {
                 Lägg till vara
               </button>
             </div>
+            <RemovedList listId={activeShoppingListId} />
           </div>
         )}
           </>

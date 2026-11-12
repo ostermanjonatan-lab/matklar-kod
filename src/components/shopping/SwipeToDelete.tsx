@@ -3,7 +3,7 @@ import { Trash2 } from 'lucide-react';
 
 /**
  * A row that can be swiped to the left to remove it. While swiping, a red area with a bin shows
- * behind the row. Let go past about a third of the width and the row slides out and onRemove is
+ * behind the row. Let go past half the width and the row slides out and onRemove is
  * called; a shorter swipe slides back. Up and down still scrolls the page as usual, and a tap
  * after a swipe does not count as a tap on the row.
  */
@@ -57,7 +57,8 @@ export const SwipeToDelete: React.FC<{
       return;
     }
     const width = rowRef.current?.offsetWidth || 360;
-    if (dx < -width / 3) {
+    // Half the width, so a sideways slip while scrolling does not remove it
+    if (dx < -width / 2) {
       setLeaving(true);
       setDx(-width - 20);
       if (navigator.vibrate) navigator.vibrate(10);

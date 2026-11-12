@@ -31,6 +31,8 @@ export interface RecipeContextType {
   renameShoppingList: (id: string, name: string) => void;
   /** Removes a saved list and everything in it */
   deleteShoppingList: (id: string) => void;
+  /** Puts a removed item back in its list, not ticked */
+  restoreRemovedShoppingItem: (item: ShoppingItem) => void;
   household: Household | null;
   households: Household[];
   currentUser: UserProfile;
