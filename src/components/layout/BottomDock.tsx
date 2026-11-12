@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { hasCoverImage } from '../../utils/coverImage';
 import { NoImage } from './NoImage';
 import { ChevronUp, X } from 'lucide-react';
@@ -24,10 +24,32 @@ export const BottomDock: React.FC<BottomDockProps> = ({ minimized, onCloseMinimi
   const { openRecipeDetail } = useRecipes();
   const visible = Boolean(minimized || timer);
   const shape = useCurvedShape(visible);
+
+  // The box covers the end of the page, so the page gets as much room at the bottom as the box
+  // is high (--dock-space, used by <main>). Otherwise the last buttons, such as Töm hela listan,
+  // can't be scrolled into view.
+  const outerRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const root = document.documentElement;
+    const el = outerRef.current;
+    if (!visible || !el) {
+      root.style.setProperty('--dock-space', '0px');
+      return;
+    }
+    const update = () => root.style.setProperty('--dock-space', `${Math.ceil(el.getBoundingClientRect().height) + 12}px`);
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(el);
+    return () => {
+      observer.disconnect();
+      root.style.setProperty('--dock-space', '0px');
+    };
+  }, [visible]);
+
   if (!visible) return null;
 
   return (
-    <div className="fixed left-4 right-4 max-w-md mx-auto bottom-[calc(95px+env(safe-area-inset-bottom,0px))] md:left-auto md:right-6 md:bottom-6 md:w-96 md:mx-0 z-30">
+    <div ref={outerRef} className="fixed left-4 right-4 max-w-md mx-auto bottom-[calc(95px+env(safe-area-inset-bottom,0px))] md:left-auto md:right-6 md:bottom-6 md:w-96 md:mx-0 z-30">
       {/* The shadow is a blurred copy of the shape behind the box. A shadow filter or an animation
           on a layer around the box would turn off the see-through blur. */}
       {shape.path && (

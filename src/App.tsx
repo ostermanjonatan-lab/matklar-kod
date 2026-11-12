@@ -76,7 +76,10 @@ const AppContent: React.FC = () => {
       />
 
       {/* Adaptive Container: max-w-md on mobile, max-w-5xl on tablet, max-w-7xl on desktop */}
-      <main className="w-full max-w-md md:max-w-5xl lg:max-w-7xl mx-auto min-h-screen bg-[#FCFAF5] shadow-2xl md:shadow-none flex flex-col relative min-w-0 overflow-x-clip flex-1">
+      <main className="w-full max-w-md md:max-w-5xl lg:max-w-7xl mx-auto min-h-screen bg-[#FCFAF5] shadow-2xl md:shadow-none flex flex-col relative min-w-0 overflow-x-clip flex-1"
+        // Room for the minimized recipe and the timer above the menu (see BottomDock)
+        style={{ paddingBottom: 'var(--dock-space, 0px)' }}
+      >
         {/* PWA Install Prompt Banner */}
         <PwaInstallPrompt />
 
