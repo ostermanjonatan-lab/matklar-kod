@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Check, Plus } from 'lucide-react';
+import { Check, Plus, Trash2 } from 'lucide-react';
 import { useRecipes } from '../../context/RecipeContext';
 import { ConfirmSheet } from '../layout/ConfirmSheet';
 
@@ -7,7 +7,8 @@ import { ConfirmSheet } from '../layout/ConfirmSheet';
 export const MAIN_LIST_NAME = 'Inköpslista';
 
 /**
- * Choose which shopping list Inköp shows, make a new one, or rename and remove the open one.
+ * Choose which shopping list Inköp shows, make a new one, rename the open one, or remove one
+ * with the bin on its row.
  * No field is focused when it opens, so the keyboard stays down until a field is tapped.
  */
 export const ShoppingListsSheet: React.FC<{ onClose: () => void }> = ({ onClose }) => {
@@ -24,7 +25,8 @@ export const ShoppingListsSheet: React.FC<{ onClose: () => void }> = ({ onClose 
   const [newName, setNewName] = useState('');
   const activeList = shoppingLists.find((l) => l.id === activeShoppingListId) || null;
   const [renameText, setRenameText] = useState<string | null>(null);
-  const [confirmDelete, setConfirmDelete] = useState(false);
+  // The list about to be removed, asked about first
+  const [listToDelete, setListToDelete] = useState<{ id: string; name: string } | null>(null);
 
   // Items left to buy in each list
   const remaining = useMemo(() => {
@@ -83,22 +85,37 @@ export const ShoppingListsSheet: React.FC<{ onClose: () => void }> = ({ onClose 
             {rows.map((row) => {
               const isActive = (row.id || null) === (activeList?.id || null);
               const count = remaining.get(row.id || '') || 0;
+              const listId = row.id;
               return (
-                <button
-                  key={row.id || 'main'}
-                  type="button"
-                  onClick={() => open(row.id)}
-                  className="w-full min-h-[48px] px-1 flex items-center gap-3 text-left text-sm touch-manipulation active:bg-stone-100"
-                  aria-current={isActive}
-                >
-                  <span className={`flex-1 min-w-0 truncate ${isActive ? 'font-semibold text-stone-900' : 'text-stone-800'}`}>
-                    {row.name}
-                  </span>
-                  <span className="text-xs text-stone-500 tabular-nums shrink-0">
-                    {count === 0 ? 'Tom' : `${count} kvar`}
-                  </span>
-                  <span className="w-4 shrink-0">{isActive && <Check className="w-4 h-4 text-[#284235]" />}</span>
-                </button>
+                <div key={listId || 'main'} className="flex items-center">
+                  <button
+                    type="button"
+                    onClick={() => open(listId)}
+                    className="flex-1 min-w-0 min-h-[48px] px-1 flex items-center gap-3 text-left text-sm touch-manipulation active:bg-stone-100"
+                    aria-current={isActive}
+                  >
+                    <span className={`flex-1 min-w-0 truncate ${isActive ? 'font-semibold text-stone-900' : 'text-stone-800'}`}>
+                      {row.name}
+                    </span>
+                    <span className="text-xs text-stone-500 tabular-nums shrink-0">
+                      {count === 0 ? 'Tom' : `${count} kvar`}
+                    </span>
+                    <span className="w-4 shrink-0">{isActive && <Check className="w-4 h-4 text-[#284235]" />}</span>
+                  </button>
+                  {/* The main list can't be removed, only emptied */}
+                  {listId ? (
+                    <button
+                      type="button"
+                      onClick={() => setListToDelete({ id: listId, name: row.name })}
+                      className="w-11 h-11 -mr-1 flex items-center justify-center text-stone-400 hover:text-rose-700 active:text-rose-700 touch-manipulation shrink-0"
+                      aria-label={`Ta bort ${row.name}`}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  ) : (
+                    <span className="w-11 -mr-1 shrink-0" />
+                  )}
+                </div>
               );
             })}
           </div>
@@ -142,38 +159,28 @@ export const ShoppingListsSheet: React.FC<{ onClose: () => void }> = ({ onClose 
                   </button>
                 </form>
               ) : (
-                <div className="flex items-center gap-5 text-sm">
-                  <button
-                    type="button"
-                    onClick={() => setRenameText(activeList.name)}
-                    className="min-h-[40px] font-semibold text-stone-700 touch-manipulation"
-                  >
-                    Byt namn på {activeList.name}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setConfirmDelete(true)}
-                    className="min-h-[40px] font-semibold text-rose-700 touch-manipulation"
-                  >
-                    Ta bort listan
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => setRenameText(activeList.name)}
+                  className="min-h-[40px] text-sm font-semibold text-stone-700 touch-manipulation"
+                >
+                  Byt namn på {activeList.name}
+                </button>
               )}
             </div>
           )}
         </div>
       </div>
 
-      {confirmDelete && activeList && (
+      {listToDelete && (
         <ConfirmSheet
-          title={`Ta bort ${activeList.name}?`}
+          title={`Ta bort ${listToDelete.name}?`}
           text="Listan och varorna i den tas bort för alla i hushållet."
           confirmLabel="Ta bort listan"
-          onCancel={() => setConfirmDelete(false)}
+          onCancel={() => setListToDelete(null)}
           onConfirm={() => {
-            deleteShoppingList(activeList.id);
-            setConfirmDelete(false);
-            onClose();
+            deleteShoppingList(listToDelete.id);
+            setListToDelete(null);
           }}
         />
       )}

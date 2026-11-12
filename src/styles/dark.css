@@ -16,6 +16,7 @@ html.dark, html.dark body { background-color: #1B1916 !important; color: #DCD4C7
 .dark .active\:bg-stone-200:active { background-color: #3A352F !important; }
 .dark .active\:bg-stone-200\/70:active { background-color: rgba(58,53,47,0.70) !important; }
 .dark .active\:bg-stone-50:active { background-color: #201D1A !important; }
+.dark .active\:text-rose-700:active { color: #F2A0AE !important; }
 .dark .bg-\[\#284235\] { background-color: #3F7458 !important; }
 .dark .bg-\[\#284235\]\/10 { background-color: rgba(63,116,88,0.10) !important; }
 .dark .bg-\[\#284235\]\/75 { background-color: rgba(63,116,88,0.75) !important; }
