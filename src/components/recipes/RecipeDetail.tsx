@@ -556,7 +556,8 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
       aria-label={recipe.title}
     >
       <div
-        className="bg-[#FCFAF5] w-full max-w-md sm:max-w-lg md:max-w-xl lg:max-w-6xl rounded-t-3xl sm:rounded-3xl shadow-2xl border border-[#E8E4DC] overflow-hidden flex flex-col max-h-[94vh] sm:max-h-[90vh] lg:h-[90vh] transition-all relative"
+        // On the phone the recipe fills the whole screen. Wider screens show it as a box.
+        className="bg-[#FCFAF5] w-full max-w-md sm:max-w-lg md:max-w-xl lg:max-w-6xl rounded-none sm:rounded-3xl shadow-2xl sm:border sm:border-[#E8E4DC] overflow-hidden flex flex-col h-[100dvh] sm:h-auto sm:max-h-[90vh] lg:h-[90vh] transition-all relative"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Full Recipe Editing Modal */}
@@ -570,7 +571,7 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
         )}
 
         {/* Modal Sticky Top Header */}
-        <div className="bg-[#FCFAF5]/95 backdrop-blur-md px-4 sm:px-5 py-3 border-b border-[#EBE7DF] flex items-center justify-between shrink-0 z-20">
+        <div className="bg-[#FCFAF5]/95 backdrop-blur-md px-4 sm:px-5 pt-[max(0.75rem,env(safe-area-inset-top,0px))] sm:pt-3 pb-3 border-b border-[#EBE7DF] flex items-center justify-between shrink-0 z-20">
           <button
             type="button"
             onClick={onBack}
