@@ -693,7 +693,7 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
                 </span>
               )}
             </div>
-            {/* What kind of dish: the category (warm, filled) and every subcategory as small outlined
+            {/* What kind of dish: the category (filled green) and every subcategory as small outlined
                 labels. Special diets (Glutenfri) below, in green. */}
             {(() => {
               const subcats = getRecipeSubcategories(recipe);
@@ -711,7 +711,7 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
                           key={label}
                           className={`text-xs rounded-md px-2 py-0.5 whitespace-nowrap border ${
                             i === 0 && category
-                              ? 'font-medium text-amber-900 bg-amber-50 border-amber-200'
+                              ? 'font-medium text-white bg-[#284235] border-[#284235]'
                               : 'text-stone-700 border-stone-300'
                           }`}
                         >
