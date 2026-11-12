@@ -11,6 +11,13 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.0.195',
+    date: '2026-11-12',
+    items: [
+      'Det är svårare att råka svepa bort en vara i inköpslistan. Raden måste dras halvvägs, och ett svep som avbryts tar aldrig bort något.',
+    ],
+  },
+  {
     version: '1.0.194',
     date: '2026-11-12',
     items: [
