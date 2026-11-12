@@ -779,7 +779,7 @@ export const RecipeList: React.FC = () => {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6" aria-label="Hämtar recepten" role="status">
               {[0, 1, 2].map((i) => (
-                <div key={i} className="relative aspect-[16/11] md:aspect-[4/5] w-full rounded-2xl overflow-hidden">
+                <div key={i} className="relative aspect-[16/10] md:aspect-[6/7] w-full rounded-2xl overflow-hidden">
                   <span className="skeleton absolute inset-0 block" />
                 </div>
               ))}
