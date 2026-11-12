@@ -162,7 +162,14 @@ function layout(
     }
   }
 
-  text(`500 24px ${SANS}`, COLORS.faint, 'Från MatKlar', LEFT, HEIGHT - 40);
+  // In the bottom right corner
+  ops.push((c) => {
+    c.font = `500 24px ${SANS}`;
+    c.fillStyle = COLORS.faint;
+    c.textAlign = 'right';
+    c.fillText('Från MatKlar', WIDTH - PAD, HEIGHT - 40);
+    c.textAlign = 'left';
+  });
   return { bottom: lowest, fits, draw: (c) => ops.forEach((op) => op(c)) };
 }
 
