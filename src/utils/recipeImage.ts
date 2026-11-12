@@ -12,14 +12,17 @@ import {
 } from './formatters';
 
 /**
- * Draws a recipe as one picture in 3:4 (1080 × 1440 px, standing) to send in a chat or save on
- * the phone: the photo, the name, time and portions, and below that the ingredients to the left
+ * Draws a recipe as one picture the shape of a standing A4 page, so it prints well, to send in a
+ * chat or save on the phone: the photo, the name, time and portions, and below that the ingredients to the left
  * and the steps to the right. Long recipes get smaller text, then a lower photo, then no photo,
  * so everything fits. Drawn straight on a canvas with the app's own fonts.
  */
 
+// Laid out on 1080 × 1527 (A4 is 210 × 297 mm), drawn at twice that: 2160 × 3054 px, about
+// 260 dots per inch on paper
 const WIDTH = 1080;
-const HEIGHT = 1440;
+const HEIGHT = Math.round((WIDTH * 297) / 210);
+const RESOLUTION = 2;
 const PAD = 64;
 const COLORS = {
   background: '#FCFAF5',
@@ -252,9 +255,11 @@ export async function createRecipeImage(recipe: Recipe, servings: number): Promi
   const photo = hasCoverImage(recipe.coverImageUrl) ? await loadPhoto(recipe.coverImageUrl) : null;
 
   const canvas = document.createElement('canvas');
-  canvas.width = WIDTH;
-  canvas.height = HEIGHT;
+  canvas.width = WIDTH * RESOLUTION;
+  canvas.height = HEIGHT * RESOLUTION;
   const ctx = canvas.getContext('2d')!;
+  ctx.scale(RESOLUTION, RESOLUTION);
+  ctx.imageSmoothingQuality = 'high';
   const { draw } = fitLayout(ctx, recipe, servings, photo);
 
   ctx.fillStyle = COLORS.background;
