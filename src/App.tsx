@@ -4,7 +4,6 @@ import { TimerProvider } from './context/TimerContext';
 import { BottomDock } from './components/layout/BottomDock';
 import { CoverShoppingList, useCoverScreen } from './components/shopping/CoverShoppingList';
 import { UpdateNotice } from './components/layout/UpdateNotice';
-import { WhatsNew } from './components/layout/WhatsNew';
 import { BottomNav } from './components/layout/BottomNav';
 import { DesktopNav } from './components/layout/DesktopNav';
 import { PwaInstallPrompt } from './components/layout/PwaInstallPrompt';
@@ -87,11 +86,8 @@ const AppContent: React.FC = () => {
         {/* A recipe someone sent as a link */}
         <OpenedRecipeSheet />
 
-        {/* Loads a newer version by itself when nothing would be lost, or tells about it */}
+        {/* Loads a newer version by itself when nothing would be lost, without a word */}
         <UpdateNotice busy={Boolean(selectedRecipe || minimized || showAddModal || showAddShoppingModal)} />
-
-        {/* After an update: what is new */}
-        <WhatsNew />
 
         {/* Main Tab Views (Stay mounted underneath when modal opens) */}
         {activeTab === 'recipes' && <RecipeList />}

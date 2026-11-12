@@ -1,5 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { Toast } from './Toast';
+import React, { useEffect, useRef } from 'react';
 
 /** The address of the app's main script in a page, e.g. /assets/index-AbC123.js. */
 function mainScript(html: string): string | null {
@@ -37,10 +36,9 @@ function mayReloadNow(): boolean {
  * this checks whether a newer version has been published and loads it by itself, as long as
  * nothing would be lost: no recipe open or minimized (ticked steps and portions), no dialog
  * and no text being typed. The tab and a running timer are kept over a reload. Otherwise it
- * offers to load it, so nothing is lost while cooking.
+ * waits until the app is opened again. Nothing is shown: the new version is just there.
  */
 export const UpdateNotice: React.FC<{ busy: boolean }> = ({ busy }) => {
-  const [newVersion, setNewVersion] = useState(false);
   const busyRef = useRef(busy);
   busyRef.current = busy;
 
@@ -73,7 +71,7 @@ export const UpdateNotice: React.FC<{ busy: boolean }> = ({ busy }) => {
         const latest = mainScript(await res.text());
         if (!latest || latest === current) return;
         found = true;
-        if (!(returning && reloadIfSafe())) setNewVersion(true);
+        if (returning) reloadIfSafe();
       } catch {
         // Offline: try again next time
       }
@@ -92,15 +90,5 @@ export const UpdateNotice: React.FC<{ busy: boolean }> = ({ busy }) => {
     };
   }, []);
 
-  if (!newVersion) return null;
-  return (
-    <Toast
-      message="Det finns en ny version"
-      onDismiss={() => setNewVersion(false)}
-      actions={[
-        { label: 'Ladda om', onClick: () => window.location.reload() },
-        { label: 'Senare', onClick: () => setNewVersion(false) },
-      ]}
-    />
-  );
+  return null;
 };
