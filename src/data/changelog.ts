@@ -11,6 +11,15 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.0.193',
+    date: '2026-11-12',
+    items: [
+      'Inköpslistan går att dela och spara som bild. Tryck på dela-knappen i Inköp.',
+      'Receptbilden har formen av ett A4-ark, så den blir snygg utskriven, och har plats för hålslag i vänsterkanten.',
+      'Receptbilden visar ikonen för svårighetsgrad.',
+    ],
+  },
+  {
     version: '1.0.192',
     date: '2026-11-12',
     items: [
