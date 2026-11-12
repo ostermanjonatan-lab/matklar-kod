@@ -163,6 +163,26 @@ export const DinnerBrowser: React.FC<DinnerBrowserProps> = ({ recipes, mealLabel
 
   const rowClass = 'w-full py-2.5 flex items-center gap-3 text-left touch-manipulation active:bg-stone-100/70';
 
+  // The grid of categories, three to a row. Only its outer corners are rounded.
+  const tiles = [
+    { name: allLabel, value: ALL, count: dinners.length, images: allDinnerImages },
+    ...subcategories.map((sub) => ({ ...sub, value: sub.name })),
+  ];
+  const COLUMNS = 3;
+  const lastRowStart = Math.floor((tiles.length - 1) / COLUMNS) * COLUMNS;
+  const lastRowFull = tiles.length % COLUMNS === 0;
+  const outerCorners = (i: number) =>
+    [
+      i === 0 && 'rounded-tl-xl',
+      i === Math.min(COLUMNS, tiles.length) - 1 && 'rounded-tr-xl',
+      i === lastRowStart && 'rounded-bl-xl',
+      i === tiles.length - 1 && 'rounded-br-xl',
+      // With a short last row, the end of the row above is a corner too
+      !lastRowFull && i === lastRowStart - 1 && 'rounded-br-xl',
+    ]
+      .filter(Boolean)
+      .join(' ');
+
   return (
     <div className="flex flex-col flex-1 min-h-0">
       <div className="relative shrink-0">
@@ -227,13 +247,12 @@ export const DinnerBrowser: React.FC<DinnerBrowserProps> = ({ recipes, mealLabel
           // The categories as a grid of square pictures side by side, with the name and the number
           // of recipes on the picture
           <div className="grid grid-cols-3 pt-1 pb-3">
-            {[{ name: allLabel, value: ALL, count: dinners.length, images: allDinnerImages }, ...subcategories.map((sub) => ({ ...sub, value: sub.name }))].map(
-              (tile) => (
+            {tiles.map((tile, i) => (
                 <button
                   key={tile.value}
                   type="button"
                   onClick={() => setSubcategory(tile.value)}
-                  className="relative aspect-square text-left touch-manipulation active:opacity-80 min-w-0 overflow-hidden"
+                  className={`relative aspect-square text-left touch-manipulation active:opacity-80 min-w-0 overflow-hidden ${outerCorners(i)}`}
                 >
                   <SlideshowThumb images={tile.images} />
                   <span className="absolute inset-x-0 bottom-0 h-3/5 bg-gradient-to-t from-black/70 to-transparent pointer-events-none" />
@@ -244,8 +263,7 @@ export const DinnerBrowser: React.FC<DinnerBrowserProps> = ({ recipes, mealLabel
                     <span className="text-[11px] text-white/80 tabular-nums shrink-0">{tile.count}</span>
                   </span>
                 </button>
-              )
-            )}
+            ))}
           </div>
         )}
       </div>
