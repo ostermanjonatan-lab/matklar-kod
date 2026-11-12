@@ -50,6 +50,12 @@ export const SwipeToDelete: React.FC<{
     start.current = null;
     setDragging(false);
     if (!s.horizontal) return;
+    // The phone took the touch over (to scroll, or the app went to the background): never a
+    // removal, the row slides back
+    if (e.type === 'pointercancel') {
+      setDx(0);
+      return;
+    }
     const width = rowRef.current?.offsetWidth || 360;
     if (dx < -width / 3) {
       setLeaving(true);
