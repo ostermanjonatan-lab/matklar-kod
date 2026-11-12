@@ -89,6 +89,7 @@ DARK = {
     'border:stone-200': '#433E37',
     'border:stone-300': '#4A443D',
     'border:[#284235]': '#5E9478',
+    'border:[#B9C9BE]': 'rgba(94,148,120,0.55)',
     'border:emerald-300': 'rgba(52,211,153,0.35)',
     'border:amber-200': 'rgba(245,158,11,0.30)',
     'border:amber-300': 'rgba(245,158,11,0.40)',

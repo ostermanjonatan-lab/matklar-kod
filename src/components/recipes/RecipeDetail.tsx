@@ -680,42 +680,7 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
             {/* Cover image: in the left column on a wide screen */}
             {renderCover('hidden lg:block aspect-[4/3] rounded-2xl')}
 
-            <div className="space-y-2 lg:mb-4">
-            {/* What kind of dish: the category, then every subcategory as a plain list with commas.
-                Special diets (Glutenfri) on a line of their own below. */}
-            {(() => {
-              const subcats = getRecipeSubcategories(recipe);
-              const kinds = subcats.filter((sub) => !DIETARY_SUBCATEGORIES.includes(sub));
-              const diets = subcats.filter((sub) => DIETARY_SUBCATEGORIES.includes(sub));
-              const category = categoryLabel(recipe.category);
-              if (!category && subcats.length === 0) return null;
-              return (
-                <div className="text-sm leading-snug space-y-0.5">
-                  {(category || kinds.length > 0) && (
-                    <p className="flex flex-wrap gap-x-1">
-                      {category && <span className="font-medium text-stone-800 mr-1.5">{category}</span>}
-                      {/* Each one kept whole on its line: "Medelhav & Mellanöstern" */}
-                      {kinds.map((sub, i) => (
-                        <span key={sub} className="text-stone-600 whitespace-nowrap">
-                          {sub}
-                          {i < kinds.length - 1 ? ',' : ''}
-                        </span>
-                      ))}
-                    </p>
-                  )}
-                  {diets.length > 0 && (
-                    <p className="flex flex-wrap gap-x-1 text-stone-500">
-                      {diets.map((sub, i) => (
-                        <span key={sub} className="whitespace-nowrap">
-                          {sub}
-                          {i < diets.length - 1 ? ',' : ''}
-                        </span>
-                      ))}
-                    </p>
-                  )}
-                </div>
-              );
-            })()}
+            <div className="space-y-3 lg:mb-4">
 
             {/* Cooking time */}
             <div className="flex items-center gap-2 text-sm text-stone-600">
@@ -728,6 +693,30 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
                 </span>
               )}
             </div>
+            {/* What kind of dish: the category and every subcategory as small outlined labels.
+                Special diets (Glutenfri) last, in green. */}
+            {(() => {
+              const subcats = getRecipeSubcategories(recipe);
+              const kinds = subcats.filter((sub) => !DIETARY_SUBCATEGORIES.includes(sub));
+              const diets = subcats.filter((sub) => DIETARY_SUBCATEGORIES.includes(sub));
+              const category = categoryLabel(recipe.category);
+              const labels = [category, ...kinds].filter(Boolean);
+              if (labels.length === 0 && diets.length === 0) return null;
+              return (
+                <ul className="flex flex-wrap gap-1.5" aria-label="Kategorier">
+                  {labels.map((label) => (
+                    <li key={label} className="text-xs text-stone-700 border border-stone-300 rounded-md px-2 py-0.5 whitespace-nowrap">
+                      {label}
+                    </li>
+                  ))}
+                  {diets.map((diet) => (
+                    <li key={diet} className="text-xs text-[#284235] border border-[#B9C9BE] rounded-md px-2 py-0.5 whitespace-nowrap">
+                      {diet}
+                    </li>
+                  ))}
+                </ul>
+              );
+            })()}
             </div>
 
             {/* Ingredients Section */}
