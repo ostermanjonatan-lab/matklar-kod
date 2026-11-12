@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+﻿import React, { useMemo, useState } from 'react';
 import { Toast } from '../layout/Toast';
 import { useRecipes } from '../../context/RecipeContext';
 import { HouseholdShareModal } from '../auth/HouseholdShareModal';
@@ -9,6 +9,8 @@ import { APP_VERSION } from '../../version';
 import { PrivacySheet } from './PrivacySheet';
 import { TermsSheet } from './TermsSheet';
 import { ChangelogSheet } from './ChangelogSheet';
+import { SubcategoryUpdateSheet } from './SubcategoryUpdateSheet';
+import { findSubcategoryUpdates } from '../../utils/subcategoryUpdates';
 import { eraseThisDevice } from '../../utils/eraseAll';
 import { getThemeChoice, setThemeChoice, type ThemeChoice } from '../../utils/theme';
 import { OPEN_STORE_ORDER_KEY } from '../shopping/storeOrderLink';
@@ -107,6 +109,13 @@ export const SettingsView: React.FC = () => {
   const [confirming, setConfirming] = useState<'newCode' | 'clearRecipes' | 'reset' | 'eraseAll' | null>(null);
   const [copiedCode, setCopiedCode] = useState<boolean>(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Recipes saved before the newer subcategories, with suggestions for them
+  // Counted up after a review, so what was looked at disappears also when nothing was changed
+  const [reviewRound, setReviewRound] = useState(0);
+  const subcategoryUpdates = useMemo(() => findSubcategoryUpdates(recipes), [recipes, reviewRound]);
+  const [showSubcategoryUpdates, setShowSubcategoryUpdates] = useState(false);
+  useModalBackHandler(showSubcategoryUpdates, () => setShowSubcategoryUpdates(false), 'subcategory-updates');
 
   const showToast = (text: string) => {
     setToastMessage(text);
@@ -433,6 +442,31 @@ export const SettingsView: React.FC = () => {
         <div className="divide-y divide-[#EBE7DF] border-y border-[#EBE7DF]">
           <Row label="Butiker och avdelningarnas ordning" onClick={openStoreOrder} />
         </div>
+
+        {/* Newer subcategories for recipes saved before them. Gone once nothing is left to suggest. */}
+        {subcategoryUpdates.length > 0 && (
+          <>
+            <h2 className={sectionHeading}>Recepten</h2>
+            <div className="divide-y divide-[#EBE7DF] border-y border-[#EBE7DF]">
+              <Row
+                label="Nya underkategorier"
+                detail={subcategoryUpdates.length === 1 ? '1 recept' : `${subcategoryUpdates.length} recept`}
+                onClick={() => setShowSubcategoryUpdates(true)}
+              />
+            </div>
+          </>
+        )}
+        {showSubcategoryUpdates && (
+          <SubcategoryUpdateSheet
+            updates={subcategoryUpdates}
+            onClose={() => setShowSubcategoryUpdates(false)}
+            onSaved={(count) => {
+              setShowSubcategoryUpdates(false);
+              setReviewRound((n) => n + 1);
+              if (count > 0) showToast(count === 1 ? '1 recept har nya underkategorier' : `${count} recept har nya underkategorier`);
+            }}
+          />
+        )}
 
         {/* Backup of the recipes */}
         <h2 className={sectionHeading}>Säkerhetskopia</h2>

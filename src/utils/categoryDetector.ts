@@ -273,7 +273,7 @@ export function detectSubcategories(
       if (/taco|fajita|enchilada|quesadilla|burrito|nacho|texmex/i.test(mText)) {
         matches.push('Tacos & Texmex');
       }
-      if (/shakshuka|falafel|moussaka|souvlaki|gyros|shawarma|kebab|halloumi|hummus|couscous|bulgur|tabbouleh|za.?atar|grekisk sallad|libanesisk|marockansk|persisk|tagine|dolmar|spanakopita|börek/i.test(mText)) {
+      if (/shakshuka|falafel|moussaka|souvlaki|gyros|shawarma|kebab|couscous|bulgur|tabbouleh|za.?atar|grekisk sallad|libanesisk|marockansk|persisk|tagine|dolmar|spanakopita|börek/i.test(mText)) {
         matches.push('Medelhav & Mellanöstern');
       }
       if (/pizza|calzone/i.test(mText)) {
@@ -282,7 +282,7 @@ export function detectSubcategories(
       if (/(^|[^a-zåäö])pajer?([^a-zåäö]|$)|[a-zåäö]paj([^a-zåäö]|$)|quiche|pirog/i.test(mText)) {
         matches.push('Paj');
       }
-      if (/wrap|pitabröd|(^|[^a-zåäö])pita([^a-zåäö]|$)|tortilla|panini|smörgås|toast|piadina|flatbröd|tunnbrödsrulle/i.test(mText)) {
+      if (/wrap|pitabröd|(^|[^a-zåäö])pita([^a-zåäö]|$)|panini|smörgås|toast|piadina|flatbröd|tunnbrödsrulle/i.test(mText)) {
         matches.push('Wraps & Bröd');
       }
       if (/(^|[^a-zåäö])bowls?([^a-zåäö]|$)|poke/i.test(mText)) {
