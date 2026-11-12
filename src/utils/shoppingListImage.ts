@@ -1,10 +1,11 @@
 import { WIDTH, HEIGHT, RESOLUTION, PAD, LEFT, COLORS, SERIF, SANS, wrap, loadImageFonts } from './recipeImage';
 import { imageFileName } from './shareImage';
+import { loadAisleIconImages } from './aisleIconImages';
 
 /**
  * Draws a shopping list as one picture the shape of a standing A4 page, like the recipe picture,
  * to save, send or print: the list's name and the date at the top, then the items in two columns,
- * by aisle, each with a box to tick on paper. The left margin leaves room for a hole punch.
+ * by aisle with the aisle's icon, each with a box to tick on paper. The left margin leaves room for a hole punch.
  * A long list gets smaller text so everything fits.
  */
 
@@ -27,7 +28,14 @@ interface Placed {
   draw: (c: CanvasRenderingContext2D) => void;
 }
 
-function layout(ctx: CanvasRenderingContext2D, title: string, subtitle: string, groups: ShoppingImageGroup[], scale: number): Placed {
+function layout(
+  ctx: CanvasRenderingContext2D,
+  title: string,
+  subtitle: string,
+  groups: ShoppingImageGroup[],
+  icons: Map<string, HTMLImageElement>,
+  scale: number
+): Placed {
   const ops: ((c: CanvasRenderingContext2D) => void)[] = [];
   const px = (n: number) => Math.round(n * scale);
   const text = (font: string, color: string, value: string, x: number, y: number) =>
@@ -89,6 +97,15 @@ function layout(ctx: CanvasRenderingContext2D, title: string, subtitle: string, 
     px(14) + bodySize + (m.lines.length - 1) * lineHeight + m.notes.length * px(28) + px(14);
   const headingHeight = groups.some((g) => g.heading) ? px(56) : 0;
 
+  // An aisle's heading: its icon, then the name
+  const iconSize = px(30);
+  const drawHeading = (heading: string, x: number, top: number) => {
+    const icon = icons.get(heading);
+    const baseline = top + px(40);
+    if (icon) ops.push((c) => c.drawImage(icon, x, baseline - iconSize + px(4), iconSize, iconSize));
+    text(headingFont, COLORS.text, heading, x + (icon ? iconSize + px(12) : 0), baseline);
+  };
+
   const nextColumn = () => {
     if (col === 1) {
       fits = false;
@@ -106,7 +123,7 @@ function layout(ctx: CanvasRenderingContext2D, title: string, subtitle: string, 
       const needed = headingHeight + (measured[0] ? itemHeight(measured[0]) : 0);
       if (cy + needed > bottomLimit && !nextColumn()) break;
       const x = columns[col];
-      text(headingFont, COLORS.text, group.heading, x, cy + px(40));
+      drawHeading(group.heading, x, cy);
       cy += headingHeight;
       rule(x, cy - 2, colW);
     }
@@ -116,7 +133,7 @@ function layout(ctx: CanvasRenderingContext2D, title: string, subtitle: string, 
         if (!nextColumn()) break;
         // The aisle goes on in the next column: its heading again
         if (group.heading) {
-          text(headingFont, COLORS.text, group.heading, columns[col], cy + px(40));
+          drawHeading(group.heading, columns[col], cy);
           cy += headingHeight;
           rule(columns[col], cy - 2, colW);
         }
@@ -155,6 +172,7 @@ function layout(ctx: CanvasRenderingContext2D, title: string, subtitle: string, 
 /** Makes the picture of the shopping list */
 export async function createShoppingListImage(title: string, subtitle: string, groups: ShoppingImageGroup[]): Promise<Blob> {
   await loadImageFonts();
+  const icons = await loadAisleIconImages(groups.map((g) => g.heading), COLORS.muted);
   const canvas = document.createElement('canvas');
   canvas.width = WIDTH * RESOLUTION;
   canvas.height = HEIGHT * RESOLUTION;
@@ -164,7 +182,7 @@ export async function createShoppingListImage(title: string, subtitle: string, g
   // The largest text that makes the whole list fit. Last resort: the smallest, cut off.
   let placed: Placed | null = null;
   for (let s = 1; s >= 0.5; s -= 0.05) {
-    placed = layout(ctx, title, subtitle, groups, s);
+    placed = layout(ctx, title, subtitle, groups, icons, s);
     if (placed.fits) break;
   }
 
