@@ -102,7 +102,8 @@ export const BottomNav: React.FC<BottomNavProps> = ({ onAddRecipeClick, onAddSho
               : 'translateY(calc(100% + 5rem))',
           }}
           role="dialog"
-          aria-modal="true"
+          aria-modal={isMenuOpen}
+          aria-hidden={!isMenuOpen}
           aria-label="Lägg till meny"
           onClick={(e) => e.stopPropagation()}
         >

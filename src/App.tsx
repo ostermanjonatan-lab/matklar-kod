@@ -87,8 +87,8 @@ const AppContent: React.FC = () => {
         {/* A recipe someone sent as a link */}
         <OpenedRecipeSheet />
 
-        {/* Tells when a newer version has been published */}
-        <UpdateNotice />
+        {/* Loads a newer version by itself when nothing would be lost, or tells about it */}
+        <UpdateNotice busy={Boolean(selectedRecipe || minimized || showAddModal || showAddShoppingModal)} />
 
         {/* After an update: what is new */}
         <WhatsNew />
