@@ -11,6 +11,13 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.0.191',
+    date: '2026-11-12',
+    items: [
+      'När du väljer middag eller lunch i planeraren visas kategorierna som ett rutnät med bilder.',
+    ],
+  },
+  {
     version: '1.0.190',
     date: '2026-11-12',
     items: [
