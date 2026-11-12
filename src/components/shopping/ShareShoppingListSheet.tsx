@@ -4,25 +4,28 @@ import { shareImageFile, saveImageFile } from '../../utils/shareImage';
 
 /** Share the shopping list: as a picture (A4, for printing too) or as text */
 export const ShareShoppingListSheet: React.FC<{
+  /** The list's name, for the heading of this sheet */
   title: string;
+  /** The heading in the picture: "Inköpslista", or "Inköpslista Stugan" for a saved list */
+  imageTitle: string;
   subtitle: string;
   groups: ShoppingImageGroup[];
   onCopyText: () => void;
   onClose: () => void;
   onDone: (message: string) => void;
-}> = ({ title, subtitle, groups, onCopyText, onClose, onDone }) => {
+}> = ({ title, imageTitle, subtitle, groups, onCopyText, onClose, onDone }) => {
   // The picture is made when the sheet opens, so it is ready when a button is tapped
   const [image, setImage] = useState<File | null>(null);
   const [failed, setFailed] = useState(false);
   useEffect(() => {
     let alive = true;
-    createShoppingListImage(title, subtitle, groups)
-      .then((blob) => alive && setImage(new File([blob], shoppingListImageFileName(title), { type: 'image/png' })))
+    createShoppingListImage(imageTitle, subtitle, groups)
+      .then((blob) => alive && setImage(new File([blob], shoppingListImageFileName(imageTitle), { type: 'image/png' })))
       .catch(() => alive && setFailed(true));
     return () => {
       alive = false;
     };
-  }, [title, subtitle, groups]);
+  }, [imageTitle, subtitle, groups]);
 
   const handle = async (result: Promise<'shared' | 'saved' | 'cancelled'>) => {
     const done = await result;
@@ -51,7 +54,7 @@ export const ShareShoppingListSheet: React.FC<{
             <div className="flex gap-2">
               <button
                 type="button"
-                onClick={() => image && handle(shareImageFile(image, title))}
+                onClick={() => image && handle(shareImageFile(image, imageTitle))}
                 disabled={!image}
                 className="flex-1 min-h-[48px] rounded-xl bg-[#284235] hover:bg-black disabled:opacity-50 text-white text-sm font-semibold touch-manipulation"
               >
