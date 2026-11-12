@@ -11,6 +11,13 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.0.183',
+    date: '2026-11-12',
+    items: [
+      'Receptkorten på startsidan är lägre, så att fler recept syns på en gång.',
+    ],
+  },
+  {
     version: '1.0.182',
     date: '2026-11-12',
     items: [
