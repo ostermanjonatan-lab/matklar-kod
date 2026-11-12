@@ -693,8 +693,8 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
                 </span>
               )}
             </div>
-            {/* What kind of dish: the category and every subcategory as small outlined labels.
-                Special diets (Glutenfri) below, in green. */}
+            {/* What kind of dish: the category (warm, filled) and every subcategory as small outlined
+                labels. Special diets (Glutenfri) below, in green. */}
             {(() => {
               const subcats = getRecipeSubcategories(recipe);
               const kinds = subcats.filter((sub) => !DIETARY_SUBCATEGORIES.includes(sub));
@@ -706,8 +706,15 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
                 <div className="space-y-1.5">
                   {labels.length > 0 && (
                     <ul className="flex flex-wrap gap-1.5" aria-label="Kategorier">
-                      {labels.map((label) => (
-                        <li key={label} className="text-xs text-stone-700 border border-stone-300 rounded-md px-2 py-0.5 whitespace-nowrap">
+                      {labels.map((label, i) => (
+                        <li
+                          key={label}
+                          className={`text-xs rounded-md px-2 py-0.5 whitespace-nowrap border ${
+                            i === 0 && category
+                              ? 'font-medium text-amber-900 bg-amber-50 border-amber-200'
+                              : 'text-stone-700 border-stone-300'
+                          }`}
+                        >
                           {label}
                         </li>
                       ))}
