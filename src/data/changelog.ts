@@ -11,6 +11,14 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.0.184',
+    date: '2026-11-12',
+    items: [
+      'Receptkorten visar svårighetsgraden med samma ikon som i receptet.',
+      'Uppdateringar sker i tysthet. Inget meddelande visas längre när appen har uppdaterats.',
+    ],
+  },
+  {
     version: '1.0.183',
     date: '2026-11-12',
     items: [
