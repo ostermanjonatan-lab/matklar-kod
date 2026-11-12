@@ -157,7 +157,7 @@ export const RecipeCard = React.memo<RecipeCardProps>(
       <div
         onClick={handleCardClick}
         style={{ contentVisibility: 'auto', containIntrinsicSize: '300px' }}
-        className="group relative aspect-[16/10] md:aspect-[6/7] w-full rounded-2xl overflow-hidden cursor-pointer active:scale-[0.985] transition-transform"
+        className="group relative aspect-[16/9] md:aspect-[1/1] w-full rounded-2xl overflow-hidden cursor-pointer active:scale-[0.985] transition-transform"
       >
         {/* Cover Image */}
         <FadeImage
