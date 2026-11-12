@@ -11,6 +11,14 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.0.190',
+    date: '2026-11-12',
+    items: [
+      'Specialkost står på samma rad som underkategorierna i ett öppnat recept, i gråblått.',
+      'Med ett minimerat recept eller en timer igång går det att skrolla fram knapparna längst ner, som Töm hela listan.',
+    ],
+  },
+  {
     version: '1.0.189',
     date: '2026-11-12',
     items: [
