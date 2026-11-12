@@ -47,11 +47,6 @@ function layout(
       c.fillStyle = color;
       c.fillText(value, x, y);
     });
-  const rule = (x: number, y: number, w: number) =>
-    ops.push((c) => {
-      c.fillStyle = COLORS.line;
-      c.fillRect(x, y, w, 2);
-    });
 
   // Name of the list and the date. These keep their size.
   let y = PAD;
@@ -97,7 +92,7 @@ function layout(
     return { amountW, lines, notes };
   };
   const itemHeight = (m: ReturnType<typeof itemLines>) =>
-    px(14) + bodySize + (m.lines.length - 1) * lineHeight + m.notes.length * px(28) + px(14);
+    px(10) + bodySize + (m.lines.length - 1) * lineHeight + m.notes.length * px(28) + px(10);
   const headingHeight = groups.some((g) => g.heading) ? px(56) : 0;
 
   // An aisle's heading: its icon, then the name
@@ -123,12 +118,13 @@ function layout(
     if (!fits) break;
     const measured = group.items.map(itemLines);
     if (group.heading) {
+      // Air between aisles, without lines. Not at the top of a column.
+      if (cy > top) cy += px(22);
       const needed = headingHeight + (measured[0] ? itemHeight(measured[0]) : 0);
       if (cy + needed > bottomLimit && !nextColumn()) break;
       const x = columns[col];
       drawHeading(group.heading, x, cy);
       cy += headingHeight;
-      rule(x, cy - 2, colW);
     }
     for (const m of measured) {
       const h = itemHeight(m);
@@ -138,11 +134,10 @@ function layout(
         if (group.heading) {
           drawHeading(group.heading, columns[col], cy);
           cy += headingHeight;
-          rule(columns[col], cy - 2, colW);
         }
       }
       const x = columns[col];
-      const row = cy + px(14) + bodySize;
+      const row = cy + px(10) + bodySize;
       const boxTop = row - bodySize * 0.78;
       ops.push((c) => {
         c.strokeStyle = COLORS.faint;
@@ -163,7 +158,6 @@ function layout(
         text(noteFont, COLORS.muted, note, x + textX, ly);
       });
       cy += h;
-      rule(x, cy, colW);
       lowest = Math.max(lowest, cy);
     }
   }
