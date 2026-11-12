@@ -380,11 +380,11 @@ export const ShoppingListView: React.FC = () => {
       }))
       .filter((group) => group.items.length > 0);
   }, [shoppingList, groupedByAisle, flatList]);
-  const imageSubtitle = useMemo(() => {
-    const day = new Date().toLocaleDateString('sv-SE', { weekday: 'long', day: 'numeric', month: 'long' });
-    const count = imageGroups.reduce((n, g) => n + g.items.length, 0);
-    return `${capitalizeFirst(day)}  ·  ${count} ${count === 1 ? 'vara' : 'varor'}`;
-  }, [imageGroups]);
+  // Only the date under the name in the picture
+  const imageSubtitle = useMemo(
+    () => capitalizeFirst(new Date().toLocaleDateString('sv-SE', { weekday: 'long', day: 'numeric', month: 'long' })),
+    [imageGroups]
+  );
 
   const handleCopyShoppingListText = async () => {
     if (shoppingList.length === 0) return;
