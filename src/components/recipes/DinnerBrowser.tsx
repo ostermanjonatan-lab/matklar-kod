@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { DIFFICULTY_LABELS } from '../../utils/recipeDifficulty';
-import { Check, ChevronLeft, ChevronRight, Search } from 'lucide-react';
+import { Check, ChevronLeft, Search } from 'lucide-react';
 import type { Recipe, RecipeDifficulty } from '../../types/recipe';
 import { DifficultyFilter, matchesDifficulty } from './DifficultyPicker';
 import { getRecipeSubcategories } from '../../types/recipe';
@@ -26,12 +26,14 @@ const Thumb: React.FC<{ src?: string }> = ({ src }) =>
   );
 
 /**
- * Small picture that cycles through the recipes in a category, about every 4 seconds.
+ * Picture that cycles through the recipes in a category, about every 4 seconds. It fills its
+ * tile in the grid of categories.
  * Each row starts at a random point and time, so the rows do not change at once.
  * Only the current picture and the one before it are in the page, and the next one is
  * loaded in advance. With "reduce motion" turned on, the first picture stays.
  */
 const SlideshowThumb: React.FC<{ images: string[] }> = ({ images }) => {
+  const tileImg = 'w-full h-full object-cover bg-stone-200';
   const [slide, setSlide] = useState<{ idx: number; prev: number | null }>(() => ({
     idx: images.length > 1 ? Math.floor(Math.random() * images.length) : 0,
     prev: null,
@@ -58,20 +60,27 @@ const SlideshowThumb: React.FC<{ images: string[] }> = ({ images }) => {
     next.src = images[(idx + 1) % images.length];
   }, [idx, images]);
 
-  if (images.length === 0) return <Thumb />;
+  const frame = 'relative w-full aspect-[3/2] rounded-xl overflow-hidden bg-stone-200';
+  if (images.length === 0) {
+    return (
+      <span className={`block ${frame}`}>
+        <NoImage />
+      </span>
+    );
+  }
   const current = images[idx % images.length];
   const previous = prevIdx !== null ? images[prevIdx % images.length] : null;
 
   return (
-    <div className="relative w-11 h-11 rounded-xl overflow-hidden bg-stone-200 shrink-0">
+    <div className={frame}>
       {previous && previous !== current && (
-        <img key={`p-${previous}`} src={previous} alt="" className={`absolute inset-0 ${thumbClass}`} />
+        <img key={`p-${previous}`} src={previous} alt="" className={`absolute inset-0 ${tileImg}`} />
       )}
       <img
         key={`c-${current}`}
         src={current}
         alt=""
-        className={`absolute inset-0 ${thumbClass} ${previous ? 'animate-thumb-fade' : ''}`}
+        className={`absolute inset-0 ${tileImg} ${previous ? 'animate-thumb-fade' : ''}`}
       />
     </div>
   );
@@ -81,9 +90,13 @@ const SlideshowThumb: React.FC<{ images: string[] }> = ({ images }) => {
 const smallImage = (url: string) =>
   url.includes('images.unsplash.com') ? url.replace(/([?&])w=\d+/, '$1w=160') : url;
 
+// The tiles in the grid are wider than the small pictures in the recipe rows
+const tileImage = (url: string) =>
+  url.includes('images.unsplash.com') ? url.replace(/([?&])w=\d+/, '$1w=400') : url;
+
 const imagesOf = (list: Recipe[]) =>
   Array.from(
-    new Set(list.map((r) => r.coverImageUrl).filter(hasCoverImage).map(smallImage))
+    new Set(list.map((r) => r.coverImageUrl).filter(hasCoverImage).map(tileImage))
   );
 
 const byTitle = (a: Recipe, b: Recipe) =>
@@ -177,7 +190,11 @@ export const DinnerBrowser: React.FC<DinnerBrowserProps> = ({ recipes, mealLabel
         </button>
       )}
 
-      <div className={`flex-1 min-h-0 overflow-y-auto divide-y divide-[#EBE7DF] ${canGoBack ? 'border-t border-[#EBE7DF]' : 'mt-2'}`}>
+      <div
+        className={`flex-1 min-h-0 overflow-y-auto ${showRecipes ? 'divide-y divide-[#EBE7DF]' : ''} ${
+          canGoBack ? 'border-t border-[#EBE7DF]' : 'mt-2'
+        }`}
+      >
         {showRecipes ? (
           recipeList.length === 0 ? (
             <p className="py-6 text-sm text-stone-500">
@@ -207,22 +224,25 @@ export const DinnerBrowser: React.FC<DinnerBrowserProps> = ({ recipes, mealLabel
             ))
           )
         ) : (
-          <>
-            <button type="button" onClick={() => setSubcategory(ALL)} className={rowClass}>
-              <SlideshowThumb images={allDinnerImages} />
-              <span className="flex-1 min-w-0 text-sm font-semibold text-stone-900">{allLabel}</span>
-              <span className="text-xs text-stone-500 tabular-nums">{dinners.length}</span>
-              <ChevronRight className="w-4 h-4 text-stone-300 shrink-0" />
-            </button>
-            {subcategories.map((sub) => (
-              <button key={sub.name} type="button" onClick={() => setSubcategory(sub.name)} className={rowClass}>
-                <SlideshowThumb images={sub.images} />
-                <span className="flex-1 min-w-0 text-sm font-semibold text-stone-900 truncate">{sub.name}</span>
-                <span className="text-xs text-stone-500 tabular-nums">{sub.count}</span>
-                <ChevronRight className="w-4 h-4 text-stone-300 shrink-0" />
-              </button>
-            ))}
-          </>
+          // The categories as a grid: a picture with the name and the number of recipes below
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-3 gap-y-4 pt-1 pb-3">
+            {[{ name: allLabel, value: ALL, count: dinners.length, images: allDinnerImages }, ...subcategories.map((sub) => ({ ...sub, value: sub.name }))].map(
+              (tile) => (
+                <button
+                  key={tile.value}
+                  type="button"
+                  onClick={() => setSubcategory(tile.value)}
+                  className="text-left touch-manipulation active:opacity-80 min-w-0"
+                >
+                  <SlideshowThumb images={tile.images} />
+                  <span className="mt-1.5 flex items-baseline gap-2 min-w-0">
+                    <span className="flex-1 min-w-0 text-sm font-semibold text-stone-900 truncate">{tile.name}</span>
+                    <span className="text-xs text-stone-500 tabular-nums shrink-0">{tile.count}</span>
+                  </span>
+                </button>
+              )
+            )}
+          </div>
         )}
       </div>
     </div>
