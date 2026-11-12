@@ -11,6 +11,13 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.0.182',
+    date: '2026-11-12',
+    items: [
+      'Appen uppdateras av sig själv när du öppnar den igen, om inget recept eller någon ruta är öppen. Annars kommer en fråga som förut.',
+    ],
+  },
+  {
     version: '1.0.181',
     date: '2026-11-11',
     items: [
