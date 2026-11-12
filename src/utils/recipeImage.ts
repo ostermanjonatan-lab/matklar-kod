@@ -147,16 +147,38 @@ function layout(
     text(titleFont, COLORS.text, line, PAD, y);
   }
 
-  // Time, portions and difficulty
+  // Time, portions and difficulty. The difficulty has the app's three bars before it.
+  const metaFont = `500 ${px(28)}px ${SANS}`;
   const meta = [
     formatCookingTime(recipe.prepTimeMinutes, recipe.cookTimeMinutes),
     `${servings} portioner`,
-    recipe.difficulty ? DIFFICULTY_LABELS[recipe.difficulty] : '',
   ]
     .filter(Boolean)
     .join('  ·  ');
   y += px(44);
-  text(`500 ${px(28)}px ${SANS}`, COLORS.muted, meta, PAD, y);
+  text(metaFont, COLORS.muted, meta, PAD, y);
+  if (recipe.difficulty) {
+    const level = recipe.difficulty;
+    ctx.font = metaFont;
+    let x = PAD + ctx.measureText(`${meta}  ·  `).width;
+    text(metaFont, COLORS.muted, '·', x - ctx.measureText('·  ').width, y);
+    // Three bars, rising, filled up to the level: one for Lätt, three for Avancerad
+    const barW = px(6);
+    const barGap = px(4);
+    const heights = [px(12), px(17), px(22)];
+    const baseline = y - px(1);
+    heights.forEach((h, i) => {
+      const bx = x + i * (barW + barGap);
+      ops.push((c) => {
+        c.fillStyle = i < level ? COLORS.muted : COLORS.line;
+        c.beginPath();
+        c.roundRect(bx, baseline - h, barW, h, barW / 2);
+        c.fill();
+      });
+    });
+    x += 3 * barW + 2 * barGap + px(10);
+    text(metaFont, COLORS.muted, DIFFICULTY_LABELS[level], x, y);
+  }
 
   // Two columns: ingredients to the left, steps to the right
   const gap = px(44);
