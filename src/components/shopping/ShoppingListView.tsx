@@ -389,8 +389,8 @@ export const ShoppingListView: React.FC = () => {
   const handleCopyShoppingListText = async () => {
     if (shoppingList.length === 0) return;
 
-    // "INKÖPSLISTA", or "INKÖPSLISTA STUGAN" for a saved list, as in the picture
-    const title = (activeShoppingListId ? `${MAIN_LIST_NAME} ${activeListName}` : MAIN_LIST_NAME).toUpperCase();
+    // "INKÖPSLISTA", or "INKÖPSLISTA - STUGAN" for a saved list, as in the picture
+    const title = (activeShoppingListId ? `${MAIN_LIST_NAME} - ${activeListName}` : MAIN_LIST_NAME).toUpperCase();
     let text = checkedCount > 0
       ? `${title} (${checkedCount}/${totalCount} klart):\n\n`
       : `${title}:\n\n`;
@@ -436,7 +436,7 @@ export const ShoppingListView: React.FC = () => {
       {showShareSheet && (
         <ShareShoppingListSheet
           title={activeListName}
-          imageTitle={activeShoppingListId ? `${MAIN_LIST_NAME} ${activeListName}` : MAIN_LIST_NAME}
+          imageTitle={activeShoppingListId ? `${MAIN_LIST_NAME} - ${activeListName}` : MAIN_LIST_NAME}
           subtitle={imageSubtitle}
           groups={imageGroups}
           onCopyText={handleCopyShoppingListText}

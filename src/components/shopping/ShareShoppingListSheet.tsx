@@ -6,7 +6,7 @@ import { shareImageFile, saveImageFile } from '../../utils/shareImage';
 export const ShareShoppingListSheet: React.FC<{
   /** The list's name, for the heading of this sheet */
   title: string;
-  /** The heading in the picture: "Inköpslista", or "Inköpslista Stugan" for a saved list */
+  /** The heading in the picture: "Inköpslista", or "Inköpslista - Stugan" for a saved list */
   imageTitle: string;
   subtitle: string;
   groups: ShoppingImageGroup[];
