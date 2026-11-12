@@ -8,7 +8,7 @@ import { DifficultyDots } from './DifficultyPicker';
 import { DIFFICULTY_LABELS } from '../../utils/recipeDifficulty';
 import type { Recipe } from '../../types/recipe';
 import { getRecipeSubcategories } from '../../types/recipe';
-import { categoryLabel } from '../../data/categories';
+import { categoryLabel, DIETARY_SUBCATEGORIES } from '../../data/categories';
 import { addDaysISO, dayNameForDate, formatDayMonth, todayISO } from '../../utils/mealPlanDates';
 
 /** "I dag", "I morgon" or "Lördag 7 nov" */
@@ -681,10 +681,40 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
             {renderCover('hidden lg:block aspect-[4/3] rounded-2xl')}
 
             <div className="space-y-2 lg:mb-4">
-            {/* What kind of dish: the category and its subcategories, as plain text */}
+            {/* What kind of dish: the category, then every subcategory as a plain list with commas.
+                Special diets (Glutenfri) on a line of their own below. */}
             {(() => {
-              const kinds = [categoryLabel(recipe.category), ...getRecipeSubcategories(recipe)].filter(Boolean);
-              return kinds.length > 0 ? <p className="text-sm text-stone-500 leading-snug">{kinds.join(' · ')}</p> : null;
+              const subcats = getRecipeSubcategories(recipe);
+              const kinds = subcats.filter((sub) => !DIETARY_SUBCATEGORIES.includes(sub));
+              const diets = subcats.filter((sub) => DIETARY_SUBCATEGORIES.includes(sub));
+              const category = categoryLabel(recipe.category);
+              if (!category && subcats.length === 0) return null;
+              return (
+                <div className="text-sm leading-snug space-y-0.5">
+                  {(category || kinds.length > 0) && (
+                    <p className="flex flex-wrap gap-x-1">
+                      {category && <span className="font-medium text-stone-800 mr-1.5">{category}</span>}
+                      {/* Each one kept whole on its line: "Medelhav & Mellanöstern" */}
+                      {kinds.map((sub, i) => (
+                        <span key={sub} className="text-stone-600 whitespace-nowrap">
+                          {sub}
+                          {i < kinds.length - 1 ? ',' : ''}
+                        </span>
+                      ))}
+                    </p>
+                  )}
+                  {diets.length > 0 && (
+                    <p className="flex flex-wrap gap-x-1 text-stone-500">
+                      {diets.map((sub, i) => (
+                        <span key={sub} className="whitespace-nowrap">
+                          {sub}
+                          {i < diets.length - 1 ? ',' : ''}
+                        </span>
+                      ))}
+                    </p>
+                  )}
+                </div>
+              );
             })()}
 
             {/* Cooking time */}
