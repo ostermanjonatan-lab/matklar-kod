@@ -694,7 +694,7 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
               )}
             </div>
             {/* What kind of dish: the category (filled green) and every subcategory as small outlined
-                labels. Special diets (Glutenfri) below, in green. */}
+                labels, with special diets (Glutenfri) last in blue. */}
             {(() => {
               const subcats = getRecipeSubcategories(recipe);
               const kinds = subcats.filter((sub) => !DIETARY_SUBCATEGORIES.includes(sub));
@@ -703,34 +703,26 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
               const labels = [category, ...kinds].filter(Boolean);
               if (labels.length === 0 && diets.length === 0) return null;
               return (
-                <div className="space-y-1.5">
-                  {labels.length > 0 && (
-                    <ul className="flex flex-wrap gap-1.5" aria-label="Kategorier">
-                      {labels.map((label, i) => (
-                        <li
-                          key={label}
-                          className={`text-xs rounded-md px-2 py-0.5 whitespace-nowrap border ${
-                            i === 0 && category
-                              ? 'font-medium text-white bg-[#284235] border-[#284235]'
-                              : 'text-stone-700 border-stone-300'
-                          }`}
-                        >
-                          {label}
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                  {/* Special diets on a line of their own */}
-                  {diets.length > 0 && (
-                    <ul className="flex flex-wrap gap-1.5" aria-label="Specialkost">
-                      {diets.map((diet) => (
-                        <li key={diet} className="text-xs text-[#284235] border border-[#B9C9BE] rounded-md px-2 py-0.5 whitespace-nowrap">
-                          {diet}
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
+                <ul className="flex flex-wrap gap-1.5" aria-label="Kategorier">
+                  {labels.map((label, i) => (
+                    <li
+                      key={label}
+                      className={`text-xs rounded-md px-2 py-0.5 whitespace-nowrap border ${
+                        i === 0 && category
+                          ? 'font-medium text-white bg-[#284235] border-[#284235]'
+                          : 'text-stone-700 border-stone-300'
+                      }`}
+                    >
+                      {label}
+                    </li>
+                  ))}
+                  {/* Special diets last, in a muted blue */}
+                  {diets.map((diet) => (
+                    <li key={diet} className="text-xs text-[#3E5A73] border border-[#B7C6D4] rounded-md px-2 py-0.5 whitespace-nowrap">
+                      {diet}
+                    </li>
+                  ))}
+                </ul>
               );
             })()}
             </div>
