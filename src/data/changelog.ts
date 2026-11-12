@@ -11,6 +11,13 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.0.188',
+    date: '2026-11-12',
+    items: [
+      'Ett öppnat recept visar kategori och underkategorier som små etiketter under tiden, med specialkost i grönt på en egen rad.',
+    ],
+  },
+  {
     version: '1.0.187',
     date: '2026-11-12',
     items: [
