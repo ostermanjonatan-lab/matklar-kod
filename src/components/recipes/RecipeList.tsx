@@ -49,6 +49,9 @@ const INITIAL_BATCH_SIZE = 24;
 const BATCH_INCREMENT = 18;
 
 const VIEW_KEY = 'matklar_recipe_view';
+
+// Little words between the ingredients searched for, which are not searched for themselves
+const SEARCH_STOP_WORDS = new Set(['och', 'med', 'eller', 'samt', 'i', 'på', 'av', 'till']);
 /** The rows in the list view: one column on a phone, more beside each other on wider screens */
 const LIST_CLASS = 'border-t border-[#EBE7DF] md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-x-8';
 
@@ -332,26 +335,36 @@ export const RecipeList: React.FC = () => {
     );
   };
 
+  // The words searched for. Little words and signs between them ("kyckling och kokosmjölk",
+  // "kyckling, kokosmjölk", "kyckling + kokosmjölk") are left out.
+  const searchTerms = useMemo(
+    () =>
+      deferredSearchQuery
+        .toLowerCase()
+        .split(/[\s,;+&]+/)
+        .map((t) => t.trim())
+        .filter((t) => t.length > 0 && !SEARCH_STOP_WORDS.has(t)),
+    [deferredSearchQuery]
+  );
+
   // Filter & Sort Recipes
   const sortedAndFilteredRecipes = useMemo(() => {
     const result = recipes.filter((recipe) => {
       const recipeSubcats = getRecipeSubcategories(recipe);
 
       // Search query filter
-      if (deferredSearchQuery.trim()) {
-        const q = deferredSearchQuery.toLowerCase().trim();
-        const matchesTitle = recipe.title.toLowerCase().includes(q);
-        const matchesDesc = (recipe.description || '').toLowerCase().includes(q);
-        const matchesIngredient = recipe.ingredients.some((ing) =>
-          ing.name.toLowerCase().includes(q)
-        );
-        const matchesTag = recipe.tags?.some((t) => t.toLowerCase().includes(q));
-        const matchesSubcat = recipeSubcats.some((s) => s.toLowerCase().includes(q));
-        const matchesCategory = categoryLabel(recipe.category).toLowerCase().includes(q);
-
-        if (!matchesTitle && !matchesDesc && !matchesIngredient && !matchesTag && !matchesSubcat && !matchesCategory) {
-          return false;
-        }
+      if (searchTerms.length > 0) {
+        // Every word has to be somewhere in the recipe, not necessarily in the same place:
+        // "kyckling kokosmjölk" finds recipes with both
+        const fields = [
+          recipe.title,
+          recipe.description || '',
+          ...recipe.ingredients.map((ing) => ing.name),
+          ...(recipe.tags || []),
+          ...recipeSubcats,
+          categoryLabel(recipe.category),
+        ].map((f) => f.toLowerCase());
+        if (!searchTerms.every((term) => fields.some((f) => f.includes(term)))) return false;
       }
 
       // Category filter
@@ -434,7 +447,7 @@ export const RecipeList: React.FC = () => {
     return result;
   }, [
     recipes,
-    deferredSearchQuery,
+    searchTerms,
     selectedCategory,
     selectedSubcategories,
     maxCookingTime,

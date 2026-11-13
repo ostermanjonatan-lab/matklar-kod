@@ -11,6 +11,14 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.0.202',
+    date: '2026-11-13',
+    items: [
+      'Sök på flera ingredienser samtidigt, till exempel kyckling kokosmjölk. Du får de recept som har allt du skrev. Det går också att skriva kyckling och spenat eller kyckling, spenat.',
+      'Pannkakor är borttaget från snabbvalen under Egen måltid i planeraren.',
+    ],
+  },
+  {
     version: '1.0.201',
     date: '2026-11-13',
     items: [

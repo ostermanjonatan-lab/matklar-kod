@@ -1602,7 +1602,7 @@ export const MealPlanView: React.FC = () => {
                     Snabbval:
                   </p>
                   <div className="flex flex-wrap gap-1.5">
-                    {['Rester', 'Äta ute', 'Hämtmat', 'Bortbjudna', 'Mackor & te', 'Enkel sallad', 'Pannkakor', 'Grillat'].map(
+                    {['Rester', 'Äta ute', 'Hämtmat', 'Bortbjudna', 'Mackor & te', 'Enkel sallad', 'Grillat'].map(
                       (suggestion) => (
                         <button
                           key={suggestion}
