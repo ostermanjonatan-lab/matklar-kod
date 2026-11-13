@@ -67,7 +67,8 @@ export const MonthView: React.FC<MonthViewProps> = ({ target, today, recipes, ge
   }, [first, last]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <div className="animate-fade-in space-y-6 pb-6">
+    // On wide screens the calendar is as wide as lets a whole month fit on the screen (month-calendar in index.css)
+    <div className="month-calendar animate-fade-in space-y-6 md:space-y-10 pb-6">
       {months.map((month) => (
         <section
           key={month}
@@ -76,15 +77,30 @@ export const MonthView: React.FC<MonthViewProps> = ({ target, today, recipes, ge
             if (el) sections.current.set(month, el);
             else sections.current.delete(month);
           }}
-          className="scroll-mt-[76px] md:scroll-mt-4"
+          // On wide screens the planner's header stays at the top (137 px with the menu above it)
+          className="scroll-mt-[76px] md:scroll-mt-[137px]"
         >
-          <h2 className="font-serif font-bold text-lg text-stone-900 pb-2">{formatMonth(month)}</h2>
+          {/* The month's name and the weekdays stay at the top on wide screens while the month is scrolled */}
+          <div className="md:sticky md:top-[137px] md:z-10 md:bg-[#FCFAF5]/95 md:backdrop-blur-sm md:pt-3">
+            <h2 className="font-serif font-bold text-lg md:text-xl text-stone-900 pb-2">{formatMonth(month)}</h2>
+            <Weekdays />
+          </div>
           <MonthGrid month={month} today={today} byId={byId} getMealPlanForDate={getMealPlanForDate} onOpenDay={onOpenDay} />
         </section>
       ))}
     </div>
   );
 };
+
+const Weekdays: React.FC = () => (
+  <div className="grid grid-cols-7 gap-1 md:gap-1.5 pb-1 md:pb-2">
+    {WEEKDAYS_SHORT.map((d) => (
+      <div key={d} className="text-center text-[11px] md:text-xs text-stone-500">
+        {d}
+      </div>
+    ))}
+  </div>
+);
 
 const MonthGrid: React.FC<{
   month: string;
@@ -101,14 +117,7 @@ const MonthGrid: React.FC<{
 
   return (
     <>
-      <div className="grid grid-cols-7 gap-1 md:gap-2 pb-1">
-        {WEEKDAYS_SHORT.map((d) => (
-          <div key={d} className="text-center text-[11px] text-stone-500">
-            {d}
-          </div>
-        ))}
-      </div>
-      <div className="grid grid-cols-7 gap-1 md:gap-2">
+      <div className="grid grid-cols-7 gap-1 md:gap-1.5">
         {Array.from({ length: cells }, (_, i) => {
           const date = addDaysISO(gridStart, i);
           if (i < lead || i >= lead + daysInMonth) return <div key={date} aria-hidden="true" />;
@@ -128,17 +137,35 @@ const MonthGrid: React.FC<{
               type="button"
               onClick={() => onOpenDay(date)}
               aria-label={`${dateNumber} ${MONTHS[firstDay.getMonth()]} ${firstDay.getFullYear()}${meal ? `: ${meal}` : ''}`}
-              className={`relative aspect-square rounded-lg overflow-hidden touch-manipulation active:opacity-80 ${
-                meal ? 'bg-stone-100' : 'border border-[#EBE7DF]'
+              title={meal || undefined}
+              className={`group relative aspect-square rounded-lg overflow-hidden touch-manipulation active:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#284235] ${
+                meal ? 'bg-stone-100' : 'border border-[#EBE7DF] md:border-transparent md:bg-stone-100 md:hover:bg-stone-200/70'
               } ${isToday ? 'ring-2 ring-[#284235]' : ''}`}
             >
               {recipe ? (
-                <FadeImage src={recipe.coverImageUrl} alt="" loading="lazy" className="absolute inset-0 w-full h-full object-cover" />
+                <FadeImage
+                  src={recipe.coverImageUrl}
+                  alt=""
+                  loading="lazy"
+                  className="absolute inset-0 w-full h-full object-cover md:transition-transform md:duration-300 md:group-hover:scale-105"
+                />
               ) : custom ? (
                 <CustomMealImage name={custom} />
+              ) : null}
+              {/* The date: on the phone only on days without a meal, on wide screens on every day */}
+              {meal ? (
+                <span className="hidden md:block absolute left-1.5 top-1 text-[11px] font-semibold text-white [text-shadow:0_1px_2px_rgba(0,0,0,0.6)]">
+                  {dateNumber}
+                </span>
               ) : (
                 <span className={`absolute left-1.5 top-1 text-[11px] ${isToday ? 'font-semibold text-[#284235]' : 'text-stone-400'}`}>
                   {dateNumber}
+                </span>
+              )}
+              {/* On wide screens the name of the meal comes up when the pointer is over the day */}
+              {meal && (
+                <span className="hidden md:flex absolute inset-x-0 bottom-0 items-end min-h-[60%] px-1.5 pb-1.5 bg-gradient-to-t from-black/75 to-transparent text-left text-[11px] leading-tight font-semibold text-white opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100 transition-opacity">
+                  <span className="line-clamp-3">{meal}</span>
                 </span>
               )}
             </button>

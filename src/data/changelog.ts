@@ -11,6 +11,14 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.0.203',
+    date: '2026-11-13',
+    items: [
+      'Planeraren på dator: veckan visas som sju kolumner med stora bilder, rättens hela namn och lunchen under. På mellanstora skärmar visas en dag per rad.',
+      'Månadsvyn på dator: en hel månad får plats på skärmen, månaden och veckodagarna står kvar överst när du skrollar, varje dag visar sitt datum och rättens namn syns när du håller musen över bilden.',
+    ],
+  },
+  {
     version: '1.0.202',
     date: '2026-11-13',
     items: [

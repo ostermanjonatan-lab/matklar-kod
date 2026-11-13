@@ -206,3 +206,12 @@ html.dark .skeleton {
 @media (prefers-reduced-motion: reduce) {
   .skeleton { animation: none; }
 }
+
+/* The month view on wide screens: as wide as lets a whole month (six weeks at most) fit under the
+   header, at least 36rem, in the middle of the page */
+@media (min-width: 768px) {
+  .month-calendar {
+    max-width: max(36rem, calc((100dvh - 15rem) * 7 / 6));
+    margin-inline: auto;
+  }
+}
