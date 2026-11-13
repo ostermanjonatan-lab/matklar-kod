@@ -25,6 +25,9 @@ import {
   ChefHat,
   Users,
   CookingPot,
+  Calendar1,
+  CalendarRange,
+  CalendarDays,
 } from 'lucide-react';
 import { LunchboxIcon } from '../icons/LunchboxIcon';
 import { DinnerBrowser } from '../recipes/DinnerBrowser';
@@ -628,13 +631,13 @@ export const MealPlanView: React.FC = () => {
                 </button>
               )}
 
-              {/* Day / Week view */}
+              {/* Day, week or month, shown as calendars: one day, a week marked, the whole month */}
               <div className="flex items-center bg-white border border-[#EBE7DF] p-0.5 rounded-xl shadow-xs" role="group" aria-label="Vy">
                 {([
-                  ['split', 'Dag'],
-                  ['overview', 'Vecka'],
-                  ['month', 'Månad'],
-                ] as const).map(([mode, label]) => (
+                  ['split', 'Dag', Calendar1],
+                  ['overview', 'Vecka', CalendarRange],
+                  ['month', 'Månad', CalendarDays],
+                ] as const).map(([mode, label, Icon]) => (
                   <button
                     key={mode}
                     type="button"
@@ -645,11 +648,13 @@ export const MealPlanView: React.FC = () => {
                       setViewMode(mode);
                     }}
                     aria-pressed={viewMode === mode}
-                    className={`px-2.5 min-[380px]:px-3 rounded-lg text-xs font-semibold transition-all touch-manipulation min-h-[34px] cursor-pointer ${
+                    aria-label={label}
+                    title={label}
+                    className={`w-10 rounded-lg flex items-center justify-center transition-all touch-manipulation min-h-[34px] cursor-pointer ${
                       viewMode === mode ? 'bg-[#284235] text-white shadow-xs' : 'text-stone-600 hover:text-stone-900'
                     }`}
                   >
-                    {label}
+                    <Icon className="w-[18px] h-[18px]" aria-hidden="true" />
                   </button>
                 ))}
               </div>

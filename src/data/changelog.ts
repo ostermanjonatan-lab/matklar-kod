@@ -14,6 +14,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     version: '1.0.204',
     date: '2026-11-13',
     items: [
+      'Knapparna för Dag, Vecka och Månad i planeraren är kalenderikoner i stället för text. Håll musen över en knapp på dator för att se namnet.',
       'På dator finns ingen veckovy i planeraren längre, eftersom dagvyn redan visar veckans dagar bredvid dagen. Där väljer du mellan Dag och Månad. På telefonen finns Vecka kvar.',
     ],
   },
