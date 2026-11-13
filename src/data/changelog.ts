@@ -11,6 +11,13 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.0.206',
+    date: '2026-11-13',
+    items: [
+      'På dator är toppen grön som på telefonen: menyn och raden under den med kategorier, vecka eller inköpslista är ett grönt fält.',
+    ],
+  },
+  {
     version: '1.0.205',
     date: '2026-11-13',
     items: [

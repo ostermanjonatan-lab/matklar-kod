@@ -528,30 +528,30 @@ export const MealPlanView: React.FC = () => {
       )}
 
       {/* HEADER & THUMBNAIL STRIP (Sticky top-0 on mobile, static on desktop) */}
-      <div className={`green-header sticky top-0 z-20 ${viewMode === 'month' ? 'md:top-[72px] md:z-30' : 'md:static md:z-auto'} bg-[#284235]/75 backdrop-blur-md backdrop-saturate-150 md:bg-[#FCFAF5]/95 md:backdrop-blur-md md:border-b md:border-[#EBE7DF] px-3.5 md:px-6 pt-3 pb-3 shadow-xs`}>
+      <div className={`green-header sticky top-0 z-20 ${viewMode === 'month' ? 'md:top-[72px] md:z-30' : 'md:static md:z-auto'} bg-[#284235]/75 backdrop-blur-md backdrop-saturate-150 px-3.5 md:px-6 pt-3 pb-3 shadow-xs`}>
         <div className="w-full max-w-md md:max-w-5xl lg:max-w-7xl mx-auto">
           {/* Row 1: Week with arrows, and Day / Week view */}
           <h1 className="sr-only">Planerare</h1>
           <div className="flex items-center justify-between gap-2">
             {viewMode === 'stats' ? (
-              <div className="text-[15px] font-semibold text-white md:text-stone-900 whitespace-nowrap py-2">Statistik</div>
+              <div className="text-[15px] font-semibold text-white whitespace-nowrap py-2">Statistik</div>
             ) : viewMode === 'month' ? (
             <div className="flex items-center gap-1 min-w-0">
               <button
                 type="button"
                 onClick={() => goToMonth(addMonths(monthStart, -1))}
-                className="w-8 h-9 -ml-1.5 rounded-full flex items-center justify-center text-white/80 md:text-stone-600 active:bg-[#FFFFFF]/15 md:hover:bg-stone-100 md:active:bg-stone-200 touch-manipulation shrink-0"
+                className="w-8 h-9 -ml-1.5 rounded-full flex items-center justify-center text-white/80 active:bg-[#FFFFFF]/15 md:hover:bg-[#FFFFFF]/10 touch-manipulation shrink-0"
                 aria-label="Förra månaden"
               >
                 <ChevronLeft className="w-5 h-5" />
               </button>
               <div className="shrink-0 text-center leading-tight">
-                <div className="text-[15px] font-semibold text-white md:text-stone-900 whitespace-nowrap">{formatMonth(monthStart)}</div>
+                <div className="text-[15px] font-semibold text-white whitespace-nowrap">{formatMonth(monthStart)}</div>
                 {!isThisMonth && (
                   <button
                     type="button"
                     onClick={() => goToMonth(monthStartOf(today))}
-                    className="text-xs font-semibold text-white/80 md:text-[#284235] whitespace-nowrap touch-manipulation"
+                    className="text-xs font-semibold text-white/80 whitespace-nowrap touch-manipulation"
                   >
                     Till i dag
                   </button>
@@ -560,7 +560,7 @@ export const MealPlanView: React.FC = () => {
               <button
                 type="button"
                 onClick={() => goToMonth(addMonths(monthStart, 1))}
-                className="w-8 h-9 rounded-full flex items-center justify-center text-white/80 md:text-stone-600 active:bg-[#FFFFFF]/15 md:hover:bg-stone-100 md:active:bg-stone-200 touch-manipulation shrink-0"
+                className="w-8 h-9 rounded-full flex items-center justify-center text-white/80 active:bg-[#FFFFFF]/15 md:hover:bg-[#FFFFFF]/10 touch-manipulation shrink-0"
                 aria-label="Nästa månad"
               >
                 <ChevronRight className="w-5 h-5" />
@@ -571,16 +571,16 @@ export const MealPlanView: React.FC = () => {
               <button
                 type="button"
                 onClick={() => goToWeek(addDaysISO(planWeekStart, -7))}
-                className="w-8 h-9 -ml-1.5 rounded-full flex items-center justify-center text-white/80 md:text-stone-600 active:bg-[#FFFFFF]/15 md:hover:bg-stone-100 md:active:bg-stone-200 touch-manipulation shrink-0"
+                className="w-8 h-9 -ml-1.5 rounded-full flex items-center justify-center text-white/80 active:bg-[#FFFFFF]/15 md:hover:bg-[#FFFFFF]/10 touch-manipulation shrink-0"
                 aria-label="Förra veckan"
               >
                 <ChevronLeft className="w-5 h-5" />
               </button>
               <div className="shrink-0 text-center leading-tight">
-                <div className="text-[15px] font-semibold text-white md:text-stone-900 whitespace-nowrap">
+                <div className="text-[15px] font-semibold text-white whitespace-nowrap">
                   Vecka {weekNumber}
                 </div>
-                <div className={`text-xs text-white/70 md:text-stone-500 whitespace-nowrap ${isThisWeek ? '' : 'hidden min-[380px]:block'}`}>
+                <div className={`text-xs text-white/70 whitespace-nowrap ${isThisWeek ? '' : 'hidden min-[380px]:block'}`}>
                   {formatWeekRange(planWeekStart)}
                 </div>
                 {!isThisWeek && (
@@ -596,7 +596,7 @@ export const MealPlanView: React.FC = () => {
               <button
                 type="button"
                 onClick={() => goToWeek(addDaysISO(planWeekStart, 7))}
-                className="w-8 h-9 rounded-full flex items-center justify-center text-white/80 md:text-stone-600 active:bg-[#FFFFFF]/15 md:hover:bg-stone-100 md:active:bg-stone-200 touch-manipulation shrink-0"
+                className="w-8 h-9 rounded-full flex items-center justify-center text-white/80 active:bg-[#FFFFFF]/15 md:hover:bg-[#FFFFFF]/10 touch-manipulation shrink-0"
                 aria-label="Nästa vecka"
               >
                 <ChevronRight className="w-5 h-5" />
@@ -609,7 +609,7 @@ export const MealPlanView: React.FC = () => {
                 <button
                   type="button"
                   onClick={randomizeWeek}
-                  className="hidden md:block px-3 min-h-[38px] text-xs font-semibold text-[#284235] hover:text-stone-900 touch-manipulation"
+                  className="hidden md:block px-3 min-h-[38px] text-xs font-semibold text-white hover:text-white/80 touch-manipulation"
                 >
                   Slumpa veckan
                 </button>
@@ -619,7 +619,7 @@ export const MealPlanView: React.FC = () => {
               <button
                 type="button"
                 onClick={openGenerate}
-                className="hidden md:flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#284235] hover:bg-black text-white text-xs font-bold transition-all shadow-xs active:scale-95 cursor-pointer min-h-[38px]"
+                className="hidden md:flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white hover:bg-stone-100 text-[#284235] text-xs font-bold transition-all shadow-xs active:scale-95 cursor-pointer min-h-[38px]"
               >
                 <span>Skapa inköpslista</span>
               </button>

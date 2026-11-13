@@ -456,7 +456,7 @@ export const ShoppingListView: React.FC = () => {
       )}
 
       {/* Header (Sticky top-0 on mobile, static below DesktopNav on desktop) */}
-      <div className="green-header relative sticky top-0 md:static z-20 md:z-auto bg-[#284235]/75 backdrop-blur-md backdrop-saturate-150 md:bg-[#FCFAF5]/95 md:backdrop-blur-md md:border-b md:border-[#EBE7DF] px-4 md:px-6 py-2.5 md:py-0 shadow-xs w-full">
+      <div className="green-header relative sticky top-0 md:static z-20 md:z-auto bg-[#284235]/75 backdrop-blur-md backdrop-saturate-150 px-4 md:px-6 py-2.5 md:py-0 shadow-xs md:shadow-none w-full">
         <div className="w-full max-w-md md:max-w-5xl lg:max-w-7xl mx-auto">
           {/* DESKTOP HEADER (MD+) */}
           <div className="hidden md:flex items-center justify-between gap-4 h-16">
@@ -519,7 +519,7 @@ export const ShoppingListView: React.FC = () => {
 
                 {/* Status badges placed AFTER the switcher so switcher never shifts */}
                 {activeSubTab === 'list' && totalCount > 0 && (
-                  <span className="text-xs font-semibold text-[#284235] bg-[#284235]/10 px-2.5 py-1 rounded-full whitespace-nowrap shrink-0">
+                  <span className="text-xs font-semibold text-white bg-[#FFFFFF]/15 px-2.5 py-1 rounded-full whitespace-nowrap shrink-0">
                     {checkedCount} av {totalCount} klara
                   </span>
                 )}
@@ -625,7 +625,7 @@ export const ShoppingListView: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setShowAddForm((prev) => !prev)}
-                    className="px-4 py-1.5 rounded-xl bg-[#284235] hover:bg-black text-white font-semibold text-xs flex items-center gap-1.5 shadow-xs active:scale-95 transition-all cursor-pointer h-9"
+                    className="px-4 py-1.5 rounded-xl bg-white hover:bg-stone-100 text-[#284235] font-semibold text-xs flex items-center gap-1.5 shadow-xs active:scale-95 transition-all cursor-pointer h-9"
                   >
                     <Plus className="w-4 h-4" />
                     <span>Lägg till vara</span>
@@ -636,9 +636,9 @@ export const ShoppingListView: React.FC = () => {
 
           {/* Progress Bar (Desktop) - absolute at bottom border of header to prevent layout shifts */}
           {activeSubTab === 'list' && totalCount > 0 && (
-            <div className="hidden md:block absolute bottom-0 left-0 right-0 h-[2px] bg-[#EBE7DF]">
+            <div className="hidden md:block absolute bottom-0 left-0 right-0 h-[2px] bg-[#FFFFFF]/20">
               <div
-                className="bg-[#284235] h-full transition-[width] duration-150 ease-out will-change-[width]"
+                className="bg-[#FFFFFF] h-full transition-[width] duration-150 ease-out will-change-[width]"
                 style={{ width: `${progressPercent}%` }}
               />
             </div>

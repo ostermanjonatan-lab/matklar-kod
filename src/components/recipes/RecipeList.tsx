@@ -292,17 +292,17 @@ export const RecipeList: React.FC = () => {
           }
         }}
         className={`relative shrink-0 whitespace-nowrap min-h-[44px] text-[15px] touch-manipulation cursor-pointer ${
-          // White on the green header on a phone, dark on the light page on a wide screen
-          isSelected ? 'text-white md:text-stone-900 font-semibold' : 'text-white/70 md:text-stone-500 hover:text-white md:hover:text-stone-800'
+          // White on the green header
+          isSelected ? 'text-white font-semibold' : 'text-white/70 hover:text-white'
         }`}
       >
         {isFavorites ? (
-          <Heart className={`w-5 h-5 ${isSelected ? 'fill-rose-400 text-rose-400 md:fill-rose-500 md:text-rose-500' : ''}`} aria-hidden="true" />
+          <Heart className={`w-5 h-5 ${isSelected ? 'fill-rose-400 text-rose-400' : ''}`} aria-hidden="true" />
         ) : (
           categoryLabel(cat)
         )}
         {isSelected && (
-          <span className="absolute left-0 right-0 bottom-1 h-[2px] rounded-full bg-[#FFFFFF] md:bg-[#284235]" aria-hidden="true" />
+          <span className="absolute left-0 right-0 bottom-1 h-[2px] rounded-full bg-[#FFFFFF]" aria-hidden="true" />
         )}
       </button>
     );
@@ -620,7 +620,7 @@ export const RecipeList: React.FC = () => {
       )}
 
       {/* Search & Filter Header (sticky top-0 on mobile, static on desktop below the hero banner) */}
-      <div className="green-header sticky top-0 md:static z-20 md:z-auto bg-[#284235]/75 backdrop-blur-md backdrop-saturate-150 md:bg-transparent md:backdrop-blur-none shadow-xs md:shadow-none py-2.5 md:py-2 w-full min-w-0">
+      <div className="green-header sticky top-0 md:static z-20 md:z-auto bg-[#284235]/75 backdrop-blur-md backdrop-saturate-150 shadow-xs md:shadow-none py-2.5 md:pt-1 md:pb-2.5 w-full min-w-0">
         <div className="w-full max-w-md md:max-w-5xl lg:max-w-7xl mx-auto px-4 md:px-6">
           {/* Mobile Search Input (Hidden on desktop since DesktopNav handles search) */}
           <div className="md:hidden mb-2.5 flex items-center gap-2">
@@ -672,7 +672,7 @@ export const RecipeList: React.FC = () => {
             <div className="flex items-center gap-5 flex-1 min-w-0" role="tablist" aria-label="Kategorier">
               {renderTab('Favoriter')}
               {renderTab(categories[0])}
-              <span className="w-px h-4 bg-[#FFFFFF]/30 md:bg-[#E2DCD1] shrink-0 -mx-1" aria-hidden="true" />
+              <span className="w-px h-4 bg-[#FFFFFF]/30 shrink-0 -mx-1" aria-hidden="true" />
               <div
                 className="flex items-center gap-5 overflow-x-auto no-scrollbar flex-1 min-w-0 -ml-4 pl-5 pr-6"
                 style={{
@@ -723,7 +723,7 @@ export const RecipeList: React.FC = () => {
                 <button
                   type="button"
                   onClick={clearFilters}
-                  className="text-xs text-[#284235] font-bold hover:underline py-1.5 px-2 cursor-pointer"
+                  className="text-xs text-white font-bold hover:underline py-1.5 px-2 cursor-pointer"
                 >
                   Återställ
                 </button>

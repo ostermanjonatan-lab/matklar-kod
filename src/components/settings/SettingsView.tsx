@@ -202,11 +202,11 @@ export const SettingsView: React.FC = () => {
       {showSupabaseModal && <SupabaseConfigModal onClose={() => setShowSupabaseModal(false)} />}
 
       {/* Header */}
-      <div className="green-header sticky top-0 md:static z-20 md:z-auto bg-[#284235]/75 backdrop-blur-md backdrop-saturate-150 md:bg-[#FCFAF5]/95 md:backdrop-blur-md md:border-b md:border-[#EBE7DF] px-4 md:px-6 py-3 w-full">
+      <div className="green-header sticky top-0 md:static z-20 md:z-auto bg-[#284235]/75 backdrop-blur-md backdrop-saturate-150 px-4 md:px-6 py-3 w-full">
         <div className="w-full max-w-md md:max-w-3xl lg:max-w-4xl mx-auto flex items-center justify-between gap-3">
-          <h1 className="font-serif text-xl font-bold text-white md:text-stone-900 leading-tight">Inställningar</h1>
-          <span className="flex items-center gap-1.5 text-xs text-white/75 md:text-stone-500">
-            <span className={`w-2 h-2 rounded-full ${isLiveSupabase ? 'bg-emerald-300 md:bg-emerald-600' : 'bg-[#FFFFFF]/50 md:bg-stone-400'}`} />
+          <h1 className="font-serif text-xl font-bold text-white leading-tight">Inställningar</h1>
+          <span className="flex items-center gap-1.5 text-xs text-white/75">
+            <span className={`w-2 h-2 rounded-full ${isLiveSupabase ? 'bg-emerald-300' : 'bg-[#FFFFFF]/50'}`} />
             {isLiveSupabase ? 'Synkas' : 'Bara på den här telefonen'}
           </span>
         </div>
