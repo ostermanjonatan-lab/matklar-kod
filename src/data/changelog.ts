@@ -14,7 +14,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     version: '1.0.202',
     date: '2026-11-13',
     items: [
-      'Sök på flera ingredienser samtidigt, till exempel kyckling kokosmjölk. Du får de recept som har allt du skrev. Det går också att skriva kyckling och spenat eller kyckling, spenat.',
+      'Sök på flera ingredienser samtidigt, till exempel kyckling kokosmjölk, så får du de recept som har allt du skrev. OCH (eller AND) gör samma sak. Med ELLER (eller OR) räcker det att receptet har ett av orden, till exempel lax eller torsk. Parenteser grupperar: (lax eller torsk) och citron.',
       'Svep åt sidan i veckovyn i planeraren för att byta vecka, på samma sätt som du byter dag i dagvyn.',
       'Pannkakor är borttaget från snabbvalen under Egen måltid i planeraren.',
     ],

@@ -1,3 +1,4 @@
+import { matchesSearch, parseSearch } from '../../utils/recipeSearch';
 import { formatRecipeTitle } from '../../utils/formatters';
 import { categoryLabel } from '../../data/categories';
 import React, { useState, useMemo, useDeferredValue, useCallback, useRef, useEffect } from 'react';
@@ -49,9 +50,6 @@ const INITIAL_BATCH_SIZE = 24;
 const BATCH_INCREMENT = 18;
 
 const VIEW_KEY = 'matklar_recipe_view';
-
-// Little words between the ingredients searched for, which are not searched for themselves
-const SEARCH_STOP_WORDS = new Set(['och', 'med', 'eller', 'samt', 'i', 'på', 'av', 'till']);
 /** The rows in the list view: one column on a phone, more beside each other on wider screens */
 const LIST_CLASS = 'border-t border-[#EBE7DF] md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-x-8';
 
@@ -335,17 +333,8 @@ export const RecipeList: React.FC = () => {
     );
   };
 
-  // The words searched for. Little words and signs between them ("kyckling och kokosmjölk",
-  // "kyckling, kokosmjölk", "kyckling + kokosmjölk") are left out.
-  const searchTerms = useMemo(
-    () =>
-      deferredSearchQuery
-        .toLowerCase()
-        .split(/[\s,;+&]+/)
-        .map((t) => t.trim())
-        .filter((t) => t.length > 0 && !SEARCH_STOP_WORDS.has(t)),
-    [deferredSearchQuery]
-  );
+  // The search as a tree of words with OCH and ELLER (see recipeSearch.ts)
+  const search = useMemo(() => parseSearch(deferredSearchQuery), [deferredSearchQuery]);
 
   // Filter & Sort Recipes
   const sortedAndFilteredRecipes = useMemo(() => {
@@ -353,9 +342,9 @@ export const RecipeList: React.FC = () => {
       const recipeSubcats = getRecipeSubcategories(recipe);
 
       // Search query filter
-      if (searchTerms.length > 0) {
+      if (search) {
         // Every word has to be somewhere in the recipe, not necessarily in the same place:
-        // "kyckling kokosmjölk" finds recipes with both
+        // "kyckling kokosmjölk" finds recipes with both, "lax eller torsk" recipes with one of them
         const fields = [
           recipe.title,
           recipe.description || '',
@@ -364,7 +353,7 @@ export const RecipeList: React.FC = () => {
           ...recipeSubcats,
           categoryLabel(recipe.category),
         ].map((f) => f.toLowerCase());
-        if (!searchTerms.every((term) => fields.some((f) => f.includes(term)))) return false;
+        if (!matchesSearch(search, fields)) return false;
       }
 
       // Category filter
@@ -447,7 +436,7 @@ export const RecipeList: React.FC = () => {
     return result;
   }, [
     recipes,
-    searchTerms,
+    search,
     selectedCategory,
     selectedSubcategories,
     maxCookingTime,
