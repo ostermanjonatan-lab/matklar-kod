@@ -84,3 +84,24 @@ export function formatDayMonth(iso: string): string {
   return `${d.getDate()} ${MONTHS_SHORT[d.getMonth()]}`;
 }
 
+/** Month names, lower case as in running text */
+export const MONTHS = ['januari', 'februari', 'mars', 'april', 'maj', 'juni', 'juli', 'augusti', 'september', 'oktober', 'november', 'december'];
+
+/** First day of the month the date is in, as yyyy-mm-01. */
+export function monthStartOf(iso: string): string {
+  return `${iso.slice(0, 7)}-01`;
+}
+
+/** First day of the month before (-1) or after (1). */
+export function addMonths(monthStart: string, delta: number): string {
+  const d = parseISODate(monthStart);
+  const m = new Date(d.getFullYear(), d.getMonth() + delta, 1);
+  return `${m.getFullYear()}-${String(m.getMonth() + 1).padStart(2, '0')}-01`;
+}
+
+/** "November 2026" */
+export function formatMonth(monthStart: string): string {
+  const d = parseISODate(monthStart);
+  const name = MONTHS[d.getMonth()];
+  return `${name.charAt(0).toUpperCase()}${name.slice(1)} ${d.getFullYear()}`;
+}

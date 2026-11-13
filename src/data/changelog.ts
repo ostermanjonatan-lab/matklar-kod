@@ -11,6 +11,13 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.0.199',
+    date: '2026-11-13',
+    items: [
+      'Planeraren har en månadsvy. Välj Månad uppe till höger för att se bilden på varje dags middag under månaden, och bläddra med pilarna. Tryck på en dag för att öppna den.',
+    ],
+  },
+  {
     version: '1.0.198',
     date: '2026-11-13',
     items: [

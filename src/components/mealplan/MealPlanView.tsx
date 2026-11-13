@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { FadeImage } from '../layout/FadeImage';
 import { CustomMealImage } from './CustomMealImage';
+import { MonthView } from './MonthView';
 import { categoryLabel } from '../../data/categories';
 import { Toast } from '../layout/Toast';
 import { ConfirmSheet } from '../layout/ConfirmSheet';
@@ -38,6 +39,9 @@ import {
   getISOWeekNumber,
   getWeekDates,
   getWeekStart,
+  addMonths,
+  formatMonth,
+  monthStartOf,
 } from '../../utils/mealPlanDates';
 
 const DAYS_OF_WEEK: MealPlanDay['dayName'][] = [
@@ -221,7 +225,20 @@ export const MealPlanView: React.FC = () => {
 
   // View Mode: 'split' (Master-Detail Split View on desktop / Story Card on mobile) vs 'overview' (compact list)
   // Day or week, remembered on this phone
-  const [viewMode, setViewMode] = useStoredState<'split' | 'overview'>('matklar_plan_view', 'split', (v) => v === 'split' || v === 'overview');
+  const [viewMode, setViewMode] = useStoredState<'split' | 'overview' | 'month'>(
+    'matklar_plan_view',
+    'split',
+    (v) => v === 'split' || v === 'overview' || v === 'month'
+  );
+  // The month shown in the month view, starting with the month of the week shown
+  const [monthStart, setMonthStart] = useState<string>(() => monthStartOf(planWeekStart));
+  const isThisMonth = monthStart === monthStartOf(today);
+  // A day in the month opens in the day view
+  const openDayFromMonth = (date: string) => {
+    setPlanWeekStart(getWeekStart(date));
+    setSelectedDayIndex(getWeekDates(getWeekStart(date)).indexOf(date));
+    setViewMode('split');
+  };
 
   // Recipe Picker modal
   const [pickerState, setPickerState] = useState<{
@@ -486,6 +503,38 @@ export const MealPlanView: React.FC = () => {
           {/* Row 1: Week with arrows, and Day / Week view */}
           <h1 className="sr-only">Planerare</h1>
           <div className="flex items-center justify-between gap-2">
+            {viewMode === 'month' ? (
+            <div className="flex items-center gap-1 min-w-0">
+              <button
+                type="button"
+                onClick={() => setMonthStart(addMonths(monthStart, -1))}
+                className="w-8 h-9 -ml-1.5 rounded-full flex items-center justify-center text-white/80 md:text-stone-600 active:bg-[#FFFFFF]/15 md:hover:bg-stone-100 md:active:bg-stone-200 touch-manipulation shrink-0"
+                aria-label="Förra månaden"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+              <div className="shrink-0 text-center leading-tight">
+                <div className="text-[15px] font-semibold text-white md:text-stone-900 whitespace-nowrap">{formatMonth(monthStart)}</div>
+                {!isThisMonth && (
+                  <button
+                    type="button"
+                    onClick={() => setMonthStart(monthStartOf(today))}
+                    className="text-xs font-semibold text-white/80 md:text-[#284235] whitespace-nowrap touch-manipulation"
+                  >
+                    Till i dag
+                  </button>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => setMonthStart(addMonths(monthStart, 1))}
+                className="w-8 h-9 rounded-full flex items-center justify-center text-white/80 md:text-stone-600 active:bg-[#FFFFFF]/15 md:hover:bg-stone-100 md:active:bg-stone-200 touch-manipulation shrink-0"
+                aria-label="Nästa månad"
+              >
+                <ChevronRight className="w-5 h-5" />
+              </button>
+            </div>
+            ) : (
             <div className="flex items-center gap-1 min-w-0">
               <button
                 type="button"
@@ -521,9 +570,10 @@ export const MealPlanView: React.FC = () => {
                 <ChevronRight className="w-5 h-5" />
               </button>
             </div>
+            )}
 
             <div className="flex items-center gap-1.5 shrink-0">
-              {weekDates[6] >= today && (
+              {viewMode !== 'month' && weekDates[6] >= today && (
                 <button
                   type="button"
                   onClick={randomizeWeek}
@@ -533,6 +583,7 @@ export const MealPlanView: React.FC = () => {
                 </button>
               )}
               {/* Desktop Create Shopping List Button */}
+              {viewMode !== 'month' && (
               <button
                 type="button"
                 onClick={openGenerate}
@@ -540,8 +591,9 @@ export const MealPlanView: React.FC = () => {
               >
                 <span>Skapa inköpslista</span>
               </button>
+              )}
 
-              {!isThisWeek && (
+              {viewMode !== 'month' && !isThisWeek && (
                 <button
                   type="button"
                   onClick={() => goToWeek(thisWeekStart)}
@@ -556,11 +608,16 @@ export const MealPlanView: React.FC = () => {
                 {([
                   ['split', 'Dag'],
                   ['overview', 'Vecka'],
+                  ['month', 'Månad'],
                 ] as const).map(([mode, label]) => (
                   <button
                     key={mode}
                     type="button"
-                    onClick={() => setViewMode(mode)}
+                    onClick={() => {
+                      // The month view opens on the month of the week shown
+                      if (mode === 'month' && viewMode !== 'month') setMonthStart(monthStartOf(planWeekStart));
+                      setViewMode(mode);
+                    }}
                     aria-pressed={viewMode === mode}
                     className={`px-2.5 min-[380px]:px-3 rounded-lg text-xs font-semibold transition-all touch-manipulation min-h-[34px] cursor-pointer ${
                       viewMode === mode ? 'bg-[#284235] text-white shadow-xs' : 'text-stone-600 hover:text-stone-900'
@@ -1239,6 +1296,16 @@ export const MealPlanView: React.FC = () => {
         {/* =================================================================== */}
         {/* MODE 2: OVERVIEW MATRIX (ALL 7 DAYS IN BEAUTIFUL COMPACT ROWS)     */}
         {/* =================================================================== */}
+        {viewMode === 'month' && (
+          <MonthView
+            monthStart={monthStart}
+            today={today}
+            recipes={recipes}
+            getMealPlanForDate={getMealPlanForDate}
+            onOpenDay={openDayFromMonth}
+          />
+        )}
+
         {viewMode === 'overview' && (
           <div className="divide-y divide-[#EBE7DF] border-b border-[#EBE7DF] md:border-0 md:divide-y-0 md:grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-7 md:gap-3.5 animate-fade-in">
             {DAYS_OF_WEEK.map((day, idx) => {
@@ -1345,7 +1412,10 @@ export const MealPlanView: React.FC = () => {
           </div>
         )}
 
-        {/* Shopping list from the week, and emptying the week. At the end of the page, not floating. */}
+        {/* Shopping list from the week, and emptying the week. At the end of the page, not floating.
+            They belong to a week, so the month view leaves them out. */}
+        {viewMode !== 'month' && (
+        <>
         <div className="md:hidden pt-2 space-y-1">
           <button
             type="button"
@@ -1377,6 +1447,8 @@ export const MealPlanView: React.FC = () => {
             </button>
           )}
         </div>
+        </>
+        )}
       </div>
 
       {/* =================================================================== */}
