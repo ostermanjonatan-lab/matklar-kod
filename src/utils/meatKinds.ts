@@ -3,7 +3,6 @@
  * They replaced the old subcategory "Kött & Färs". The name decides first; the ingredients only when the name says
  * nothing, and stock and fond are left out ("kalvfond" in a fish dish is not beef).
  */
-export const MEAT_KINDS = ['Nöt', 'Fläsk', 'Lamm', 'Vilt', 'Färs'] as const;
 
 /** The old subcategory, still found in recipes saved before the split */
 export const OLD_MEAT_SUBCATEGORY = 'Kött & Färs';

@@ -624,13 +624,6 @@ export const scaleNutrition = (v: Partial<NutritionValues>, factor: number): Par
   return out;
 };
 
-/** The weight of the dish in grams from its ingredients, or null when too few can be weighed. */
-export function recipeGrams(ingredients: Pick<Ingredient, 'amount' | 'unit' | 'name'>[]): number | null {
-  const calc = calculateNutrition(ingredients || []);
-  const weighable = ingredients.length > 0 && calc.missing.length <= ingredients.length * 0.3 && calc.grams > 0;
-  return weighable ? calc.grams : null;
-}
-
 /**
  * Values given for one basis (a portion, 100 g or the whole dish) as all three. 100 g needs the
  * dish's weight; without it that one is missing.

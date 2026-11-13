@@ -1900,49 +1900,6 @@ const LOWERCASE_PARTICLES = new Set([
   'e', 'ed', 'con', 'in', 'de', 'du', 'le', 'les', 'un', 'une'
 ]);
 
-const KNOWN_CHAPTER_HEADERS = new Set([
-  'kött, fisk', 'kött & fisk', 'kött', 'fisk', 'fågel', 'pasta', 'soppor',
-  'desserter', 'efterrätter', 'förrätter', 'varmrätter', 'vegetariskt',
-  'bröd', 'bakning', 'sallader', 'smårätter', 'vardag', 'fest', 'grundrecept',
-  'tillbehör', 'såser', 'potatis - ugn'
-]);
-
-function isSectionHeader(text: string): boolean {
-  const lower = text.toLowerCase().trim();
-  if (KNOWN_CHAPTER_HEADERS.has(lower)) return true;
-  if (/^(?:kapitel|del)\s*\d+/i.test(lower)) return true;
-  if (
-    lower.includes('ingrediens') ||
-    lower.includes('du behöver') ||
-    lower.includes('det här behöver du') ||
-    lower.includes('det behöver du') ||
-    lower.includes('innehåll') ||
-    lower.startsWith('vad du behöver') ||
-    lower.startsWith('vad behöver du') ||
-    (lower.startsWith('till ') && lower.includes('portion')) ||
-    lower.startsWith('tillbehör:') ||
-    lower === 'ingredienser:' ||
-    lower === 'ingredienser' ||
-    lower === 'du behöver:' ||
-    lower.includes('gör så här') ||
-    lower.includes('gör såhär') ||
-    lower.includes('gör gärna så här') ||
-    lower.includes('så här gör du') ||
-    lower.includes('så gör du') ||
-    lower.includes('tillagning') ||
-    lower.includes('instruktion') ||
-    lower.includes('tillredning') ||
-    lower.includes('beredning') ||
-    lower.includes('arbetsgång') ||
-    lower === 'metod:' ||
-    lower === 'metod' ||
-    lower === 'steg:'
-  ) {
-    return true;
-  }
-  return false;
-}
-
 export function isAllCaps(text: string): boolean {
   const letters = text.replace(/[^a-zA-ZåäöÅÄÖéèàáüï]/g, '');
   if (letters.length < 3) return false;
@@ -2006,65 +1963,6 @@ export function formatRecipeTitle(rawTitle: string): string {
   });
 
   return formattedWords.join(' ');
-}
-
-export function cleanTitleLine(line: string): string {
-  let cleaned = line.trim();
-  // Strip leading numbering or bullet (e.g. "4 PAPPARDELLE" -> "PAPPARDELLE")
-  cleaned = cleaned.replace(/^\d+\s+([A-ZÅÄÖa-zåäö])/, '$1');
-  // Strip leading book border/shadow noise like "Å | ", "Sel £", "| | ", etc.
-  cleaned = cleaned.replace(/^[a-zA-Z0-9åäöÅÄÖ\s]{0,4}[|/\\_~;§£€]\s*/g, '');
-  // Strip trailing book border noise like " |", " /"
-  cleaned = cleaned.replace(/\s*[|/\\_~;§£€][a-zA-Z0-9åäöÅÄÖ\s]*$/g, '');
-  cleaned = cleaned.replace(/^[#\*\-–—•~_|\s]+/, '').replace(/[#\*\-–—•~_|\s]+$/, '').trim();
-  // Strip trailing isolated 1-2 caps letters from border artifacts (e.g. "PAPRIKOR IN" -> "PAPRIKOR")
-  cleaned = cleaned.replace(/\s+[A-Z]{1,2}$/, '');
-  // Strip isolated 1-2 char noise at start/end of line (e.g. "U a ALA" -> "ALA", "ALBANIEN j el" -> "ALBANIEN")
-  cleaned = cleaned.replace(/^[a-zA-ZåäöÅÄÖ0-9]{1,2}\s+[a-zA-ZåäöÅÄÖ0-9]{1,2}\s+([A-ZÅÄÖa-zåäö]{3,})/, '$1');
-  cleaned = cleaned.replace(/\s+[a-zA-ZåäöÅÄÖ0-9]{1,2}\s+[a-zA-ZåäöÅÄÖ0-9]{1,2}$/, '');
-  return cleaned.trim();
-}
-
-function isKnownDishWord(text: string): boolean {
-  const l = text.toLowerCase();
-  return /^(ceviche|pizza|paj|soppa|gryta|biff|pasta|risotto|lasagne|sallad|tacos|focaccia|bröd|macka|toast|burgare|lax|torsk|kyckling|falafel|curry|ramen|nudlar|wok|köttbullar|pannkakor|våfflor)$/i.test(l);
-}
-
-export function isValidTitleCandidate(line: string): boolean {
-  const trimmed = line.trim();
-  // Solitary portioner, cooking time, page numbers
-  if (/^(\d+[-–\d]*\s*port(?:ioner?)?|\d+[-–\d]*\s*person(?:er)?|tid|tillagning)/i.test(trimmed)) return false;
-  if (/^(?:sida\s*)?\d{1,4}$/i.test(trimmed)) return false;
-
-  const cleaned = cleanTitleLine(line);
-  if (!cleaned || cleaned.length < 3 || cleaned.length > 80) return false;
-
-  // Cannot contain non-word symbols or currency
-  if (/[£$€§~^=+\\/|<>]/.test(cleaned)) return false;
-
-  const letters = cleaned.match(/[a-zA-ZåäöÅÄÖéèàáü]/g) || [];
-  if (letters.length < 3) return false;
-  if (letters.length / cleaned.replace(/\s+/g, '').length < 0.6) return false;
-
-  // Reject section headers
-  if (isSectionHeader(cleaned)) return false;
-
-  // Reject ingredient lines (e.g. "400 g kycklingfilé", "2 msk olja")
-  if (isLikelyIngredientLine(cleaned, false) || isLikelyIngredientLine(trimmed, false)) return false;
-
-  // Reject instruction steps (e.g. "1. Sätt ugnen på 200 grader")
-  if (isInstructionLine(cleaned) || isInstructionLine(trimmed)) return false;
-
-  // Check if it's only 1-2 short garbage words (e.g. "make Zz", "snare eee")
-  const words = cleaned.split(/\s+/);
-  if (words.length <= 2 && cleaned.length < 9 && !isKnownDishWord(cleaned)) {
-    if (words.every(w => w.length <= 4)) return false;
-  }
-
-  // Reject sentences ending with period/exclamation
-  if (/[.!?]$/.test(cleaned) && cleaned.length > 35) return false;
-
-  return true;
 }
 
 // ── Pasted recipe text ─────────────────────────────────────────────────────
