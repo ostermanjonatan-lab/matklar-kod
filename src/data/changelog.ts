@@ -14,6 +14,9 @@ export const CHANGELOG: ChangelogEntry[] = [
     version: '1.0.206',
     date: '2026-11-13',
     items: [
+      'Statistiken har en egen knapp i planeraren, till vänster om Dag, Vecka och Månad. Tryck på den igen för att gå tillbaka till dagen.',
+      'Receptbilden som sparas eller delas har inga linjer mellan ingredienserna och stegen.',
+      'Planeraren hoppar inte längre ner till botten när du går från Månad tillbaka till Dag eller Vecka.',
       'På dator är toppen grön som på telefonen: menyn och raden under den med kategorier, vecka eller inköpslista är ett grönt fält.',
     ],
   },

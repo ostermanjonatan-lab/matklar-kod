@@ -252,6 +252,12 @@ export const MealPlanView: React.FC = () => {
     return () => mq.removeEventListener('change', update);
   }, []);
   const viewMode = isWide && storedViewMode === 'overview' ? 'split' : storedViewMode;
+  // The page scrolls in <body> (not the window), so all three are set back to the top
+  const scrollPageToTop = () => {
+    window.scrollTo({ top: 0 });
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+  };
   // The month shown in the month view, starting with the month of the week shown
   // The month in the header (the one at the top of the screen), and the month to scroll to
   const [monthStart, setMonthStart] = useState<string>(() => monthStartOf(planWeekStart));
@@ -267,7 +273,7 @@ export const MealPlanView: React.FC = () => {
     setSelectedDayIndex(getWeekDates(getWeekStart(date)).indexOf(date));
     setViewMode('split');
     // The day starts at the top, not where the month list was scrolled to
-    window.scrollTo({ top: 0 });
+    scrollPageToTop();
   };
 
   // Recipe Picker modal
@@ -635,21 +641,39 @@ export const MealPlanView: React.FC = () => {
                 </button>
               )}
 
+              {/* Statistics on its own, beside the views of the plan. Pressed again it goes back to the day. */}
+              <button
+                type="button"
+                onClick={() => {
+                  scrollPageToTop();
+                  setViewMode(viewMode === 'stats' ? 'split' : 'stats');
+                }}
+                aria-pressed={viewMode === 'stats'}
+                aria-label="Statistik"
+                title="Statistik"
+                className={`w-10 h-[38px] rounded-xl flex items-center justify-center transition-colors touch-manipulation cursor-pointer shrink-0 ${
+                  viewMode === 'stats' ? 'bg-white text-[#284235] shadow-xs' : 'text-white/85 hover:text-white hover:bg-[#FFFFFF]/10'
+                }`}
+              >
+                <ChartColumn className="w-[18px] h-[18px]" aria-hidden="true" />
+              </button>
+
               {/* Day, week or month, shown as calendars: one day, a week marked, the whole month */}
               <div className="flex items-center bg-white border border-[#EBE7DF] p-0.5 rounded-xl shadow-xs" role="group" aria-label="Vy">
                 {([
                   ['split', 'Dag', Calendar1],
                   ['overview', 'Vecka', CalendarRange],
                   ['month', 'Månad', CalendarDays],
-                  ['stats', 'Statistik', ChartColumn],
                 ] as const).map(([mode, label, Icon]) => (
                   <button
                     key={mode}
                     type="button"
                     hidden={mode === 'overview' && isWide}
                     onClick={() => {
-                      // The month view opens on the month of the week shown
+                      // The month view opens on the month of the week shown and scrolls to it itself,
+                      // the other views start at the top (not where the month list was scrolled to)
                       if (mode === 'month' && viewMode !== 'month') goToMonth(monthStartOf(planWeekStart));
+                      else if (mode !== viewMode) scrollPageToTop();
                       setViewMode(mode);
                     }}
                     aria-pressed={viewMode === mode}

@@ -119,11 +119,6 @@ function layout(
       c.fillText(value, x, y);
       c.textAlign = 'left';
     });
-  const rule = (x: number, y: number, w: number) =>
-    ops.push((c) => {
-      c.fillStyle = COLORS.line;
-      c.fillRect(x, y, w, 2);
-    });
 
   let y: number;
   if (photo && photoHeight > 0) {
@@ -200,7 +195,6 @@ function layout(
   let ly = columnTop + px(36);
   text(headingFont, COLORS.text, 'Ingredienser', LEFT, ly);
   ly += px(20);
-  rule(LEFT, ly, leftW);
   for (const ing of recipe.ingredients) {
     const scaled = scaleIngredientAmount(ing.amount, recipe.servings, servings);
     const amount = scaled !== null ? `${formatAmount(scaled)} ${formatUnit(ing.unit, scaled)}`.trim() : ing.unit || '';
@@ -218,14 +212,12 @@ function layout(
       if (i < lines.length - 1) row += lineHeight;
     });
     ly = row + px(16);
-    rule(LEFT, ly, leftW);
   }
 
   // Steps, numbered
   let ry = columnTop + px(36);
   text(headingFont, COLORS.text, 'Gör så här', rightX, ry);
   ry += px(20);
-  rule(rightX, ry, rightW);
   const numberW = px(40);
   for (const [i, step] of recipe.instructions.entries()) {
     ctx.font = bodyFont;
@@ -237,7 +229,6 @@ function layout(
       if (li < lines.length - 1) row += lineHeight;
     });
     ry = row + px(16);
-    rule(rightX, ry, rightW);
   }
 
   text(`500 24px ${SANS}`, COLORS.faint, 'Från MatKlar', LEFT, HEIGHT - 40);
