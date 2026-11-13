@@ -11,6 +11,13 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.0.204',
+    date: '2026-11-13',
+    items: [
+      'På dator finns ingen veckovy i planeraren längre, eftersom dagvyn redan visar veckans dagar bredvid dagen. Där väljer du mellan Dag och Månad. På telefonen finns Vecka kvar.',
+    ],
+  },
+  {
     version: '1.0.203',
     date: '2026-11-13',
     items: [

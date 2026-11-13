@@ -56,7 +56,6 @@ html.dark, html.dark body { background-color: #1B1916 !important; color: #DCD4C7
 .dark .bg-white { background-color: #25221E !important; }
 .dark .bg-white\/35 { background-color: rgba(37,34,30,0.35) !important; }
 .dark .bg-white\/80 { background-color: rgba(37,34,30,0.80) !important; }
-.dark .bg-white\/90 { background-color: rgba(37,34,30,0.90) !important; }
 .dark .bg-white\/95 { background-color: rgba(37,34,30,0.95) !important; }
 .dark .border-\[\#284235\] { border-color: #5E9478 !important; }
 .dark .border-\[\#284235\]\/30 { border-color: rgba(94,148,120,0.30) !important; }
@@ -137,7 +136,6 @@ html.dark, html.dark body { background-color: #1B1916 !important; color: #DCD4C7
 @media (min-width: 768px) { .dark .md\:hover\:bg-stone-100:hover { background-color: #2E2A25 !important; } }
 @media (min-width: 768px) { .dark .md\:hover\:bg-stone-100\/40:hover { background-color: rgba(46,42,37,0.40) !important; } }
 @media (min-width: 768px) { .dark .md\:hover\:bg-stone-200\/70:hover { background-color: rgba(58,53,47,0.70) !important; } }
-@media (min-width: 768px) { .dark .md\:hover\:bg-stone-50:hover { background-color: #201D1A !important; } }
 @media (min-width: 768px) { .dark .md\:hover\:text-stone-800:hover { color: #D0C8BB !important; } }
 @media (min-width: 768px) { .dark .md\:text-\[\#284235\] { color: #A3CDB4 !important; } }
 @media (min-width: 768px) { .dark .md\:text-stone-500 { color: #888075 !important; } }

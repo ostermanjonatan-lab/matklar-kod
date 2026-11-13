@@ -231,11 +231,22 @@ export const MealPlanView: React.FC = () => {
 
   // View Mode: 'split' (Master-Detail Split View on desktop / Story Card on mobile) vs 'overview' (compact list)
   // Day or week, remembered on this phone
-  const [viewMode, setViewMode] = useStoredState<'split' | 'overview' | 'month'>(
+  const [storedViewMode, setViewMode] = useStoredState<'split' | 'overview' | 'month'>(
     'matklar_plan_view',
     'split',
     (v) => v === 'split' || v === 'overview' || v === 'month'
   );
+  // On wide screens the day view already lists the week's days beside the day, so there is no
+  // week view there: the day view is shown instead (the choice for the phone is kept)
+  const [isWide, setIsWide] = useState(() => typeof window !== 'undefined' && !!window.matchMedia?.('(min-width: 768px)').matches);
+  useEffect(() => {
+    const mq = window.matchMedia?.('(min-width: 768px)');
+    if (!mq) return;
+    const update = () => setIsWide(mq.matches);
+    mq.addEventListener('change', update);
+    return () => mq.removeEventListener('change', update);
+  }, []);
+  const viewMode = isWide && storedViewMode === 'overview' ? 'split' : storedViewMode;
   // The month shown in the month view, starting with the month of the week shown
   // The month in the header (the one at the top of the screen), and the month to scroll to
   const [monthStart, setMonthStart] = useState<string>(() => monthStartOf(planWeekStart));
@@ -627,6 +638,7 @@ export const MealPlanView: React.FC = () => {
                   <button
                     key={mode}
                     type="button"
+                    hidden={mode === 'overview' && isWide}
                     onClick={() => {
                       // The month view opens on the month of the week shown
                       if (mode === 'month' && viewMode !== 'month') goToMonth(monthStartOf(planWeekStart));
@@ -1330,8 +1342,8 @@ export const MealPlanView: React.FC = () => {
             onTouchCancel={handleSwipeEnd}
             className="will-change-transform touch-pan-y"
           >
-          {/* Phone and medium screens: one day per row. Wide screens: the week as seven columns, below. */}
-          <div className="xl:hidden divide-y divide-[#EBE7DF] border-b border-[#EBE7DF] md:border-t md:max-w-3xl animate-fade-in">
+          {/* One day per row. Only on the phone: on wide screens the day view lists the week. */}
+          <div className="divide-y divide-[#EBE7DF] border-b border-[#EBE7DF] animate-fade-in">
             {DAYS_OF_WEEK.map((day, idx) => {
               const dayData = mealPlan.find((d) => d.dayName === day);
               const dRecipe = recipes.find((r) => r.id === dayData?.dinnerRecipeId);
@@ -1347,7 +1359,7 @@ export const MealPlanView: React.FC = () => {
                 // day opens the day; lunch can be added and the dinner removed from the row.
                 <div
                   key={day}
-                  className="flex items-center gap-2 md:gap-3 transition-colors"
+                  className="flex items-center gap-2 transition-colors"
                 >
                 <div
                   role="button"
@@ -1359,10 +1371,10 @@ export const MealPlanView: React.FC = () => {
                       openDayFromWeek(idx, day, hasDinnerHere);
                     }
                   }}
-                  className="flex-1 min-w-0 text-left py-3 flex items-center gap-3 md:gap-4 cursor-pointer touch-manipulation active:bg-stone-100/60 md:hover:bg-stone-50 md:-mx-2 md:px-2 md:rounded-xl"
+                  className="flex-1 min-w-0 text-left py-3 flex items-center gap-3 cursor-pointer touch-manipulation active:bg-stone-100/60"
                 >
                   {/* Thumbnail */}
-                  <div className="relative w-12 h-12 md:w-24 md:h-[72px] rounded-xl overflow-hidden bg-stone-100 shrink-0">
+                  <div className="relative w-12 h-12 rounded-xl overflow-hidden bg-stone-100 shrink-0">
                     {dRecipe ? (
                       <FadeImage src={dRecipe.coverImageUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
                     ) : hasCustomDinner ? (
@@ -1381,8 +1393,8 @@ export const MealPlanView: React.FC = () => {
                       {day} {formatDayMonth(weekDates[idx])}{isToday ? ', i dag' : ''}
                     </div>
 
-                    <div className="h-5 md:h-6">
-                      <div className={`text-sm md:text-base leading-5 md:leading-6 truncate ${hasDinnerHere ? 'font-semibold text-stone-900' : 'font-semibold text-[#284235]'}`}>
+                    <div className="h-5">
+                      <div className={`text-sm leading-5 truncate ${hasDinnerHere ? 'font-semibold text-stone-900' : 'font-semibold text-[#284235]'}`}>
                         {dRecipe ? formatRecipeTitle(dRecipe.title) : hasCustomDinner ? dayData?.customDinner : 'Välj middag'}
                       </div>
                     </div>
@@ -1435,110 +1447,6 @@ export const MealPlanView: React.FC = () => {
             })}
           </div>
 
-          {/* Wide screens: the week as seven columns, each with a big picture of the dinner */}
-          <div className="hidden xl:grid grid-cols-7 gap-x-4 animate-fade-in">
-            {DAYS_OF_WEEK.map((day, idx) => {
-              const dayData = mealPlan.find((d) => d.dayName === day);
-              const dRecipe = recipes.find((r) => r.id === dayData?.dinnerRecipeId);
-              const lRecipe = recipes.find((r) => r.id === dayData?.lunchRecipeId);
-              const customDinner = dayData?.customDinner?.trim();
-              const customLunch = dayData?.customLunch?.trim();
-              const isToday = idx === todayIndex;
-              const hasDinnerHere = Boolean(dRecipe || customDinner);
-              const dinnerName = dRecipe ? formatRecipeTitle(dRecipe.title) : customDinner;
-              const lunchName = lRecipe ? formatRecipeTitle(lRecipe.title) : customLunch;
-              const open = () => openDayFromWeek(idx, day, hasDinnerHere);
-              return (
-                <div key={day} className="min-w-0 flex flex-col">
-                  {/* Weekday and date, with today marked by a line in the app's green */}
-                  <div className={`pb-2 mb-3 border-b-2 ${isToday ? 'border-[#284235]' : 'border-[#EBE7DF]'}`}>
-                    <div className={`text-sm font-semibold ${isToday ? 'text-[#284235]' : 'text-stone-900'}`}>{day}</div>
-                    <div className="text-xs text-stone-500">
-                      {formatDayMonth(weekDates[idx])}
-                      {isToday ? ', i dag' : ''}
-                    </div>
-                  </div>
-
-                  {hasDinnerHere ? (
-                    <div className="group relative">
-                      <button
-                        type="button"
-                        onClick={open}
-                        className="block w-full text-left cursor-pointer rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-[#284235]"
-                      >
-                        <span className="relative block aspect-[4/3] rounded-xl overflow-hidden bg-stone-100">
-                          {dRecipe ? (
-                            <FadeImage
-                              src={dRecipe.coverImageUrl}
-                              alt=""
-                              className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
-                            />
-                          ) : (
-                            <CustomMealImage name={customDinner!} />
-                          )}
-                        </span>
-                        <span className="mt-2 text-sm font-semibold leading-5 text-stone-900 line-clamp-2 group-hover:text-[#284235]">
-                          {dinnerName}
-                        </span>
-                        <span className="block mt-0.5 text-xs text-stone-500">
-                          {dRecipe ? `${formatCookingTime(dRecipe.prepTimeMinutes, dRecipe.cookTimeMinutes)}, ` : ''}
-                          {dayData?.dinnerServings || 4} port
-                          {isInList(day, 'dinner', dayData?.dinnerRecipeId) && <span className="text-[#284235]">, i listan</span>}
-                        </span>
-                      </button>
-                      {/* Remove the dinner: shown when the pointer is over the day */}
-                      <button
-                        type="button"
-                        onClick={() => removeDinner(day)}
-                        className="absolute top-2 right-2 w-8 h-8 rounded-full bg-white/90 text-stone-600 hover:text-rose-700 flex items-center justify-center shadow-xs opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity"
-                        aria-label={`Ta bort middagen på ${day.toLowerCase()}`}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => openPickerModal(day, 'dinner')}
-                      className="w-full aspect-[4/3] rounded-xl border border-dashed border-stone-300 text-[#284235] hover:bg-stone-50 hover:border-[#284235] flex flex-col items-center justify-center gap-1.5 text-sm font-semibold transition-colors"
-                    >
-                      <Plus className="w-5 h-5" />
-                      Välj middag
-                    </button>
-                  )}
-
-                  {/* Lunch under the dinner, at the same height in every column */}
-                  <div className="mt-auto pt-3">
-                  <div className="pt-2 border-t border-[#EBE7DF] min-w-0">
-                    {lunchName ? (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setSelectedDayIndex(idx);
-                          setViewMode('split');
-                        }}
-                        className="w-full flex items-center gap-1.5 text-left text-xs text-stone-600 hover:text-stone-900 min-h-[32px]"
-                        title={`Lunch: ${lunchName}`}
-                      >
-                        <LunchboxIcon className="w-3.5 h-3.5 text-stone-400 shrink-0" />
-                        <span className="truncate">{lunchName}</span>
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => openPickerModal(day, 'lunch')}
-                        className="w-full flex items-center gap-1.5 text-left text-xs font-semibold text-stone-400 hover:text-[#284235] min-h-[32px]"
-                      >
-                        <LunchboxIcon className="w-3.5 h-3.5 shrink-0" />
-                        Lägg till lunch
-                      </button>
-                    )}
-                  </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
           </div>
         )}
 
