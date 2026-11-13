@@ -127,12 +127,12 @@
 }
 
 .animate-thumb-fade {
-  animation: thumbFade 1.4s cubic-bezier(0.4, 0, 0.2, 1) both;
+  animation: thumbFade 1s cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 
 /* A picture in a tile zooms out slowly while it is shown */
 .animate-thumb-drift {
-  animation: thumbDrift 16s cubic-bezier(0.25, 0.1, 0.25, 1) both;
+  animation: thumbDrift 12s cubic-bezier(0.25, 0.1, 0.25, 1) both;
   will-change: transform;
 }
 

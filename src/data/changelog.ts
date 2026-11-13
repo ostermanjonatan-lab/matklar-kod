@@ -11,6 +11,13 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.0.198',
+    date: '2026-11-13',
+    items: [
+      'Bilderna i rutorna när du väljer middag byts oftare och mer oregelbundet. Rutor som stått still länge byter gärna först, och två rutor bredvid varandra byter inte direkt efter varandra.',
+    ],
+  },
+  {
     version: '1.0.197',
     date: '2026-11-13',
     items: [

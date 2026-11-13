@@ -13,9 +13,12 @@ import { NoImage } from '../layout/NoImage';
 const ALL = '__all__';
 
 // How long a new picture takes to fade in, and how often one of the tiles changes picture
-const FADE_MS = 1400;
-const CHANGE_MIN_MS = 1700;
-const CHANGE_SPREAD_MS = 1300;
+const FADE_MS = 1000;
+// The time to the next change is uneven: at least CHANGE_MIN_MS, usually around half a second
+// more, now and then two changes close together or a longer pause
+const CHANGE_MIN_MS = 250;
+const CHANGE_MEAN_MS = 550;
+const CHANGE_MAX_MS = 2200;
 
 // The longest time to choose among, in minutes. The choice is remembered on the device.
 const MAX_TIMES = [15, 30, 45, 60];
@@ -146,32 +149,72 @@ function useTilePictures(pools: string[][], running: boolean): (string | null)[]
     if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
     let timer: ReturnType<typeof setTimeout>;
     let stopped = false;
-    let lastTile = -1;
     const pools = poolsRef.current;
+    // When each tile last changed, the tiles changed most recently, and tiles waiting for a picture to load
+    const changedAt = pools.map(() => performance.now() - Math.random() * 6000);
+    const recent: number[] = [];
+    const loading = new Set<number>();
     // Each tile goes through its pictures in a shuffled order before starting over
     const queues = pools.map((p) => shuffle(p));
     const next = () => {
-      timer = setTimeout(change, CHANGE_MIN_MS + Math.random() * CHANGE_SPREAD_MS);
+      const wait = CHANGE_MIN_MS - Math.log(1 - Math.random()) * CHANGE_MEAN_MS;
+      timer = setTimeout(change, Math.min(CHANGE_MAX_MS, wait));
     };
     const change = () => {
       const current = shownRef.current;
-      const inUse = new Set(current.filter(Boolean) as string[]);
-      const tiles = pools.map((_, i) => i).filter((i) => i !== lastTile && pools[i].some((src) => !inUse.has(src)));
+      // A picture can go in a tile if no tile shows it, or, when there are fewer pictures than
+      // tiles, if the tiles that show it are far away
+      const fits = (i: number, src: string) =>
+        src !== current[i] && current.every((other, j) => other !== src || tileDistance(i, j) >= 3);
+      const last = recent[recent.length - 1];
+      const tiles = pools
+        .map((_, i) => i)
+        .filter(
+          (i) =>
+            !loading.has(i) &&
+            !recent.includes(i) &&
+            // Not right beside the tile that just changed, so the changes do not walk across the grid
+            (last === undefined || tileDistance(i, last) > 1) &&
+            pools[i].some((src) => fits(i, src))
+        );
       if (tiles.length === 0) return next();
-      const tile = tiles[Math.floor(Math.random() * tiles.length)];
+      // A tile that has been still for long is more likely to change, but any tile can
+      const now = performance.now();
+      // ... and a tile with a picture no other tile shows, so the same picture is not repeated more than needed
+      const weights = tiles.map(
+        (i) => Math.pow(Math.max(500, now - changedAt[i]), 1.5) * (pools[i].some((src) => !current.includes(src)) ? 4 : 1)
+      );
+      let r = Math.random() * weights.reduce((a, b) => a + b, 0);
+      let tile = tiles[tiles.length - 1];
+      for (let j = 0; j < tiles.length; j++) {
+        r -= weights[j];
+        if (r <= 0) {
+          tile = tiles[j];
+          break;
+        }
+      }
       let queue = queues[tile];
-      let k = queue.findIndex((src) => !inUse.has(src));
+      // A picture no tile shows comes first
+      const free = (src: string) => !current.includes(src);
+      let k = queue.findIndex(free);
+      if (k < 0) k = queue.findIndex((src) => fits(tile, src));
       if (k < 0) {
         queue = queues[tile] = shuffle(pools[tile]);
-        k = queue.findIndex((src) => !inUse.has(src));
+        k = queue.findIndex(free);
+        if (k < 0) k = queue.findIndex((src) => fits(tile, src));
       }
       if (k < 0) return next();
       const [src] = queue.splice(k, 1);
       if (queue.length === 0) queues[tile] = shuffle(pools[tile]).filter((s) => s !== src);
-      lastTile = tile;
-      // Show the picture only once it has loaded, so it never fades in half drawn
+      recent.push(tile);
+      if (recent.length > 3) recent.shift();
+      changedAt[tile] = now;
+      loading.add(tile);
+      // Show the picture only once it has loaded, so it never fades in half drawn. The next change
+      // is planned right away, so a slow picture does not hold up the others.
       const img = new Image();
       const show = () => {
+        loading.delete(tile);
         if (stopped) return;
         setState((st) => {
           if (st.signature !== signature) return st;
@@ -179,16 +222,14 @@ function useTilePictures(pools: string[][], running: boolean): (string | null)[]
           copy[tile] = src;
           return { ...st, shown: copy };
         });
-        next();
       };
       img.onload = () => {
         if (img.decode) img.decode().then(show, show);
         else show();
       };
-      img.onerror = () => {
-        if (!stopped) next();
-      };
+      img.onerror = () => loading.delete(tile);
       img.src = src;
+      next();
     };
     next();
     return () => {
