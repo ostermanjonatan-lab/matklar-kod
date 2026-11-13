@@ -98,6 +98,8 @@ export const MealPlanView: React.FC = () => {
   // Styles are set directly on the elements so that the big view does not re-render on every move.
   const slideTitleRef = useRef<HTMLDivElement>(null);
   const slideContentRef = useRef<HTMLDivElement>(null);
+  // The week view slides the same way, a week at a time
+  const weekContentRef = useRef<HTMLDivElement>(null);
   const slidingRef = useRef(false);
   const dragRef = useRef<{ x: number; y: number; t: number; axis: 'x' | 'y' | null; dx: number } | null>(null);
 
@@ -108,7 +110,8 @@ export const MealPlanView: React.FC = () => {
     typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 
   const setSlide = (x: string, opacity: number, animate: boolean) => {
-    [slideTitleRef.current, slideContentRef.current].forEach((el) => {
+    const els = viewMode === 'overview' ? [weekContentRef.current] : [slideTitleRef.current, slideContentRef.current];
+    els.forEach((el) => {
       if (!el) return;
       el.style.transition = animate ? `transform ${SLIDE_MS}ms ${SLIDE_EASE}, opacity ${SLIDE_MS}ms ${SLIDE_EASE}` : 'none';
       el.style.transform = x === '0' ? '' : `translateX(${x})`;
@@ -116,12 +119,15 @@ export const MealPlanView: React.FC = () => {
     });
   };
 
-  // Slides the current day out, changes day and slides the new one in
+  // Slides the current day (or week, in the week view) out, changes day or week and slides the new one in
   const slideToDay = (delta: number) => {
     if (slidingRef.current) return;
-    if (prefersReducedMotion() || !slideContentRef.current) {
+    const inWeek = viewMode === 'overview';
+    const step = () => (inWeek ? goToWeek(addDaysISO(planWeekStart, 7 * delta)) : stepDay(delta));
+    const content = inWeek ? weekContentRef.current : slideContentRef.current;
+    if (prefersReducedMotion() || !content) {
       setSlide('0', 1, false);
-      stepDay(delta);
+      step();
       return;
     }
     slidingRef.current = true;
@@ -129,10 +135,10 @@ export const MealPlanView: React.FC = () => {
     const enter = delta > 0 ? '40%' : '-40%';
     setSlide(out, 0, true);
     window.setTimeout(() => {
-      flushSync(() => stepDay(delta));
+      flushSync(step);
       setSlide(enter, 0, false);
       // Read layout so the start position is applied before animating to the middle
-      void slideContentRef.current?.offsetWidth;
+      void content.offsetWidth;
       setSlide('0', 1, true);
       window.setTimeout(() => {
         setSlide('0', 1, false);
@@ -1316,6 +1322,14 @@ export const MealPlanView: React.FC = () => {
         )}
 
         {viewMode === 'overview' && (
+          <div
+            ref={weekContentRef}
+            onTouchStart={handleSwipeStart}
+            onTouchMove={handleSwipeMove}
+            onTouchEnd={handleSwipeEnd}
+            onTouchCancel={handleSwipeEnd}
+            className="will-change-transform touch-pan-y"
+          >
           <div className="divide-y divide-[#EBE7DF] border-b border-[#EBE7DF] md:border-0 md:divide-y-0 md:grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-7 md:gap-3.5 animate-fade-in">
             {DAYS_OF_WEEK.map((day, idx) => {
               const dayData = mealPlan.find((d) => d.dayName === day);
@@ -1418,6 +1432,7 @@ export const MealPlanView: React.FC = () => {
                 </div>
               );
             })}
+          </div>
           </div>
         )}
 
