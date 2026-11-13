@@ -146,6 +146,11 @@ function splitAt(ws: OcrWord[], axis: 'x' | 'y', gaps: [number, number][]): OcrW
  * columns from left to right inside a band. A block is as tall as it can be while it holds one column.
  */
 export function layoutBlocks(rawWords: OcrWord[], pageWidth: number): OcrRect[] {
+  return layoutBlockGroups(rawWords, pageWidth).map((g) => g.rect);
+}
+
+/** The blocks of layoutBlocks with the words that make up each block. */
+export function layoutBlockGroups(rawWords: OcrWord[], pageWidth: number): { rect: OcrRect; words: OcrWord[] }[] {
   const words = usefulWords(rawWords);
   if (words.length === 0) return [];
   const h = median(words.map((w) => w.height)) || 12;
@@ -192,6 +197,12 @@ export function layoutBlocks(rawWords: OcrWord[], pageWidth: number): OcrRect[] 
     const cols = columnGaps(ws);
     if (cols.length > 0) {
       return { split: true, blocks: splitAt(ws, 'x', cols).flatMap((p) => cut(p).blocks) };
+    }
+    const aligned = alignedColumn(ws, h, pageWidth);
+    if (aligned !== null) {
+      const left = ws.filter((w) => w.left < aligned);
+      const right = ws.filter((w) => w.left >= aligned);
+      return { split: true, blocks: [...cut(left).blocks, ...cut(right).blocks] };
     }
     const bandGaps = gapsAlong(ws, 'y', minBandGap);
     if (bandGaps.length === 0) return { split: false, blocks: [ws] };
@@ -242,15 +253,59 @@ export function layoutBlocks(rawWords: OcrWord[], pageWidth: number): OcrRect[] 
   const pad = Math.round(h * 0.4);
   return blocks.map((ws) => {
     const b = boxOf(ws);
-    return { left: Math.max(0, b.l - pad), top: Math.max(0, b.t - pad), width: b.r - b.l + 2 * pad, height: b.b - b.t + 2 * pad };
+    return { rect: { left: Math.max(0, b.l - pad), top: Math.max(0, b.t - pad), width: b.r - b.l + 2 * pad, height: b.b - b.t + 2 * pad }, words: ws };
   });
+}
+
+/**
+ * A column beside text with almost no space between them, such as a narrow list of ingredients
+ * right next to the steps. The gap between the columns is too small to find as empty space, but
+ * on at least three rows a word starts at the same place after a clear gap. Returns where the
+ * right column starts, or null.
+ */
+function alignedColumn(ws: OcrWord[], h: number, pageWidth: number): number | null {
+  if (ws.length < 15) return null;
+  const rowsOf = new Map<string, OcrWord[]>();
+  for (const w of ws) {
+    const r = rowsOf.get(w.line);
+    if (r) r.push(w);
+    else rowsOf.set(w.line, [w]);
+  }
+  const box = boxOf(ws);
+  const starts: { x: number; row: string }[] = [];
+  for (const [row, rws] of rowsOf) {
+    rws.sort((a, b) => a.left - b.left);
+    rws.forEach((w, i) => {
+      // A short unsure word is a speck, not the start of a column
+      if (!(w.conf >= 50 || /[\p{L}\d]{3,}/u.test(w.text))) return;
+      const gap = i === 0 ? w.left - box.l : w.left - (rws[i - 1].left + rws[i - 1].width);
+      if (gap > h * 0.9) starts.push({ x: w.left, row });
+    });
+  }
+  const tol = Math.max(4, pageWidth * 0.012);
+  let best: { rows: number; x: number } | null = null;
+  for (const s of starts) {
+    if (s.x < box.l + (box.r - box.l) * 0.25 || s.x > box.l + (box.r - box.l) * 0.9) continue;
+    const near = starts.filter((o) => Math.abs(o.x - s.x) <= tol);
+    const rows = new Set(near.map((o) => o.row)).size;
+    if (rows >= 3 && (!best || rows > best.rows)) best = { rows, x: Math.min(...near.map((o) => o.x)) - tol * 0.5 };
+  }
+  if (!best) return null;
+  const x = best.x;
+  const left = ws.filter((w) => w.left < x && /\p{L}{2,}/u.test(w.text));
+  const right = ws.filter((w) => w.left >= x && /\p{L}{2,}/u.test(w.text));
+  if (left.length < 8 || right.length < 3) return null;
+  // The columns stand side by side: text on the left at the same height as the right column
+  const rb = boxOf(right);
+  if (left.filter((w) => w.top < rb.b && w.top + w.height > rb.t).length < 5) return null;
+  return x;
 }
 
 // ── Putting the blocks together as a recipe ─────────────────────────────────
 
 /** Boxes and lines around the recipe that are not part of it. */
 const NOISE_START =
-  /^(?:kapitel\b|sida\s+\d|redaktionens|krönika|milj[öo]|h[åa]llbarhet|k[öo]ksredskap|förvaring|dryckestips|vintips|dryck\s*tips|vinförslag|n[äa]ring|energi\s*(?:&|och)\s*näring|ener(?:g|a)i\b|[a-zåäö]{3,8}\s*(?:&|och)\s*n[äa]ring|ur boken|recept av|recept:\s|foto\b|styling|text och bild|isbn|copyright|©|källa\b|annons|redaktionens kommentar|visste du|om författaren|observera|m[åa]ttomvandling|omvandlingstabell|omr[äa]kning|s[äa]kerhet|obs!|notera:|\d\)\s)/i;
+  /^(?:kapitel\b|sida\s+\d|redaktionens|krönika|milj[öo]|h[åa]llbarhet|k[öo]ksredskap|förvaring|dryckestips|vintips|dryck\s*tips|vinförslag|n[äa]ring|energi\s*(?:&|och)\s*näring|ener(?:g|a)i\b|[a-zåäö]{3,8}\s*(?:&|och)\s*n[äa]ring|ur boken|recept av|recept:\s|foto\b|styling|text och bild|se recept|se sid(?:an)?\s+\d|isbn|copyright|©|källa\b|annons|redaktionens kommentar|visste du|om författaren|observera|m[åa]ttomvandling|omvandlingstabell|omr[äa]kning|s[äa]kerhet|obs!|notera:|\d\)\s)/i;
 /** Lines that are the recipe's labels rather than its content, such as "0-5 MIN" in a timeline. */
 const LABEL_LINE = /^(?:\d+\s*[-–]\s*\d+\s*min|servering|förberedelse|\d+\s*min)\.?$/i;
 const INGREDIENT_HEADING =
@@ -487,11 +542,14 @@ export function recipeTextFromBlocks(readBlocks: ReadBlock[], pageHeight: number
         (prev.right - prev.left > width * 0.5 || /\s(?:och|i|med|till|på|av|att|det|en|ett|som|för|tills|eller|om|under|över)$/i.test(prevText)) &&
         !(/^(?:dl|msk|tsk|krm|cl|ml|g|kg|st)\b/i.test(text) && !/\d$/.test(prevText)) &&
         (/^[a-zåäö(]/.test(text) ||
-          (/^\d/.test(text) && prevText.split(' ').length >= 4) ||
+          (/^\d/.test(text) && prevText.split(' ').length >= 4 && !(/^[\d½¼¾]+\s*\p{L}/u.test(text) && text.split(/\s+/).length <= 4 && /^[\d½¼¾]/.test(prevText))) ||
           // Text in capitals only: a wrapped line starts with a capital too
           (isAllCaps(text) && isAllCaps(prevText) && /[,a-zåäö]$/i.test(prevText) && !/^\d+\s*-+>/.test(text)));
       if (continues) {
-        items[items.length - 1].text += ' ' + text;
+        const last = items[items.length - 1];
+        // "fruktköt-" and "tet med en sked" are one word ("mandel- eller" is not)
+        if (/\p{Ll}-$/u.test(last.text) && /^\p{Ll}/u.test(text) && !/^(?:och|eller|samt)\b/.test(text)) last.text = last.text.slice(0, -1) + text;
+        else last.text += ' ' + text;
         items[items.length - 1].bottom = line.bottom;
       } else items.push({ text, top: line.top, bottom: line.bottom });
       prev = line;
@@ -558,7 +616,9 @@ export function recipeTextFromBlocks(readBlocks: ReadBlock[], pageHeight: number
     const found: { text: string; kind: Kind }[] = [];
     for (const { text, top } of kept) {
       const hasTime = /\b\d+\s*(?:min|minuter|tim|timmar|timme|h)\b/i.test(text);
-      if (hasTitle && nearTitle(top) && (hasTime || (/\b\d+\s*(?:portion|port|pers|personer|bitar)\b/i.test(text) && !NEW_ITEM.test(text)))) {
+      // A first step that mentions minutes ("Blanda ... Låt dra 10-15 min") is a step, not the time
+      const isStep = STEP_VERB.test(stripMarker(text)) && text.split(/\s+/).length >= 5;
+      if (hasTitle && nearTitle(top) && !isStep && (hasTime || (/\b\d+\s*(?:portion|port|pers|personer|bitar)\b/i.test(text) && !NEW_ITEM.test(text)))) {
         metaLines.push(text);
         continue;
       }
@@ -617,7 +677,18 @@ export function recipeTextFromBlocks(readBlocks: ReadBlock[], pageHeight: number
           const two = part.split(/\s+(?=\d+\s*(?:g|kg|dl|cl|ml|l|msk|tsk|krm|st|burk|burkar|klyftor|skivor)\s+[a-zåäö])/i);
           const both = two.length === 2 && /^[\d½¼¾]+\s*\S*\s+[a-zåäö]{3,}/i.test(stripMarker(two[0]));
           for (const one of both ? two : [part]) {
-            const clean = sentenceCase(fixFraction(stripMarker(one)));
+            const clean = sentenceCase(
+              fixFraction(
+                stripMarker(one)
+                  // "ev 1 krm vaniljpulver": what may be left out goes last
+                  .replace(/^ev\.?\s+(?=[\d½¼¾])(.+)$/i, '$1, valfritt')
+                  // "1mango", "1krm", "3 mskchiafrön": the space after the amount or unit was not read
+                  .replace(/^([\d½¼¾⅓⅔]+(?:[.,]\d+)?)(?=\p{L})/u, '$1 ')
+                  .replace(/^([\d½¼¾⅓⅔]+\s+)(dl|msk|tsk|krm)(?=\p{L}{3,})/u, '$1$2 ')
+              )
+            );
+            // Specks at the edge of the page read as a short word ("Pi")
+            if (!/\d|\p{L}{3,}/u.test(clean)) continue;
             // An amount with no food ("1 krm", "85 g") is left over from a box of measures
             if (AMOUNT_ONLY.test(clean)) continue;
             ingredients.push(clean);

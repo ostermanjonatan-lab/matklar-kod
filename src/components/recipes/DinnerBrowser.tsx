@@ -14,6 +14,20 @@ const ALL = '__all__';
 
 const SLIDE_INTERVAL_MS = 4000;
 
+// The longest time to choose among, in minutes. The choice is remembered on the device.
+const MAX_TIMES = [15, 30, 45, 60];
+const MAX_TIME_KEY = 'matklar_dinner_max_time';
+
+/** The time shown for a recipe (see formatCookingTime): without a time it counts as 30 minutes. */
+function recipeMinutes(r: Recipe): number {
+  if (typeof r.cookTimeMinutes === 'number' && r.cookTimeMinutes > 0) return r.cookTimeMinutes;
+  if (typeof r.prepTimeMinutes === 'number' && r.prepTimeMinutes > 0) return r.prepTimeMinutes;
+  return 30;
+}
+
+const timeLabel = (minutes: number) =>
+  minutes < 60 ? `${minutes} min` : minutes % 60 === 0 ? `${minutes / 60} tim` : `${Math.floor(minutes / 60)} tim ${minutes % 60} min`;
+
 const thumbClass = 'w-11 h-11 rounded-xl object-cover bg-stone-200';
 
 const Thumb: React.FC<{ src?: string }> = ({ src }) =>
@@ -121,9 +135,32 @@ export const DinnerBrowser: React.FC<DinnerBrowserProps> = ({ recipes, mealLabel
   const [query, setQuery] = useState('');
   // Only dinners are chosen here, so the list starts in the Middag category
   const [difficultyFilter, setDifficultyFilter] = useState<RecipeDifficulty[]>([]);
+  const [maxTime, setMaxTime] = useState<number | null>(() => {
+    try {
+      const saved = parseInt(localStorage.getItem(MAX_TIME_KEY) || '', 10);
+      return MAX_TIMES.includes(saved) ? saved : null;
+    } catch {
+      return null;
+    }
+  });
+  const chooseMaxTime = (minutes: number | null) => {
+    setMaxTime(minutes);
+    try {
+      if (minutes === null) localStorage.removeItem(MAX_TIME_KEY);
+      else localStorage.setItem(MAX_TIME_KEY, String(minutes));
+    } catch {
+      // Without storage the choice lasts until the picker is closed
+    }
+  };
   const dinners = useMemo(
-    () => recipes.filter((r) => r.category === 'Middag' && matchesDifficulty(r.difficulty, difficultyFilter)),
-    [recipes, difficultyFilter]
+    () =>
+      recipes.filter(
+        (r) =>
+          r.category === 'Middag' &&
+          matchesDifficulty(r.difficulty, difficultyFilter) &&
+          (maxTime === null || recipeMinutes(r) <= maxTime)
+      ),
+    [recipes, difficultyFilter, maxTime]
   );
   const allDinnerImages = useMemo(() => imagesOf(dinners), [dinners]);
   const [subcategory, setSubcategory] = useState<string | null>(null);
@@ -198,6 +235,27 @@ export const DinnerBrowser: React.FC<DinnerBrowserProps> = ({ recipes, mealLabel
 
       <DifficultyFilter selected={difficultyFilter} onChange={setDifficultyFilter} className="shrink-0 mt-2" />
 
+      {/* The longest time: tap the chosen one again to show all */}
+      <div className="shrink-0 mt-2 flex items-center gap-1.5 overflow-x-auto no-scrollbar" role="group" aria-label="Högsta tid">
+        <span className="text-xs text-stone-500 shrink-0 pr-0.5">Högst</span>
+        {MAX_TIMES.map((minutes) => {
+          const on = maxTime === minutes;
+          return (
+            <button
+              key={minutes}
+              type="button"
+              aria-pressed={on}
+              onClick={() => chooseMaxTime(on ? null : minutes)}
+              className={`px-3 min-h-[36px] rounded-xl text-xs font-semibold shrink-0 whitespace-nowrap transition-colors touch-manipulation ${
+                on ? 'bg-[#284235] text-white' : 'bg-[#FCFAF5] border border-stone-200 text-stone-700 hover:bg-stone-100'
+              }`}
+            >
+              {timeLabel(minutes)}
+            </button>
+          );
+        })}
+      </div>
+
       {canGoBack && (
         <button
           type="button"
@@ -220,6 +278,10 @@ export const DinnerBrowser: React.FC<DinnerBrowserProps> = ({ recipes, mealLabel
             <p className="py-6 text-sm text-stone-500">
               {q
                 ? `Inga recept i Middag matchar "${query}".`
+                : maxTime !== null && difficultyFilter.length > 0
+                ? `Inga middagar med den svårighetsgraden tar högst ${timeLabel(maxTime)}.`
+                : maxTime !== null
+                ? `Inga middagar tar högst ${timeLabel(maxTime)}.`
                 : difficultyFilter.length > 0
                 ? 'Inga middagar med den svårighetsgraden.'
                 : 'Det finns inga recept i kategorin Varmrätt.'}

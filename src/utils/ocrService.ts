@@ -1,6 +1,6 @@
-import { preprocessImageForOcr } from './imagePreprocessing';
+import { loadImageElement, preprocessImageForOcr } from './imagePreprocessing';
 import { parseRawRecipeText, type ParsedRecipeData } from './ingredientParser';
-import { layoutBlocks, linesFromWords, recipeTextFromBlocks, wordsFromTsv, type ReadBlock } from './ocrLayout';
+import { layoutBlockGroups, linesFromWords, recipeTextFromBlocks, wordsFromTsv, type OcrRect, type OcrWord, type ReadBlock } from './ocrLayout';
 
 // Re-export all parsing functions and types so backwards-compatibility is 100% preserved
 export * from './ingredientParser';
@@ -89,6 +89,31 @@ function findColumnTop(words: TsvWord[], gutterX: number, pageHeight: number): n
 }
 
 /**
+ * The page with every word that is not part of the block painted white, so that the edge of a
+ * column right beside it is not read into the block.
+ */
+async function maskOtherWords(dataUrl: string, rect: OcrRect, keep: OcrWord[], all: OcrWord[]): Promise<string> {
+  const img = await loadImageElement(dataUrl);
+  const canvas = document.createElement('canvas');
+  canvas.width = img.width;
+  canvas.height = img.height;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return dataUrl;
+  ctx.drawImage(img, 0, 0);
+  ctx.fillStyle = '#fff';
+  const kept = new Set(keep);
+  let painted = false;
+  for (const w of all) {
+    if (kept.has(w)) continue;
+    const inside = w.left < rect.left + rect.width && w.left + w.width > rect.left && w.top < rect.top + rect.height && w.top + w.height > rect.top;
+    if (!inside) continue;
+    ctx.fillRect(w.left - 2, w.top - 2, w.width + 4, w.height + 4);
+    painted = true;
+  }
+  return painted ? canvas.toDataURL('image/png') : dataUrl;
+}
+
+/**
  * Execute client-side OCR on an image file or Data URL using tesseract.js.
  * Enhanced with:
  * 1. Automatic Canvas preprocessing (resizing, sharpening, contrast boost, adaptive binarization).
@@ -166,14 +191,15 @@ export async function performClientOCR(
       // block is read on its own, and the blocks are put together as a recipe. See ocrLayout.ts.
       try {
         const layout = wordsFromTsv(ret1.data.tsv);
-        const rects = layoutBlocks(layout.words, layout.pageWidth);
-        if (rects.length >= 2) {
+        const groups = layoutBlockGroups(layout.words, layout.pageWidth);
+        if (groups.length >= 2) {
           if (onProgress) onProgress(82, 'Läser sidan del för del');
           // Each block as one even block of text
           await worker.setParameters({ tessedit_pageseg_mode: '6' as never });
           const blocks: ReadBlock[] = [];
-          for (const rect of rects) {
-            const r = await worker.recognize(bestDataUrl, { rectangle: rect }, { tsv: true });
+          for (const { rect, words: blockWords } of groups) {
+            const image = await maskOtherWords(bestDataUrl, rect, blockWords, layout.words);
+            const r = await worker.recognize(image, { rectangle: rect }, { tsv: true });
             blocks.push({ rect, lines: linesFromWords(wordsFromTsv(r.data.tsv).words) });
           }
           const text = recipeTextFromBlocks(blocks, layout.pageHeight);
