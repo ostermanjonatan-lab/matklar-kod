@@ -11,6 +11,13 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.0.207',
+    date: '2026-11-13',
+    items: [
+      'På dator går det gröna fältet högst upp ända ut till skärmens kanter på alla sidor, och raden under menyn börjar i samma kant som sidans innehåll.',
+    ],
+  },
+  {
     version: '1.0.206',
     date: '2026-11-13',
     items: [

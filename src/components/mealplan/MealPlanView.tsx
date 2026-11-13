@@ -534,8 +534,9 @@ export const MealPlanView: React.FC = () => {
       )}
 
       {/* HEADER & THUMBNAIL STRIP (Sticky top-0 on mobile, static on desktop) */}
-      <div className={`green-header sticky top-0 z-20 ${viewMode === 'month' ? 'md:top-[72px] md:z-30' : 'md:static md:z-auto'} bg-[#284235]/75 backdrop-blur-md backdrop-saturate-150 px-3.5 md:px-6 pt-3 pb-3 shadow-xs`}>
-        <div className="w-full max-w-md md:max-w-5xl lg:max-w-7xl mx-auto">
+      <div className={`green-header sticky top-0 z-20 ${viewMode === 'month' ? 'md:top-[72px] md:z-30' : 'md:static md:z-auto'} bg-[#284235]/75 backdrop-blur-md backdrop-saturate-150 px-3.5 md:px-0 pt-3 pb-3 shadow-xs`}>
+        {/* The same width and edge as the page below it and the menu above it */}
+        <div className="w-full max-w-md md:max-w-5xl lg:max-w-7xl mx-auto md:px-6">
           {/* Row 1: Week with arrows, and Day / Week view */}
           <h1 className="sr-only">Planerare</h1>
           <div className="flex items-center justify-between gap-2">
