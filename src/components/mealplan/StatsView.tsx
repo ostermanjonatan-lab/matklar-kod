@@ -103,7 +103,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ today, recipes, getMealPla
     stats.from && stats.from <= stats.yesterday ? `${formatDayMonth(stats.from)} till ${formatDayMonth(stats.yesterday)}` : null;
 
   return (
-    <div className="animate-fade-in md:max-w-2xl">
+    <div className="animate-fade-in">
       {/* The period */}
       <div className="flex gap-1.5 overflow-x-auto no-scrollbar" role="group" aria-label="Tid">
         {PERIODS.map(([p, label]) => (
@@ -135,6 +135,9 @@ export const StatsView: React.FC<StatsViewProps> = ({ today, recipes, getMealPla
             {stats.custom > 0 ? `. ${stats.custom} egna måltider räknas inte med.` : '.'}
           </p>
 
+          {/* The two kinds of statistics under each other, and side by side on wide screens */}
+          <div className="lg:grid lg:grid-cols-2 lg:gap-x-12 xl:gap-x-16 lg:items-start">
+          <section>
           {/* 1. The dishes made most often */}
           <h2 className="mt-6 font-serif font-bold text-lg text-stone-900">Oftast lagat</h2>
           <ol className="mt-1 divide-y divide-[#EBE7DF] border-y border-[#EBE7DF]">
@@ -160,9 +163,11 @@ export const StatsView: React.FC<StatsViewProps> = ({ today, recipes, getMealPla
               </li>
             ))}
           </ol>
+          </section>
 
+          <section>
           {/* 2. The kinds of dinner, one bar each */}
-          <h2 className="mt-8 font-serif font-bold text-lg text-stone-900">Sorter</h2>
+          <h2 className="mt-8 lg:mt-6 font-serif font-bold text-lg text-stone-900">Sorter</h2>
           <ul className="mt-2 space-y-2.5">
             {stats.kindRows.map(({ kind, count }) => (
               <li key={kind} className="flex items-center gap-3 text-sm">
@@ -180,6 +185,8 @@ export const StatsView: React.FC<StatsViewProps> = ({ today, recipes, getMealPla
             ))}
           </ul>
           <p className="mt-3 text-xs text-stone-500">Varje middag räknas en gång, efter det första som stämmer: fisk, kyckling, kött eller vegetariskt.</p>
+          </section>
+          </div>
         </>
       )}
     </div>
