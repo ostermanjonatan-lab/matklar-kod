@@ -14,7 +14,8 @@ export const PortionScaler: React.FC<PortionScalerProps> = ({
   baseServings,
   onServingsChange,
   minServings = 1,
-  maxServings = 24,
+  // The same highest number of portions everywhere: here, in the recipe form and for recipes from links
+  maxServings = 100,
 }) => {
   const handleDecrement = () => {
     if (currentServings > minServings) {

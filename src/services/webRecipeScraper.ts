@@ -272,7 +272,7 @@ export function cleanRecipeTitle(rawTitle: string): string {
  */
 function parseServings(yieldVal: any): number {
   if (!yieldVal) return 4;
-  if (typeof yieldVal === 'number') return Math.max(1, Math.min(yieldVal, 50));
+  if (typeof yieldVal === 'number') return Math.max(1, Math.min(yieldVal, 100));
   if (Array.isArray(yieldVal) && yieldVal.length > 0) {
     return parseServings(yieldVal[0]);
   }
@@ -282,7 +282,7 @@ function parseServings(yieldVal: any): number {
       return Math.round((parseInt(rangeMatch[1], 10) + parseInt(rangeMatch[2], 10)) / 2);
     }
     const match = yieldVal.match(/(\d+)/);
-    if (match) return Math.max(1, Math.min(parseInt(match[1], 10), 50));
+    if (match) return Math.max(1, Math.min(parseInt(match[1], 10), 100));
   }
   return 4;
 }

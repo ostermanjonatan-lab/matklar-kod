@@ -14,6 +14,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     version: '1.0.208',
     date: '2026-11-13',
     items: [
+      'Ett recept kan ha upp till 100 portioner, både när du ändrar antalet i receptet och när du sparar det. Förut gick det bara till 24.',
       'I planeraren visar den valda knappen sitt namn, till exempel Dag eller Månad, bredvid ikonen. Månadsvyn och statistiken har ingen egen rubrik överst längre.',
     ],
   },

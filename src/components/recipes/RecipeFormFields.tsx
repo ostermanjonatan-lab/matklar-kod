@@ -202,7 +202,7 @@ export const RecipeFormFields: React.FC<RecipeFormFieldsProps> = ({
                 type="number"
                 inputMode="numeric"
                 min={1}
-                max={24}
+                max={100}
                 value={servings}
                 onChange={(e) => setServings(e.target.value === '' ? '' : parseInt(e.target.value, 10) || '')}
                 onBlur={() => {
