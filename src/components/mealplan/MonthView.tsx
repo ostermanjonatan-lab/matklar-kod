@@ -13,8 +13,8 @@ interface MonthViewProps {
   recipes: Recipe[];
   getMealPlanForDate: (date: string) => MealPlanDay | undefined;
   onOpenDay: (date: string) => void;
-  /** The month at the top of the screen while scrolling */
-  onVisibleMonth: (month: string) => void;
+  /** The month at the top of the screen while scrolling, if anyone wants to know */
+  onVisibleMonth?: (month: string) => void;
 }
 
 /** How far back and ahead of today the months go (further if the month scrolled to is outside) */
@@ -57,7 +57,7 @@ export const MonthView: React.FC<MonthViewProps> = ({ target, today, recipes, ge
       (entries) => {
         for (const e of entries) seen.set((e.target as HTMLElement).dataset.month || '', e.isIntersecting);
         const top = months.find((m) => seen.get(m));
-        if (top) onVisible.current(top);
+        if (top) onVisible.current?.(top);
       },
       // A line just under the header: the month that crosses it is the one being looked at
       { rootMargin: '-100px 0px -70% 0px' }

@@ -11,6 +11,13 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.0.208',
+    date: '2026-11-13',
+    items: [
+      'I planeraren visar den valda knappen sitt namn, till exempel Dag eller Månad, bredvid ikonen. Månadsvyn och statistiken har ingen egen rubrik överst längre.',
+    ],
+  },
+  {
     version: '1.0.207',
     date: '2026-11-13',
     items: [

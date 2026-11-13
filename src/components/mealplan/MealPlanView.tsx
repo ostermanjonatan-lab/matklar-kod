@@ -44,8 +44,6 @@ import {
   getISOWeekNumber,
   getWeekDates,
   getWeekStart,
-  addMonths,
-  formatMonth,
   monthStartOf,
 } from '../../utils/mealPlanDates';
 
@@ -258,15 +256,11 @@ export const MealPlanView: React.FC = () => {
     document.documentElement.scrollTop = 0;
     document.body.scrollTop = 0;
   };
-  // The month shown in the month view, starting with the month of the week shown
-  // The month in the header (the one at the top of the screen), and the month to scroll to
-  const [monthStart, setMonthStart] = useState<string>(() => monthStartOf(planWeekStart));
+  // The month the month view scrolls to, starting with the month of the week shown
   const [monthTarget, setMonthTarget] = useState(() => ({ month: monthStartOf(planWeekStart), key: 0 }));
   const goToMonth = (month: string) => {
-    setMonthStart(month);
     setMonthTarget((t) => ({ month, key: t.key + 1 }));
   };
-  const isThisMonth = monthStart === monthStartOf(today);
   // A day in the month opens in the day view
   const openDayFromMonth = (date: string) => {
     setPlanWeekStart(getWeekStart(date));
@@ -540,39 +534,10 @@ export const MealPlanView: React.FC = () => {
           {/* Row 1: Week with arrows, and Day / Week view */}
           <h1 className="sr-only">Planerare</h1>
           <div className="flex items-center justify-between gap-2">
-            {viewMode === 'stats' ? (
-              <div className="text-[15px] font-semibold text-white whitespace-nowrap py-2">Statistik</div>
-            ) : viewMode === 'month' ? (
-            <div className="flex items-center gap-1 min-w-0">
-              <button
-                type="button"
-                onClick={() => goToMonth(addMonths(monthStart, -1))}
-                className="w-8 h-9 -ml-1.5 rounded-full flex items-center justify-center text-white/80 active:bg-[#FFFFFF]/15 md:hover:bg-[#FFFFFF]/10 touch-manipulation shrink-0"
-                aria-label="Förra månaden"
-              >
-                <ChevronLeft className="w-5 h-5" />
-              </button>
-              <div className="shrink-0 text-center leading-tight">
-                <div className="text-[15px] font-semibold text-white whitespace-nowrap">{formatMonth(monthStart)}</div>
-                {!isThisMonth && (
-                  <button
-                    type="button"
-                    onClick={() => goToMonth(monthStartOf(today))}
-                    className="text-xs font-semibold text-white/80 whitespace-nowrap touch-manipulation"
-                  >
-                    Till i dag
-                  </button>
-                )}
-              </div>
-              <button
-                type="button"
-                onClick={() => goToMonth(addMonths(monthStart, 1))}
-                className="w-8 h-9 rounded-full flex items-center justify-center text-white/80 active:bg-[#FFFFFF]/15 md:hover:bg-[#FFFFFF]/10 touch-manipulation shrink-0"
-                aria-label="Nästa månad"
-              >
-                <ChevronRight className="w-5 h-5" />
-              </button>
-            </div>
+            {/* The month and the statistics need no title: the chosen button below says which view it is,
+                and the months have their own headings */}
+            {viewMode === 'stats' || viewMode === 'month' ? (
+              <div className="min-h-[38px]" />
             ) : (
             <div className="flex items-center gap-1 min-w-0">
               <button
@@ -652,11 +617,12 @@ export const MealPlanView: React.FC = () => {
                 aria-pressed={viewMode === 'stats'}
                 aria-label="Statistik"
                 title="Statistik"
-                className={`w-10 h-[38px] rounded-xl flex items-center justify-center transition-colors touch-manipulation cursor-pointer shrink-0 ${
-                  viewMode === 'stats' ? 'bg-white text-[#284235] shadow-xs' : 'text-white/85 hover:text-white hover:bg-[#FFFFFF]/10'
+                className={`h-[38px] rounded-xl flex items-center justify-center gap-1.5 transition-colors touch-manipulation cursor-pointer shrink-0 ${
+                  viewMode === 'stats' ? 'px-3 bg-white text-[#284235] shadow-xs' : 'w-10 text-white/85 hover:text-white hover:bg-[#FFFFFF]/10'
                 }`}
               >
-                <ChartColumn className="w-[18px] h-[18px]" aria-hidden="true" />
+                <ChartColumn className="w-[18px] h-[18px] shrink-0" aria-hidden="true" />
+                {viewMode === 'stats' && <span className="text-xs font-semibold" aria-hidden="true">Statistik</span>}
               </button>
 
               {/* Day, week or month, shown as calendars: one day, a week marked, the whole month */}
@@ -680,11 +646,13 @@ export const MealPlanView: React.FC = () => {
                     aria-pressed={viewMode === mode}
                     aria-label={label}
                     title={label}
-                    className={`w-10 rounded-lg flex items-center justify-center transition-all touch-manipulation min-h-[34px] cursor-pointer ${
-                      viewMode === mode ? 'bg-[#284235] text-white shadow-xs' : 'text-stone-600 hover:text-stone-900'
+                    className={`rounded-lg flex items-center justify-center gap-1.5 transition-all touch-manipulation min-h-[34px] cursor-pointer ${
+                      viewMode === mode ? 'px-3 bg-[#284235] text-white shadow-xs' : 'w-10 text-stone-600 hover:text-stone-900'
                     }`}
                   >
-                    <Icon className="w-[18px] h-[18px]" aria-hidden="true" />
+                    <Icon className="w-[18px] h-[18px] shrink-0" aria-hidden="true" />
+                    {/* The chosen view also shows its name */}
+                    {viewMode === mode && <span className="text-xs font-semibold" aria-hidden="true">{label}</span>}
                   </button>
                 ))}
               </div>
@@ -1364,7 +1332,6 @@ export const MealPlanView: React.FC = () => {
         {viewMode === 'month' && (
           <MonthView
             target={monthTarget}
-            onVisibleMonth={setMonthStart}
             today={today}
             recipes={recipes}
             getMealPlanForDate={getMealPlanForDate}
