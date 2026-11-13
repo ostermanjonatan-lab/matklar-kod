@@ -231,13 +231,21 @@ export const MealPlanView: React.FC = () => {
     (v) => v === 'split' || v === 'overview' || v === 'month'
   );
   // The month shown in the month view, starting with the month of the week shown
+  // The month in the header (the one at the top of the screen), and the month to scroll to
   const [monthStart, setMonthStart] = useState<string>(() => monthStartOf(planWeekStart));
+  const [monthTarget, setMonthTarget] = useState(() => ({ month: monthStartOf(planWeekStart), key: 0 }));
+  const goToMonth = (month: string) => {
+    setMonthStart(month);
+    setMonthTarget((t) => ({ month, key: t.key + 1 }));
+  };
   const isThisMonth = monthStart === monthStartOf(today);
   // A day in the month opens in the day view
   const openDayFromMonth = (date: string) => {
     setPlanWeekStart(getWeekStart(date));
     setSelectedDayIndex(getWeekDates(getWeekStart(date)).indexOf(date));
     setViewMode('split');
+    // The day starts at the top, not where the month list was scrolled to
+    window.scrollTo({ top: 0 });
   };
 
   // Recipe Picker modal
@@ -507,7 +515,7 @@ export const MealPlanView: React.FC = () => {
             <div className="flex items-center gap-1 min-w-0">
               <button
                 type="button"
-                onClick={() => setMonthStart(addMonths(monthStart, -1))}
+                onClick={() => goToMonth(addMonths(monthStart, -1))}
                 className="w-8 h-9 -ml-1.5 rounded-full flex items-center justify-center text-white/80 md:text-stone-600 active:bg-[#FFFFFF]/15 md:hover:bg-stone-100 md:active:bg-stone-200 touch-manipulation shrink-0"
                 aria-label="Förra månaden"
               >
@@ -518,7 +526,7 @@ export const MealPlanView: React.FC = () => {
                 {!isThisMonth && (
                   <button
                     type="button"
-                    onClick={() => setMonthStart(monthStartOf(today))}
+                    onClick={() => goToMonth(monthStartOf(today))}
                     className="text-xs font-semibold text-white/80 md:text-[#284235] whitespace-nowrap touch-manipulation"
                   >
                     Till i dag
@@ -527,7 +535,7 @@ export const MealPlanView: React.FC = () => {
               </div>
               <button
                 type="button"
-                onClick={() => setMonthStart(addMonths(monthStart, 1))}
+                onClick={() => goToMonth(addMonths(monthStart, 1))}
                 className="w-8 h-9 rounded-full flex items-center justify-center text-white/80 md:text-stone-600 active:bg-[#FFFFFF]/15 md:hover:bg-stone-100 md:active:bg-stone-200 touch-manipulation shrink-0"
                 aria-label="Nästa månad"
               >
@@ -615,7 +623,7 @@ export const MealPlanView: React.FC = () => {
                     type="button"
                     onClick={() => {
                       // The month view opens on the month of the week shown
-                      if (mode === 'month' && viewMode !== 'month') setMonthStart(monthStartOf(planWeekStart));
+                      if (mode === 'month' && viewMode !== 'month') goToMonth(monthStartOf(planWeekStart));
                       setViewMode(mode);
                     }}
                     aria-pressed={viewMode === mode}
@@ -1298,7 +1306,8 @@ export const MealPlanView: React.FC = () => {
         {/* =================================================================== */}
         {viewMode === 'month' && (
           <MonthView
-            monthStart={monthStart}
+            target={monthTarget}
+            onVisibleMonth={setMonthStart}
             today={today}
             recipes={recipes}
             getMealPlanForDate={getMealPlanForDate}
