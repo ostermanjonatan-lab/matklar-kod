@@ -2,6 +2,7 @@ import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { FadeImage } from '../layout/FadeImage';
 import { CustomMealImage } from './CustomMealImage';
 import { MonthView } from './MonthView';
+import { StatsView } from './StatsView';
 import { categoryLabel } from '../../data/categories';
 import { Toast } from '../layout/Toast';
 import { ConfirmSheet } from '../layout/ConfirmSheet';
@@ -28,6 +29,7 @@ import {
   Calendar1,
   CalendarRange,
   CalendarDays,
+  ChartColumn,
 } from 'lucide-react';
 import { LunchboxIcon } from '../icons/LunchboxIcon';
 import { DinnerBrowser } from '../recipes/DinnerBrowser';
@@ -234,10 +236,10 @@ export const MealPlanView: React.FC = () => {
 
   // View Mode: 'split' (Master-Detail Split View on desktop / Story Card on mobile) vs 'overview' (compact list)
   // Day or week, remembered on this phone
-  const [storedViewMode, setViewMode] = useStoredState<'split' | 'overview' | 'month'>(
+  const [storedViewMode, setViewMode] = useStoredState<'split' | 'overview' | 'month' | 'stats'>(
     'matklar_plan_view',
     'split',
-    (v) => v === 'split' || v === 'overview' || v === 'month'
+    (v) => v === 'split' || v === 'overview' || v === 'month' || v === 'stats'
   );
   // On wide screens the day view already lists the week's days beside the day, so there is no
   // week view there: the day view is shown instead (the choice for the phone is kept)
@@ -531,7 +533,9 @@ export const MealPlanView: React.FC = () => {
           {/* Row 1: Week with arrows, and Day / Week view */}
           <h1 className="sr-only">Planerare</h1>
           <div className="flex items-center justify-between gap-2">
-            {viewMode === 'month' ? (
+            {viewMode === 'stats' ? (
+              <div className="text-[15px] font-semibold text-white md:text-stone-900 whitespace-nowrap py-2">Statistik</div>
+            ) : viewMode === 'month' ? (
             <div className="flex items-center gap-1 min-w-0">
               <button
                 type="button"
@@ -601,7 +605,7 @@ export const MealPlanView: React.FC = () => {
             )}
 
             <div className="flex items-center gap-1.5 shrink-0">
-              {viewMode !== 'month' && weekDates[6] >= today && (
+              {viewMode !== 'month' && viewMode !== 'stats' && weekDates[6] >= today && (
                 <button
                   type="button"
                   onClick={randomizeWeek}
@@ -611,7 +615,7 @@ export const MealPlanView: React.FC = () => {
                 </button>
               )}
               {/* Desktop Create Shopping List Button */}
-              {viewMode !== 'month' && (
+              {viewMode !== 'month' && viewMode !== 'stats' && (
               <button
                 type="button"
                 onClick={openGenerate}
@@ -621,7 +625,7 @@ export const MealPlanView: React.FC = () => {
               </button>
               )}
 
-              {viewMode !== 'month' && !isThisWeek && (
+              {viewMode !== 'month' && viewMode !== 'stats' && !isThisWeek && (
                 <button
                   type="button"
                   onClick={() => goToWeek(thisWeekStart)}
@@ -637,6 +641,7 @@ export const MealPlanView: React.FC = () => {
                   ['split', 'Dag', Calendar1],
                   ['overview', 'Vecka', CalendarRange],
                   ['month', 'Månad', CalendarDays],
+                  ['stats', 'Statistik', ChartColumn],
                 ] as const).map(([mode, label, Icon]) => (
                   <button
                     key={mode}
@@ -1327,6 +1332,10 @@ export const MealPlanView: React.FC = () => {
         {/* =================================================================== */}
         {/* MODE 2: OVERVIEW MATRIX (ALL 7 DAYS IN BEAUTIFUL COMPACT ROWS)     */}
         {/* =================================================================== */}
+        {viewMode === 'stats' && (
+          <StatsView today={today} recipes={recipes} getMealPlanForDate={getMealPlanForDate} onOpenRecipe={openRecipeDetail} />
+        )}
+
         {viewMode === 'month' && (
           <MonthView
             target={monthTarget}
@@ -1457,7 +1466,7 @@ export const MealPlanView: React.FC = () => {
 
         {/* Shopping list from the week, and emptying the week. At the end of the page, not floating.
             They belong to a week, so the month view leaves them out. */}
-        {viewMode !== 'month' && (
+        {viewMode !== 'month' && viewMode !== 'stats' && (
         <>
         <div className="md:hidden pt-2 space-y-1">
           <button

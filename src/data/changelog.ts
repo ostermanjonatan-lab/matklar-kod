@@ -11,6 +11,13 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.0.205',
+    date: '2026-11-13',
+    items: [
+      'Statistik i planeraren, under den nya ikonen bredvid Dag, Vecka och Månad. Den visar vilka rätter ni lagat oftast och hur middagarna fördelar sig på fisk, kyckling, kött och vegetariskt, för de senaste 30 dagarna, månaden, året eller hela tiden. Bara dagar till och med i går räknas.',
+    ],
+  },
+  {
     version: '1.0.204',
     date: '2026-11-13',
     items: [
