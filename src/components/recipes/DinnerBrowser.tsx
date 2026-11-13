@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { DIFFICULTY_LABELS } from '../../utils/recipeDifficulty';
 import { Check, ChevronLeft, Search } from 'lucide-react';
 import type { Recipe, RecipeDifficulty } from '../../types/recipe';
@@ -12,7 +12,10 @@ import { NoImage } from '../layout/NoImage';
 // Subcategory value meaning "all recipes in the category"
 const ALL = '__all__';
 
-const SLIDE_INTERVAL_MS = 4000;
+// How long a new picture takes to fade in, and how often one of the tiles changes picture
+const FADE_MS = 1400;
+const CHANGE_MIN_MS = 1700;
+const CHANGE_SPREAD_MS = 1300;
 
 // The longest time to choose among, in minutes. The choice is remembered on the device.
 const MAX_TIMES = [15, 30, 45, 60];
@@ -40,65 +43,162 @@ const Thumb: React.FC<{ src?: string }> = ({ src }) =>
   );
 
 /**
- * Picture that cycles through the recipes in a category, about every 4 seconds. It fills its
- * tile in the grid of categories.
- * Each row starts at a random point and time, so the rows do not change at once.
- * Only the current picture and the one before it are in the page, and the next one is
- * loaded in advance. With "reduce motion" turned on, the first picture stays.
+ * One tile's picture. A new picture fades in over the one before, and every picture zooms out
+ * slowly while it is shown, so the grid moves calmly between changes.
  */
-const SlideshowThumb: React.FC<{ images: string[] }> = ({ images }) => {
-  const tileImg = 'w-full h-full object-cover bg-stone-200';
-  const [slide, setSlide] = useState<{ idx: number; prev: number | null }>(() => ({
-    idx: images.length > 1 ? Math.floor(Math.random() * images.length) : 0,
-    prev: null,
-  }));
-  const { idx, prev: prevIdx } = slide;
-
+const SlideshowThumb: React.FC<{ src: string | null }> = ({ src }) => {
+  const tileImg = 'absolute inset-0 w-full h-full object-cover bg-stone-200';
+  // The pictures in the tile, the newest last. The key stays with a picture, so its zoom is not restarted.
+  const [layers, setLayers] = useState<{ src: string; key: number }[]>(() => (src ? [{ src, key: 0 }] : []));
+  // A new picture for the tile goes on top of the one shown
+  const top = layers[layers.length - 1];
+  if (src && top?.src !== src) {
+    setLayers([...layers.slice(-1), { src, key: (top?.key ?? 0) + 1 }]);
+  }
+  // The picture underneath is removed once the new one has faded in
   useEffect(() => {
-    if (images.length <= 1) return;
-    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
-    let timer: ReturnType<typeof setTimeout>;
-    const tick = () => {
-      setSlide((s) => ({ idx: (s.idx + 1) % images.length, prev: s.idx }));
-      timer = setTimeout(tick, SLIDE_INTERVAL_MS);
-    };
-    // Random start so the rows change at different times
-    timer = setTimeout(tick, 1000 + Math.random() * SLIDE_INTERVAL_MS);
-    return () => clearTimeout(timer);
-  }, [images.length]);
-
-  // Load the next picture before it is shown
-  useEffect(() => {
-    if (images.length <= 1) return;
-    const next = new Image();
-    next.src = images[(idx + 1) % images.length];
-  }, [idx, images]);
+    if (layers.length < 2) return;
+    const t = setTimeout(() => setLayers((l) => l.slice(-1)), FADE_MS + 100);
+    return () => clearTimeout(t);
+  }, [layers]);
 
   const frame = 'absolute inset-0 overflow-hidden bg-stone-200';
-  if (images.length === 0) {
+  if (layers.length === 0) {
     return (
       <span className={`block ${frame}`}>
         <NoImage />
       </span>
     );
   }
-  const current = images[idx % images.length];
-  const previous = prevIdx !== null ? images[prevIdx % images.length] : null;
-
   return (
     <div className={frame}>
-      {previous && previous !== current && (
-        <img key={`p-${previous}`} src={previous} alt="" className={`absolute inset-0 ${tileImg}`} />
-      )}
-      <img
-        key={`c-${current}`}
-        src={current}
-        alt=""
-        className={`absolute inset-0 ${tileImg} ${previous ? 'animate-thumb-fade' : ''}`}
-      />
+      {layers.map((layer, i) => (
+        <img
+          key={layer.key}
+          src={layer.src}
+          alt=""
+          className={`${tileImg} animate-thumb-drift ${i > 0 ? 'animate-thumb-fade' : ''}`}
+        />
+      ))}
     </div>
   );
 };
+
+// Steps between two tiles in the grid of three columns
+const tileDistance = (a: number, b: number) =>
+  Math.abs(Math.floor(a / 3) - Math.floor(b / 3)) + Math.abs((a % 3) - (b % 3));
+
+const shuffle = <T,>(list: T[]): T[] => {
+  const a = [...list];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+};
+
+/**
+ * Which picture each tile shows. No picture is in two tiles at once, only one tile changes at a
+ * time, at uneven intervals and in random order, and a picture is loaded before it is shown, so
+ * the grid never changes in a pattern. With "reduce motion" turned on, the first pictures stay.
+ */
+function useTilePictures(pools: string[][], running: boolean): (string | null)[] {
+  const signature = pools.map((p) => p.join('|')).join('||');
+  const pick = (): (string | null)[] => {
+    const used = new Set<string>();
+    const shown: (string | null)[] = pools.map(() => null);
+    // The tiles with the fewest pictures choose first, so they can get one of their own
+    const order = pools.map((_, i) => i).sort((x, y) => pools[x].length - pools[y].length);
+    for (const i of order) {
+      const pool = pools[i];
+      if (pool.length === 0) continue;
+      const free = pool.filter((src) => !used.has(src));
+      let src: string;
+      if (free.length) src = free[Math.floor(Math.random() * free.length)];
+      else {
+        // Fewer pictures than tiles: the same picture as far as possible from where it already is
+        const away = (candidate: string) =>
+          Math.min(...shown.map((other, j) => (other === candidate ? tileDistance(i, j) : Infinity)));
+        src = [...pool].sort((x, y) => away(y) - away(x))[0];
+      }
+      shown[i] = src;
+      used.add(src);
+    }
+    return shown;
+  };
+  const [state, setState] = useState(() => ({ signature, shown: pick() }));
+  // New pictures in the tiles (a filter was chosen): choose again
+  let shown = state.shown;
+  if (state.signature !== signature) {
+    shown = pick();
+    setState({ signature, shown });
+  }
+
+  // The timer below reads the tiles and their pictures from here, so it does not restart at every change
+  const shownRef = useRef(shown);
+  const poolsRef = useRef(pools);
+  useEffect(() => {
+    shownRef.current = shown;
+    poolsRef.current = pools;
+  });
+  useEffect(() => {
+    if (!running) return;
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+    let timer: ReturnType<typeof setTimeout>;
+    let stopped = false;
+    let lastTile = -1;
+    const pools = poolsRef.current;
+    // Each tile goes through its pictures in a shuffled order before starting over
+    const queues = pools.map((p) => shuffle(p));
+    const next = () => {
+      timer = setTimeout(change, CHANGE_MIN_MS + Math.random() * CHANGE_SPREAD_MS);
+    };
+    const change = () => {
+      const current = shownRef.current;
+      const inUse = new Set(current.filter(Boolean) as string[]);
+      const tiles = pools.map((_, i) => i).filter((i) => i !== lastTile && pools[i].some((src) => !inUse.has(src)));
+      if (tiles.length === 0) return next();
+      const tile = tiles[Math.floor(Math.random() * tiles.length)];
+      let queue = queues[tile];
+      let k = queue.findIndex((src) => !inUse.has(src));
+      if (k < 0) {
+        queue = queues[tile] = shuffle(pools[tile]);
+        k = queue.findIndex((src) => !inUse.has(src));
+      }
+      if (k < 0) return next();
+      const [src] = queue.splice(k, 1);
+      if (queue.length === 0) queues[tile] = shuffle(pools[tile]).filter((s) => s !== src);
+      lastTile = tile;
+      // Show the picture only once it has loaded, so it never fades in half drawn
+      const img = new Image();
+      const show = () => {
+        if (stopped) return;
+        setState((st) => {
+          if (st.signature !== signature) return st;
+          const copy = [...st.shown];
+          copy[tile] = src;
+          return { ...st, shown: copy };
+        });
+        next();
+      };
+      img.onload = () => {
+        if (img.decode) img.decode().then(show, show);
+        else show();
+      };
+      img.onerror = () => {
+        if (!stopped) next();
+      };
+      img.src = src;
+    };
+    next();
+    return () => {
+      stopped = true;
+      clearTimeout(timer);
+    };
+  }, [signature, running]);
+
+  return shown;
+}
 
 // Pictures from Unsplash can be fetched small, which saves data in the slideshows
 const smallImage = (url: string) =>
@@ -205,6 +305,10 @@ export const DinnerBrowser: React.FC<DinnerBrowserProps> = ({ recipes, mealLabel
     { name: allLabel, value: ALL, count: dinners.length, images: allDinnerImages },
     ...subcategories.map((sub) => ({ ...sub, value: sub.name })),
   ];
+  const tilePictures = useTilePictures(
+    tiles.map((t) => t.images),
+    !showRecipes
+  );
   const COLUMNS = 3;
   const lastRowStart = Math.floor((tiles.length - 1) / COLUMNS) * COLUMNS;
   const lastRowFull = tiles.length % COLUMNS === 0;
@@ -316,7 +420,7 @@ export const DinnerBrowser: React.FC<DinnerBrowserProps> = ({ recipes, mealLabel
                   onClick={() => setSubcategory(tile.value)}
                   className={`relative aspect-square text-left touch-manipulation active:opacity-80 min-w-0 overflow-hidden ${outerCorners(i)}`}
                 >
-                  <SlideshowThumb images={tile.images} />
+                  <SlideshowThumb src={tilePictures[i]} />
                   <span className="absolute inset-x-0 bottom-0 h-3/5 bg-gradient-to-t from-black/70 to-transparent pointer-events-none" />
                   <span className="absolute inset-x-0 bottom-0 px-2 pb-1.5 flex items-end gap-1.5 min-w-0">
                     <span className="flex-1 min-w-0 text-[13px] font-semibold text-white leading-tight line-clamp-2 drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]">

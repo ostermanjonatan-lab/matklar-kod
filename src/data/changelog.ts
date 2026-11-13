@@ -15,6 +15,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     date: '2026-11-13',
     items: [
       'När du väljer middag eller lunch i planeraren kan du välja hur lång tid rätten får ta: högst 15, 30 eller 45 minuter eller 1 timme. Tryck på samma tid igen för att visa alla.',
+      'Bilderna i rutorna när du väljer middag byts lugnare: en ruta i taget, i slumpad ordning, med mjukare övertoning. Samma bild visas inte i två rutor samtidigt.',
       'Fotade receptsidor där ingredienserna står tätt intill texten läses bättre. Ingredienserna och stegen hålls isär, och ett ord som är avstavat vid radslut blir ett ord igen.',
     ],
   },

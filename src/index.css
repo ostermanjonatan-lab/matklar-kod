@@ -127,11 +127,23 @@
 }
 
 .animate-thumb-fade {
-  animation: thumbFade 0.8s ease-in-out both;
+  animation: thumbFade 1.4s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+/* A picture in a tile zooms out slowly while it is shown */
+.animate-thumb-drift {
+  animation: thumbDrift 16s cubic-bezier(0.25, 0.1, 0.25, 1) both;
+  will-change: transform;
+}
+
+@keyframes thumbDrift {
+  from { transform: scale(1.08); }
+  to { transform: scale(1); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .animate-thumb-fade { animation: none; }
+  .animate-thumb-fade,
+  .animate-thumb-drift { animation: none; }
 }
 
 .animate-slide-down {
