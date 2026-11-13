@@ -13,7 +13,8 @@ import { NoImage } from '../layout/NoImage';
 const ALL = '__all__';
 
 // How long a new picture takes to fade in, and how often one of the tiles changes picture
-const FADE_MS = 1000;
+// Keep in step with .animate-thumb-fade in index.css
+const FADE_MS = 2200;
 // The time to the next change is uneven: at least CHANGE_MIN_MS, usually around half a second
 // more, now and then two changes close together or a longer pause
 const CHANGE_MIN_MS = 250;
@@ -167,19 +168,21 @@ function useTilePictures(pools: string[][], running: boolean): (string | null)[]
       const fits = (i: number, src: string) =>
         src !== current[i] && current.every((other, j) => other !== src || tileDistance(i, j) >= 3);
       const last = recent[recent.length - 1];
+      const now = performance.now();
       const tiles = pools
         .map((_, i) => i)
         .filter(
           (i) =>
             !loading.has(i) &&
             !recent.includes(i) &&
+            // Not while its last picture is still fading in, which would make it jump
+            now - changedAt[i] > FADE_MS + 600 &&
             // Not right beside the tile that just changed, so the changes do not walk across the grid
             (last === undefined || tileDistance(i, last) > 1) &&
             pools[i].some((src) => fits(i, src))
         );
       if (tiles.length === 0) return next();
       // A tile that has been still for long is more likely to change, but any tile can
-      const now = performance.now();
       // ... and a tile with a picture no other tile shows, so the same picture is not repeated more than needed
       const weights = tiles.map(
         (i) => Math.pow(Math.max(500, now - changedAt[i]), 1.5) * (pools[i].some((src) => !current.includes(src)) ? 4 : 1)

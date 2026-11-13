@@ -126,24 +126,30 @@
   to { opacity: 1; }
 }
 
-.animate-thumb-fade {
-  animation: thumbFade 1s cubic-bezier(0.4, 0, 0.2, 1) both;
-}
-
 /* A picture in a tile zooms out slowly while it is shown */
-.animate-thumb-drift {
-  animation: thumbDrift 12s cubic-bezier(0.25, 0.1, 0.25, 1) both;
-  will-change: transform;
-}
-
 @keyframes thumbDrift {
   from { transform: scale(1.08); }
   to { transform: scale(1); }
 }
 
+.animate-thumb-drift {
+  animation: thumbDrift 12s cubic-bezier(0.25, 0.1, 0.25, 1) both;
+  will-change: transform, opacity;
+}
+
+/* A new picture fades in over the one before while it zooms. Both animations are named here,
+   after the zoom alone, as one animation property would otherwise replace the other. */
+.animate-thumb-drift.animate-thumb-fade,
+.animate-thumb-fade {
+  animation:
+    thumbFade 2.2s cubic-bezier(0.45, 0, 0.55, 1) both,
+    thumbDrift 12s cubic-bezier(0.25, 0.1, 0.25, 1) both;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-thumb-fade,
-  .animate-thumb-drift { animation: none; }
+  .animate-thumb-drift,
+  .animate-thumb-drift.animate-thumb-fade { animation: none; }
 }
 
 .animate-slide-down {

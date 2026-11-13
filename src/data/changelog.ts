@@ -11,6 +11,13 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.0.200',
+    date: '2026-11-13',
+    items: [
+      'Bilderna i rutorna när du väljer middag tonas in mjukt över den förra bilden, i stället för att byta direkt.',
+    ],
+  },
+  {
     version: '1.0.199',
     date: '2026-11-13',
     items: [
