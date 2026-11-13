@@ -183,6 +183,7 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
     setMealPlanForDate,
     getMealPlanForDate,
     setActiveTab,
+    browseRecipes,
   } = useRecipes();
 
   // Always bind to the live recipe from state
@@ -694,32 +695,54 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
               )}
             </div>
             {/* What kind of dish: the category (filled green) and every subcategory as small outlined
-                labels, with special diets (Glutenfri) last in blue. */}
+                labels, with special diets (Glutenfri) last in blue. Tapping one shows the recipes
+                that share it on the start screen. */}
             {(() => {
               const subcats = getRecipeSubcategories(recipe);
               const kinds = subcats.filter((sub) => !DIETARY_SUBCATEGORIES.includes(sub));
               const diets = subcats.filter((sub) => DIETARY_SUBCATEGORIES.includes(sub));
               const category = categoryLabel(recipe.category);
-              const labels = [category, ...kinds].filter(Boolean);
-              if (labels.length === 0 && diets.length === 0) return null;
+              if (!category && kinds.length === 0 && diets.length === 0) return null;
+              const chip = 'text-xs rounded-md px-2 py-0.5 whitespace-nowrap border touch-manipulation active:opacity-70';
+              // The labels are small, so the place to tap reaches a bit beyond them
+              const hit = 'relative before:absolute before:-inset-x-0.5 before:-inset-y-2.5 before:content-[""]';
               return (
                 <ul className="flex flex-wrap gap-1.5" aria-label="Kategorier">
-                  {labels.map((label, i) => (
-                    <li
-                      key={label}
-                      className={`text-xs rounded-md px-2 py-0.5 whitespace-nowrap border ${
-                        i === 0 && category
-                          ? 'font-medium text-white bg-[#284235] border-[#284235]'
-                          : 'text-stone-700 border-stone-300'
-                      }`}
-                    >
-                      {label}
+                  {category && (
+                    <li>
+                      <button
+                        type="button"
+                        onClick={() => browseRecipes({ category: recipe.category })}
+                        aria-label={`Visa recept i ${category}`}
+                        className={`${chip} ${hit} font-medium text-white bg-[#284235] border-[#284235]`}
+                      >
+                        {category}
+                      </button>
+                    </li>
+                  )}
+                  {kinds.map((sub) => (
+                    <li key={sub}>
+                      <button
+                        type="button"
+                        onClick={() => browseRecipes({ category: recipe.category || 'Alla', subcategory: sub })}
+                        aria-label={`Visa recept i ${category ? `${category}, ` : ''}${sub}`}
+                        className={`${chip} ${hit} text-stone-700 border-stone-300`}
+                      >
+                        {sub}
+                      </button>
                     </li>
                   ))}
-                  {/* Special diets last, in a muted blue */}
+                  {/* Special diets last, in a muted blue. A diet goes across categories. */}
                   {diets.map((diet) => (
-                    <li key={diet} className="text-xs text-[#3E5A73] border border-[#B7C6D4] rounded-md px-2 py-0.5 whitespace-nowrap">
-                      {diet}
+                    <li key={diet}>
+                      <button
+                        type="button"
+                        onClick={() => browseRecipes({ category: 'Alla', subcategory: diet })}
+                        aria-label={`Visa alla recept som är ${diet.toLowerCase()}`}
+                        className={`${chip} ${hit} text-[#3E5A73] border-[#B7C6D4]`}
+                      >
+                        {diet}
+                      </button>
                     </li>
                   ))}
                 </ul>

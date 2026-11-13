@@ -11,6 +11,13 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.0.201',
+    date: '2026-11-13',
+    items: [
+      'Tryck på kategorin eller en underkategori i ett recept, till exempel Varmrätt eller Fisk, för att se alla recept som har den. Startskärmen visas då med det filtret valt.',
+    ],
+  },
+  {
     version: '1.0.200',
     date: '2026-11-13',
     items: [

@@ -67,6 +67,8 @@ export const RecipeList: React.FC = () => {
     setActiveShoppingListId,
     searchQuery,
     setSearchQuery,
+    recipeBrowseRequest,
+    clearRecipeBrowseRequest,
   } = useRecipes();
 
 
@@ -310,6 +312,19 @@ export const RecipeList: React.FC = () => {
     if (recipes.length > 0 && !categories.includes(selectedCategory)) setSelectedCategory('Alla');
   }, [recipes.length, categories, selectedCategory, setSelectedCategory]);
 
+
+  // A category tapped in an open recipe: only that category and subcategory, and none of the other
+  // filters, so every recipe that shares them is shown
+  useEffect(() => {
+    if (!recipeBrowseRequest) return;
+    setSearchQuery('');
+    setSelectedCategory(recipeBrowseRequest.category);
+    setSelectedSubcategories(recipeBrowseRequest.subcategory ? [recipeBrowseRequest.subcategory] : []);
+    setMaxCookingTime(null);
+    setDifficultyFilter([]);
+    setOnlyFavorites(false);
+    clearRecipeBrowseRequest();
+  }, [recipeBrowseRequest]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const toggleSubcategory = (subcat: string) => {
     setSelectedSubcategories((prev) =>

@@ -40,6 +40,14 @@ export interface RecipeContextType {
   setActiveTab: (tab: TabType) => void;
   openRecipeDetail: (recipe: Recipe) => void;
   closeRecipeDetail: () => void;
+  /**
+   * Shows the recipes on the start screen with a category and subcategory chosen, for example
+   * when a category is tapped in an open recipe. The open recipe closes.
+   */
+  browseRecipes: (filter: RecipeBrowseFilter) => void;
+  /** The filter browseRecipes asked for, until the recipe list has taken it */
+  recipeBrowseRequest: (RecipeBrowseFilter & { key: number }) | null;
+  clearRecipeBrowseRequest: () => void;
   toggleFavorite: (id: string) => void;
   updateNotes: (id: string, notes: string) => void;
   addRecipe: (recipe: Recipe) => void;
@@ -125,4 +133,10 @@ export interface RecipeContextType {
   togglePantryItemStock: (id: string, isOutOfStock?: boolean) => void;
   searchQuery: string;
   setSearchQuery: (query: string) => void;
+}
+
+/** Category ('Alla' for every category) and subcategory to show on the start screen */
+export interface RecipeBrowseFilter {
+  category: string;
+  subcategory?: string;
 }

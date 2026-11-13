@@ -14,7 +14,7 @@ import {
 } from '../utils/mealPlanDates';
 import { isCommonPantryStaple, detectAisle, resolveSavedAisle } from '../utils/ingredientParser';
 import { emptyPlanDay, normalizeMealPlan, buildWeek, sanitizeRecipe } from './recipeData';
-import type { RecipeContextType } from './recipeContextType';
+import type { RecipeBrowseFilter, RecipeContextType } from './recipeContextType';
 import { useHouseholdSync } from './useHouseholdSync';
 import { useShoppingLists } from './useShoppingLists';
 import { withStoredSwaps } from '../utils/ingredientSwaps';
@@ -659,6 +659,20 @@ export const RecipeProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       }
     }
   }, []);
+
+  const [recipeBrowseRequest, setRecipeBrowseRequest] = useState<(RecipeBrowseFilter & { key: number }) | null>(null);
+  const browseRecipes = useCallback(
+    (filter: RecipeBrowseFilter) => {
+      setRecipeBrowseRequest((prev) => ({ ...filter, key: (prev?.key ?? 0) + 1 }));
+      // From the start screen the recipe closes the usual way (back to the list), from another tab
+      // the start screen is opened
+      if (activeTab === 'recipes') closeRecipeDetail();
+      else setActiveTab('recipes');
+      if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'instant' });
+    },
+    [activeTab, closeRecipeDetail, setActiveTab]
+  );
+  const clearRecipeBrowseRequest = useCallback(() => setRecipeBrowseRequest(null), []);
 
   const toggleFavorite = useCallback((id: string) => {
     setRecipes((prev) => {
@@ -2152,6 +2166,9 @@ export const RecipeProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         setActiveTab,
         openRecipeDetail,
         closeRecipeDetail,
+        browseRecipes,
+        recipeBrowseRequest,
+        clearRecipeBrowseRequest,
         toggleFavorite,
         updateNotes,
         addRecipe,
