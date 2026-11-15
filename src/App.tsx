@@ -18,13 +18,20 @@ import { JoinRequestNotification } from './components/notifications/JoinRequestN
 import { OpenedRecipeSheet } from './components/share/OpenedRecipeSheet';
 import { useModalBackHandler } from './hooks/useModalBackHandler';
 
+/** How many recipes can be minimized at once */
+const MAX_MINIMIZED = 6;
+
 const AppContent: React.FC = () => {
   // On the small outer screen of a folding phone only the shopping list is shown
   const isCover = useCoverScreen();
   const { activeTab, selectedRecipe, closeRecipeDetail, recipes } = useRecipes();
-  // A minimized recipe stays open in the background, so ticked steps and portions are kept
-  const [minimizedId, setMinimizedId] = useState<string | null>(null);
-  const minimized = minimizedId ? recipes.find((r) => r.id === minimizedId) || null : null;
+  // Minimized recipes stay open in the background, so ticked steps and portions are kept.
+  // The one minimized last comes first. At most MAX_MINIMIZED, the oldest goes when there are more.
+  const [minimizedIds, setMinimizedIds] = useState<string[]>([]);
+  const minimized = minimizedIds
+    .map((id) => recipes.find((r) => r.id === id))
+    .filter((r): r is NonNullable<typeof r> => Boolean(r));
+  const removeMinimized = (id: string) => setMinimizedIds((ids) => ids.filter((x) => x !== id));
   const [showAddModal, setShowAddModal] = useState<boolean>(false);
   const [showAddShoppingModal, setShowAddShoppingModal] = useState<boolean>(false);
 
@@ -91,7 +98,7 @@ const AppContent: React.FC = () => {
         <OpenedRecipeSheet />
 
         {/* Loads a newer version by itself when nothing would be lost, without a word */}
-        <UpdateNotice busy={Boolean(selectedRecipe || minimized || showAddModal || showAddShoppingModal)} />
+        <UpdateNotice busy={Boolean(selectedRecipe || minimized.length > 0 || showAddModal || showAddShoppingModal)} />
 
         {/* Main Tab Views (Stay mounted underneath when modal opens) */}
         {activeTab === 'recipes' && <RecipeList />}
@@ -99,12 +106,12 @@ const AppContent: React.FC = () => {
         {activeTab === 'shopping' && <ShoppingListView />}
         {activeTab === 'settings' && <SettingsView />}
 
-        {/* Above the menu: a minimized recipe and the kitchen timer */}
-        {!selectedRecipe && <BottomDock minimized={minimized} onCloseMinimized={() => setMinimizedId(null)} />}
+        {/* Above the menu: the minimized recipes and the kitchen timer */}
+        {!selectedRecipe && <BottomDock minimized={minimized} onCloseMinimized={removeMinimized} />}
 
-        {/* The open recipe, and a minimized one kept in the background. The same key keeps the
+        {/* The open recipe, and the minimized ones kept in the background. The same key keeps the
             view (and what was ticked in it) when it is minimized and opened again. */}
-        {[minimized, selectedRecipe && selectedRecipe.id !== minimized?.id ? selectedRecipe : null]
+        {[...minimized, selectedRecipe && !minimizedIds.includes(selectedRecipe.id) ? selectedRecipe : null]
           .filter((r): r is NonNullable<typeof r> => Boolean(r))
           .map((r) => (
             <RecipeDetail
@@ -112,11 +119,11 @@ const AppContent: React.FC = () => {
               recipe={selectedRecipe?.id === r.id ? selectedRecipe : r}
               hidden={selectedRecipe?.id !== r.id}
               onBack={() => {
-                if (r.id === minimizedId) setMinimizedId(null);
+                removeMinimized(r.id);
                 closeRecipeDetail();
               }}
               onMinimize={() => {
-                setMinimizedId(r.id);
+                setMinimizedIds((ids) => [r.id, ...ids.filter((x) => x !== r.id)].slice(0, MAX_MINIMIZED));
                 closeRecipeDetail();
               }}
             />

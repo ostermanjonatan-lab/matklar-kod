@@ -11,6 +11,13 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.0.212',
+    date: '2026-11-15',
+    items: [
+      'Flera recept kan vara minimerade samtidigt, upp till sex. Svep åt sidan i rutan ovanför menyn för att byta mellan dem, eller tryck på prickarna. Det senast minimerade receptet visas först.',
+    ],
+  },
+  {
     version: '1.0.211',
     date: '2026-11-15',
     items: [
