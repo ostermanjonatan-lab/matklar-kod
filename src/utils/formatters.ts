@@ -63,7 +63,8 @@ export function formatAmount(amount: number | null | undefined): string {
 /**
  * Format total cooking time string (e.g. 35 min)
  */
-export function formatCookingTime(prepMinutes?: number, cookMinutes?: number): string {
+/** With minutesOnly the time is always in minutes ("90 min"), so it stays short on the recipe cards. */
+export function formatCookingTime(prepMinutes?: number, cookMinutes?: number, minutesOnly = false): string {
   // Prep time and cook time have been merged into a single "Tillagningstid".
   // If both arguments are provided, cookMinutes is the primary total time.
   // If only one argument is provided, prepMinutes receives the value.
@@ -75,7 +76,7 @@ export function formatCookingTime(prepMinutes?: number, cookMinutes?: number): s
   }
 
   if (total <= 0) return '30 min';
-  if (total >= 60) {
+  if (total >= 60 && !minutesOnly) {
     const hours = Math.floor(total / 60);
     const mins = total % 60;
     return mins > 0 ? `${hours} tim ${mins} min` : `${hours} tim`;

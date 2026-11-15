@@ -90,25 +90,32 @@ export const RecipeCard = React.memo<RecipeCardProps>(
       setTimeout(() => setAddedToCart(false), 2000);
     };
 
-    // One line: category (with its icon) · time (with a clock) · difficulty (with its bars) · source · new.
+    // One line: category (with its icon; in the list the icon only) · time (with a clock) · difficulty (with its bars) · source · new.
     // Parts that do not fit are left out whole (they wrap to a hidden second line), so a part is
     // never cut in the middle.
-    const renderMeta = (onPhoto: boolean) => {
+    const renderMeta = (onPhoto: boolean, compactRow = false) => {
       const CategoryIcon = categoryIcon(recipe.category);
-      const icon = 'inline-block w-3.5 h-3.5 mr-1 align-[-2px]';
+      const icon = `inline-block w-3.5 h-3.5 ${compactRow ? 'mr-0.5' : 'mr-1'} align-[-2px]`;
       const parts: React.ReactNode[] = [
+        // In the list there is room for the category's icon only, so the difficulty fits
         categoryLabel(recipe.category) ? (
-          <>
-            <CategoryIcon className={icon} aria-hidden="true" />
-            {categoryLabel(recipe.category)}
-          </>
+          compactRow ? (
+            <span role="img" aria-label={categoryLabel(recipe.category)} title={categoryLabel(recipe.category)}>
+              <CategoryIcon className="inline-block w-3.5 h-3.5 align-[-2px]" aria-hidden="true" />
+            </span>
+          ) : (
+            <>
+              <CategoryIcon className={icon} aria-hidden="true" />
+              {categoryLabel(recipe.category)}
+            </>
+          )
         ) : '',
         <>
           <Clock className={icon} aria-hidden="true" />
-          {formatCookingTime(recipe.prepTimeMinutes, recipe.cookTimeMinutes)}
+          {formatCookingTime(recipe.prepTimeMinutes, recipe.cookTimeMinutes, true)}
         </>,
         recipe.difficulty ? (
-          <span className="inline-flex items-baseline gap-1">
+          <span className={`inline-flex items-baseline ${compactRow ? 'gap-0.5' : 'gap-1'}`}>
             <DifficultyDots level={recipe.difficulty} light={onPhoto} />
             {DIFFICULTY_LABELS[recipe.difficulty]}
           </span>
@@ -118,7 +125,7 @@ export const RecipeCard = React.memo<RecipeCardProps>(
       ].filter(Boolean);
       return parts.map((part, i) => (
         <span key={i} className="whitespace-nowrap">
-          {i > 0 && '\u00a0·\u00a0'}
+          {i > 0 && (compactRow ? '\u2009·\u2009' : '\u00a0·\u00a0')}
           {part}
         </span>
       ));
@@ -135,7 +142,7 @@ export const RecipeCard = React.memo<RecipeCardProps>(
         <div
           onClick={handleCardClick}
           style={{ contentVisibility: 'auto', containIntrinsicSize: '80px' }}
-          className="flex items-center gap-3 py-2.5 border-b border-[#EBE7DF] cursor-pointer active:bg-stone-100/70"
+          className="flex items-center gap-2.5 py-2.5 border-b border-[#EBE7DF] cursor-pointer active:bg-stone-100/70"
         >
           <div className="relative w-16 h-14 rounded-xl overflow-hidden bg-stone-100 shrink-0">
             <FadeImage
@@ -150,7 +157,7 @@ export const RecipeCard = React.memo<RecipeCardProps>(
               {formatRecipeTitle(recipe.title)}
             </h3>
             <p className="mt-0.5 text-xs leading-4 h-4 text-stone-500 flex flex-wrap overflow-hidden">
-              {renderMeta(false)}
+              {renderMeta(false, true)}
             </p>
           </div>
           <button
