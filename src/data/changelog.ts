@@ -11,6 +11,14 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.0.211',
+    date: '2026-11-15',
+    items: [
+      'Receptkorten visar en ikon för kategorin, som Varmrätt eller Efterrätt, och en klocka framför tiden. Tiden står i minuter, till exempel 90 min, så att svårighetsgraden alltid får plats. I listvyn visas kategorin bara som ikon.',
+      'En lunch med rester visar fotot från receptet den kommer från, i stället för matlådan.',
+    ],
+  },
+  {
     version: '1.0.210',
     date: '2026-11-15',
     items: [
