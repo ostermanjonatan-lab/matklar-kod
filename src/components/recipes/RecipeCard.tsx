@@ -8,6 +8,7 @@ import { isRecipeNew } from '../../types/recipe';
 import { useRecipes } from '../../context/RecipeContext';
 import { Heart, Check, ShoppingCart, Clock } from 'lucide-react';
 import { formatCookingTime, formatRecipeTitle } from '../../utils/formatters';
+import { categoryIcon } from './categoryIcon';
 
 interface RecipeCardProps {
   recipe: Recipe;
@@ -89,14 +90,23 @@ export const RecipeCard = React.memo<RecipeCardProps>(
       setTimeout(() => setAddedToCart(false), 2000);
     };
 
-    // One line: category · time (with a clock) · difficulty (with its bars) · source
+    // One line: category (with its icon) · time (with a clock) · difficulty (with its bars) · source · new.
+    // Parts that do not fit are left out whole (they wrap to a hidden second line), so a part is
+    // never cut in the middle.
     const renderMeta = (onPhoto: boolean) => {
+      const CategoryIcon = categoryIcon(recipe.category);
+      const icon = 'inline-block w-3.5 h-3.5 mr-1 align-[-2px]';
       const parts: React.ReactNode[] = [
-        categoryLabel(recipe.category),
-        <span className="whitespace-nowrap">
-          <Clock className="inline-block w-3.5 h-3.5 mr-1 align-[-2px]" aria-hidden="true" />
+        categoryLabel(recipe.category) ? (
+          <>
+            <CategoryIcon className={icon} aria-hidden="true" />
+            {categoryLabel(recipe.category)}
+          </>
+        ) : '',
+        <>
+          <Clock className={icon} aria-hidden="true" />
           {formatCookingTime(recipe.prepTimeMinutes, recipe.cookTimeMinutes)}
-        </span>,
+        </>,
         recipe.difficulty ? (
           <span className="inline-flex items-baseline gap-1">
             <DifficultyDots level={recipe.difficulty} light={onPhoto} />
@@ -104,12 +114,13 @@ export const RecipeCard = React.memo<RecipeCardProps>(
           </span>
         ) : '',
         recipe.sourceType === 'recipe_image' ? 'Foto' : recipe.sourceType === 'pdf' || recipe.recipeDocumentUrl ? 'PDF' : '',
+        isRecipeNew(recipe) ? <span className={onPhoto ? 'text-emerald-200' : 'text-emerald-700'}>Ny</span> : '',
       ].filter(Boolean);
       return parts.map((part, i) => (
-        <React.Fragment key={i}>
-          {i > 0 && ' · '}
+        <span key={i} className="whitespace-nowrap">
+          {i > 0 && '\u00a0·\u00a0'}
           {part}
-        </React.Fragment>
+        </span>
       ));
     };
 
@@ -138,9 +149,8 @@ export const RecipeCard = React.memo<RecipeCardProps>(
             <h3 className="font-serif text-[15px] font-bold text-stone-900 leading-snug line-clamp-2">
               {formatRecipeTitle(recipe.title)}
             </h3>
-            <p className="mt-0.5 text-xs text-stone-500 truncate">
+            <p className="mt-0.5 text-xs leading-4 h-4 text-stone-500 flex flex-wrap overflow-hidden">
               {renderMeta(false)}
-              {isRecipeNew(recipe) && <span className="text-emerald-700"> · Ny</span>}
             </p>
           </div>
           <button
@@ -202,9 +212,8 @@ export const RecipeCard = React.memo<RecipeCardProps>(
           <h3 className="font-serif text-lg md:text-xl font-bold text-white leading-snug tracking-tight drop-shadow-[0_1px_3px_rgba(0,0,0,0.6)] line-clamp-2">
             {formatRecipeTitle(recipe.title)}
           </h3>
-          <p className="mt-1 text-[13px] text-white/85 drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)] truncate">
+          <p className="mt-1 text-[13px] leading-5 h-5 text-white/85 drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)] flex flex-wrap overflow-hidden">
             {renderMeta(true)}
-            {isRecipeNew(recipe) && <span className="text-emerald-200"> · Ny</span>}
           </p>
         </div>
 
