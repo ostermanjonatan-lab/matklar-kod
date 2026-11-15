@@ -203,6 +203,18 @@ export const MealPlanView: React.FC = () => {
     return choices;
   };
 
+  // The recipe a leftover lunch on this date comes from, for its photo. Found by the dinner it
+  // points to, or by the name when that dinner is no longer in the plan.
+  const leftoverRecipe = (lunchDate: string, customLunch?: string | null) => {
+    const leftover = parseLeftoverLunch(customLunch);
+    if (!leftover) return undefined;
+    const source = leftoverSourceDate(lunchDate, customLunch);
+    const dinnerId = source ? getMealPlanForDate(source)?.dinnerRecipeId : undefined;
+    const byDinner = dinnerId ? recipes.find((r) => r.id === dinnerId) : undefined;
+    if (byDinner && formatRecipeTitle(byDinner.title) === leftover.title) return byDinner;
+    return recipes.find((r) => formatRecipeTitle(r.title) === leftover.title || r.title === leftover.title);
+  };
+
   // Lunches in the coming days made from the dinner on this date
   const leftoverLunchesFrom = (dinnerDate: string) => {
     const result: { date: string; servings: number }[] = [];
@@ -1276,7 +1288,13 @@ export const MealPlanView: React.FC = () => {
                     className="flex items-center gap-3 min-w-0 flex-1 text-left touch-manipulation"
                   >
                     <span className="relative w-12 h-12 rounded-xl overflow-hidden shrink-0 block">
-                      {parseLeftoverLunch(activeDayData.customLunch) ? (
+                      {leftoverRecipe(weekDates[selectedDayIndex], activeDayData.customLunch) ? (
+                        <FadeImage
+                          src={leftoverRecipe(weekDates[selectedDayIndex], activeDayData.customLunch)!.coverImageUrl}
+                          alt=""
+                          className="absolute inset-0 w-full h-full object-cover"
+                        />
+                      ) : parseLeftoverLunch(activeDayData.customLunch) ? (
                         <span className="absolute inset-0 bg-stone-100 flex items-center justify-center">
                           <LunchboxIcon className="w-5 h-5 text-stone-400" />
                         </span>
