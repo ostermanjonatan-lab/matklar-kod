@@ -30,6 +30,7 @@ import {
   CalendarRange,
   CalendarDays,
   ChartColumn,
+  ImageDown,
 } from 'lucide-react';
 import { LunchboxIcon } from '../icons/LunchboxIcon';
 import { DinnerBrowser } from '../recipes/DinnerBrowser';
@@ -616,8 +617,9 @@ export const MealPlanView: React.FC = () => {
                 <button
                   type="button"
                   onClick={randomizeWeek}
-                  className="hidden md:block px-3 min-h-[38px] text-xs font-semibold text-white hover:text-white/80 touch-manipulation"
+                  className="hidden md:inline-flex items-center gap-1.5 px-3 min-h-[38px] text-xs font-semibold text-white hover:text-white/80 touch-manipulation"
                 >
+                  <Dices className="w-4 h-4 shrink-0" aria-hidden="true" />
                   Slumpa veckan
                 </button>
               )}
@@ -1506,13 +1508,14 @@ export const MealPlanView: React.FC = () => {
           </button>
         </div>
 
-        <div className="flex justify-center md:justify-start gap-2 md:pt-2 md:-ml-3">
+        <div className="flex flex-wrap justify-center md:justify-start md:pt-2 md:-ml-3">
           {weekDates[6] >= today && (
             <button
               type="button"
               onClick={randomizeWeek}
-              className="md:hidden text-xs font-semibold text-[#284235] hover:text-stone-900 py-2 px-3 touch-manipulation min-h-[40px]"
+              className="md:hidden inline-flex items-center gap-1 text-xs font-semibold text-[#284235] hover:text-stone-900 py-2 px-2 touch-manipulation min-h-[40px]"
             >
+              <Dices className="w-4 h-4 shrink-0" aria-hidden="true" />
               Slumpa veckan
             </button>
           )}
@@ -1521,17 +1524,19 @@ export const MealPlanView: React.FC = () => {
               type="button"
               onClick={saveWeekImage}
               disabled={savingImage}
-              className="text-xs font-semibold text-[#284235] hover:text-stone-900 disabled:text-stone-400 py-2 px-3 touch-manipulation min-h-[40px]"
+              className="inline-flex items-center gap-1 text-xs font-semibold text-[#284235] hover:text-stone-900 disabled:text-stone-400 py-2 px-2 touch-manipulation min-h-[40px]"
             >
-              {savingImage ? 'Gör bilden' : 'Spara som bild'}
+              <ImageDown className="w-4 h-4 shrink-0" aria-hidden="true" />
+              {savingImage ? 'Gör bilden' : 'Spara bild'}
             </button>
           )}
           {totalPlannedMeals > 0 && (
             <button
               type="button"
               onClick={() => setShowClearWeekModal(true)}
-              className="text-xs font-semibold text-stone-500 hover:text-rose-700 py-2 px-3 touch-manipulation min-h-[40px]"
+              className="inline-flex items-center gap-1 text-xs font-semibold text-stone-500 hover:text-rose-700 py-2 px-2 touch-manipulation min-h-[40px]"
             >
+              <Trash2 className="w-4 h-4 shrink-0" aria-hidden="true" />
               Töm vecka {weekNumber}
             </button>
           )}
