@@ -11,6 +11,13 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.0.209',
+    date: '2026-11-15',
+    items: [
+      'En vecka i planeraren kan sparas som bild. Tryck på Spara som bild längst ner i Dag eller Vecka. Bilden har A4-format med en rad per dag, med middag och lunch, och går att skriva ut.',
+    ],
+  },
+  {
     version: '1.0.208',
     date: '2026-11-13',
     items: [
