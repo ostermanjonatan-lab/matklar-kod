@@ -46,6 +46,8 @@ import {
   getWeekStart,
   monthStartOf,
 } from '../../utils/mealPlanDates';
+import { createWeekPlanImage, weekPlanImageFileName } from '../../utils/weekPlanImage';
+import { saveImageFile } from '../../utils/shareImage';
 
 const DAYS_OF_WEEK: MealPlanDay['dayName'][] = [
   'Måndag',
@@ -495,6 +497,39 @@ export const MealPlanView: React.FC = () => {
       setGeneratedToast(null);
       setActiveTab('shopping');
     }, 1500);
+  };
+
+  // Spara som bild: the week as a JPEG, on the phone or as a download
+  const [savingImage, setSavingImage] = useState(false);
+  const saveWeekImage = async () => {
+    if (savingImage) return;
+    setSavingImage(true);
+    try {
+      const days = DAYS_OF_WEEK.map((day, idx) => {
+        const d = mealPlan.find((x) => x.dayName === day);
+        const dinnerRecipe = d?.dinnerRecipeId ? recipes.find((r) => r.id === d.dinnerRecipeId) : undefined;
+        const lunchRecipe = d?.lunchRecipeId ? recipes.find((r) => r.id === d.lunchRecipeId) : undefined;
+        const lunch = lunchRecipe ? formatRecipeTitle(lunchRecipe.title) : d?.customLunch?.trim() || '';
+        return {
+          label: `${day} ${formatDayMonth(weekDates[idx])}`,
+          dinner: dinnerRecipe ? formatRecipeTitle(dinnerRecipe.title) : d?.customDinner?.trim() || '',
+          photoUrl: dinnerRecipe?.coverImageUrl,
+          lunch: lunch ? `Lunch: ${lunch}` : '',
+        };
+      });
+      const title = `Vecka ${weekNumber}`;
+      const blob = await createWeekPlanImage(title, formatWeekRange(planWeekStart), days);
+      const result = await saveImageFile(new File([blob], weekPlanImageFileName(title), { type: 'image/jpeg' }));
+      if (result === 'saved') {
+        setGeneratedToast('Bilden är sparad');
+        setTimeout(() => setGeneratedToast(null), 2500);
+      }
+    } catch {
+      setGeneratedToast('Bilden gick inte att göra');
+      setTimeout(() => setGeneratedToast(null), 2500);
+    } finally {
+      setSavingImage(false);
+    }
   };
 
   const openPickerModal = (dayName: MealPlanDay['dayName'], mealType: 'lunch' | 'dinner') => {
@@ -1479,6 +1514,16 @@ export const MealPlanView: React.FC = () => {
               className="md:hidden text-xs font-semibold text-[#284235] hover:text-stone-900 py-2 px-3 touch-manipulation min-h-[40px]"
             >
               Slumpa veckan
+            </button>
+          )}
+          {totalPlannedMeals > 0 && (
+            <button
+              type="button"
+              onClick={saveWeekImage}
+              disabled={savingImage}
+              className="text-xs font-semibold text-[#284235] hover:text-stone-900 disabled:text-stone-400 py-2 px-3 touch-manipulation min-h-[40px]"
+            >
+              {savingImage ? 'Gör bilden' : 'Spara som bild'}
             </button>
           )}
           {totalPlannedMeals > 0 && (

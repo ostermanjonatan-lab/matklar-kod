@@ -69,7 +69,7 @@ export function wrap(ctx: CanvasRenderingContext2D, text: string, maxWidth: numb
  * Tried a second time with a changed address, since a copy the app already showed may be
  * kept in a form that cannot be drawn on a canvas.
  */
-async function loadPhoto(url: string): Promise<HTMLImageElement | null> {
+export async function loadPhoto(url: string): Promise<HTMLImageElement | null> {
   const first = await loadPhotoOnce(url);
   if (first || !url || url.startsWith('data:')) return first;
   return loadPhotoOnce(`${url}${url.includes('?') ? '&' : '?'}bild=1`);

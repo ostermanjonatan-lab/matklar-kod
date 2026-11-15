@@ -42,7 +42,7 @@ export async function saveImageFile(image: File): Promise<ImageResult> {
 }
 
 /** A file name like "inkopslista-stugan.png": letters and digits only */
-export function imageFileName(text: string, fallback: string): string {
+export function imageFileName(text: string, fallback: string, extension = 'png'): string {
   const slug = text
     .toLowerCase()
     .replace(/[åä]/g, 'a')
@@ -50,5 +50,5 @@ export function imageFileName(text: string, fallback: string): string {
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
     .slice(0, 60);
-  return `${slug || fallback}.png`;
+  return `${slug || fallback}.${extension}`;
 }
