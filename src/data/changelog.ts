@@ -11,6 +11,13 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.0.210',
+    date: '2026-11-15',
+    items: [
+      'Slumpa veckan, Spara bild och Töm vecka längst ner i planeraren har ikoner. Spara som bild heter nu Spara bild.',
+    ],
+  },
+  {
     version: '1.0.209',
     date: '2026-11-15',
     items: [
