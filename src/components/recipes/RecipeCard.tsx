@@ -6,7 +6,7 @@ import { DifficultyDots } from './DifficultyPicker';
 import type { Recipe } from '../../types/recipe';
 import { isRecipeNew } from '../../types/recipe';
 import { useRecipes } from '../../context/RecipeContext';
-import { Heart, Check, ShoppingCart } from 'lucide-react';
+import { Heart, Check, ShoppingCart, Clock } from 'lucide-react';
 import { formatCookingTime, formatRecipeTitle } from '../../utils/formatters';
 
 interface RecipeCardProps {
@@ -89,11 +89,14 @@ export const RecipeCard = React.memo<RecipeCardProps>(
       setTimeout(() => setAddedToCart(false), 2000);
     };
 
-    // One line: category · time · difficulty (with its bars) · source
+    // One line: category · time (with a clock) · difficulty (with its bars) · source
     const renderMeta = (onPhoto: boolean) => {
       const parts: React.ReactNode[] = [
         categoryLabel(recipe.category),
-        formatCookingTime(recipe.prepTimeMinutes, recipe.cookTimeMinutes),
+        <span className="whitespace-nowrap">
+          <Clock className="inline-block w-3.5 h-3.5 mr-1 align-[-2px]" aria-hidden="true" />
+          {formatCookingTime(recipe.prepTimeMinutes, recipe.cookTimeMinutes)}
+        </span>,
         recipe.difficulty ? (
           <span className="inline-flex items-baseline gap-1">
             <DifficultyDots level={recipe.difficulty} light={onPhoto} />
