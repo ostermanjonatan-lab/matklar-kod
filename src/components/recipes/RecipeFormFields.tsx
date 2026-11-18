@@ -1,7 +1,9 @@
 import React, { useLayoutEffect, useRef, useState } from 'react';
 import { categoryLabel } from '../../data/categories';
-import type { RecipeCategory, RecipeDifficulty } from '../../types/recipe';
-import { Camera, ImagePlus, Loader2, Trash2 } from 'lucide-react';
+import type { CoverFocus, RecipeCategory, RecipeDifficulty } from '../../types/recipe';
+import { CoverFocusEditor } from './CoverFocusEditor';
+import { coverFocusStyle } from '../../utils/coverFocus';
+import { Camera, ImagePlus, Loader2, Move, Trash2 } from 'lucide-react';
 import { DifficultyPicker } from './DifficultyPicker';
 import { SubcategorySelector } from './SubcategorySelector';
 import { STANDARD_CATEGORIES } from '../../data/categories';
@@ -56,6 +58,9 @@ interface RecipeFormFieldsProps {
   setCookingTimeMinutes: (v: number | string) => void;
   setDifficulty: (v: RecipeDifficulty | undefined) => void;
   setCoverImageUrl: (v: string) => void;
+  /** The part of the picture shown in the cards */
+  coverFocus: CoverFocus | undefined;
+  setCoverFocus: (v: CoverFocus | undefined) => void;
   setNotes: (v: string) => void;
   setIngredientsText: (v: string) => void;
   setInstructionsText: (v: string) => void;
@@ -82,6 +87,8 @@ export const RecipeFormFields: React.FC<RecipeFormFieldsProps> = ({
   setCookingTimeMinutes,
   setDifficulty,
   setCoverImageUrl,
+  coverFocus,
+  setCoverFocus,
   setNotes,
   setIngredientsText,
   setInstructionsText,
@@ -94,6 +101,12 @@ export const RecipeFormFields: React.FC<RecipeFormFieldsProps> = ({
 }) => {
   const { title, category, subcategories, servings, cookingTimeMinutes, difficulty, coverImageUrl, notes, ingredientsText, instructionsText } = values;
   const [showImageUrl, setShowImageUrl] = useState<boolean>(false);
+  const [adjustingImage, setAdjustingImage] = useState(false);
+  // A new picture starts in the middle again
+  const setPicture = (url: string) => {
+    if (url !== coverImageUrl) setCoverFocus(undefined);
+    setCoverImageUrl(url);
+  };
   const field = 'w-full bg-[#FCFAF5] border border-[#EBE7DF] rounded-2xl px-3.5 text-base sm:text-sm text-stone-900 focus:outline-none focus:ring-2 focus:ring-[#284235]';
   const label = 'font-bold text-stone-800 block mb-1 text-xs';
   const parsedIngredients = { length: ingredientCount };
@@ -118,7 +131,7 @@ export const RecipeFormFields: React.FC<RecipeFormFieldsProps> = ({
             <span className={label}>Bild</span>
             {coverImageUrl ? (
               <div className="relative aspect-16/9 rounded-2xl overflow-hidden bg-stone-900">
-                <img src={coverImageUrl} alt="" className="w-full h-full object-cover" />
+                <img src={coverImageUrl} alt="" className="w-full h-full object-cover" style={coverFocusStyle(coverFocus)} />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent flex items-end justify-between p-3">
                   <label className="px-3.5 min-h-[40px] bg-white/95 hover:bg-white text-stone-900 rounded-xl font-semibold text-xs cursor-pointer flex items-center gap-1.5 touch-manipulation">
                     <Camera className="w-4 h-4" />
@@ -127,7 +140,15 @@ export const RecipeFormFields: React.FC<RecipeFormFieldsProps> = ({
                   </label>
                   <button
                     type="button"
-                    onClick={() => setCoverImageUrl('')}
+                    onClick={() => setAdjustingImage(true)}
+                    className="mr-auto ml-2 px-3.5 min-h-[40px] bg-white/95 hover:bg-white text-stone-900 rounded-xl font-semibold text-xs flex items-center gap-1.5 touch-manipulation"
+                  >
+                    <Move className="w-4 h-4" />
+                    Justera bild
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPicture('')}
                     className="w-10 h-10 rounded-xl bg-black/60 hover:bg-rose-600 text-white flex items-center justify-center touch-manipulation"
                     aria-label="Ta bort bild"
                   >
@@ -159,7 +180,7 @@ export const RecipeFormFields: React.FC<RecipeFormFieldsProps> = ({
               <input
                 type="url"
                 value={coverImageUrl}
-                onChange={(e) => setCoverImageUrl(e.target.value)}
+                onChange={(e) => setPicture(e.target.value)}
                 placeholder="https://"
                 aria-label="Bildens webbadress"
                 className={`${field} h-10 mt-2 text-xs`}
@@ -170,6 +191,10 @@ export const RecipeFormFields: React.FC<RecipeFormFieldsProps> = ({
               </button>
             )}
           </div>
+
+          {adjustingImage && coverImageUrl && (
+            <CoverFocusEditor src={coverImageUrl} value={coverFocus} onSave={setCoverFocus} onClose={() => setAdjustingImage(false)} />
+          )}
 
           {/* Category */}
           <div>

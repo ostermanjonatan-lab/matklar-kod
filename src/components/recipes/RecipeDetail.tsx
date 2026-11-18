@@ -38,6 +38,7 @@ import {
   Pencil,
 } from 'lucide-react';
 import { PortionScaler } from './PortionScaler';
+import { coverFocusStyle } from '../../utils/coverFocus';
 import { NutritionPanel } from './NutritionPanel';
 import { findIngredientMentions, type IngredientMention } from '../../utils/stepIngredients';
 import { EditRecipeModal } from './EditRecipeModal';
@@ -498,7 +499,7 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
       className={`relative w-full overflow-hidden shrink-0 ${hasCoverImage(recipe.coverImageUrl) ? 'cursor-zoom-in' : ''} ${className}`}
       onClick={() => hasCoverImage(recipe.coverImageUrl) && setShowPhoto(true)}
     >
-      <FadeImage src={recipe.coverImageUrl} alt={recipe.title} className="absolute inset-0 w-full h-full object-cover" />
+      <FadeImage src={recipe.coverImageUrl} style={coverFocusStyle(recipe.coverFocus)} alt={recipe.title} className="absolute inset-0 w-full h-full object-cover" />
       <div className="absolute inset-0 bg-gradient-to-t from-stone-950/85 via-black/30 to-black/20" />
 
       <div className="absolute bottom-4 left-4 right-16 text-white z-10">

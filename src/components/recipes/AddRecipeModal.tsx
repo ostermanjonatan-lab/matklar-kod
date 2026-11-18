@@ -4,7 +4,7 @@ import { isCommonPantryStaple } from '../../utils/ingredientParser';
 import type { PageNutrition } from '../../utils/nutrition';
 import { Toast } from '../layout/Toast';
 import { isRecipeLink, readRecipeLink } from '../../utils/recipeLink';
-import type { Recipe, Instruction, Ingredient, RecipeCategory, RecipeSourceType, RecipeDifficulty } from '../../types/recipe';
+import type { Recipe, Instruction, Ingredient, RecipeCategory, RecipeSourceType, RecipeDifficulty, CoverFocus } from '../../types/recipe';
 import { useRecipes } from '../../context/RecipeContext';
 import {
   X,
@@ -53,6 +53,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = ({ onClose, closeGu
   const [difficulty, setDifficulty] = useState<RecipeDifficulty | undefined>(undefined);
   const [cookingTimeMinutes, setCookingTimeMinutes] = useState<number | string>(30);
   const [coverImageUrl, setCoverImageUrl] = useState('');
+  const [coverFocus, setCoverFocus] = useState<CoverFocus | undefined>(undefined);
   const [recipeDocumentUrl, setRecipeDocumentUrl] = useState('');
   // Nutrition from the recipe's web page, kept as the page gives it
   const [pageNutrition, setPageNutrition] = useState<PageNutrition | undefined>(undefined);
@@ -92,6 +93,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = ({ onClose, closeGu
     try {
       const uploadedUrl = await uploadRecipePhoto(file);
       setCoverImageUrl(uploadedUrl);
+      setCoverFocus(undefined);
       setToastMessage('Bilden är tillagd');
       setTimeout(() => setToastMessage(null), 3000);
     } catch (err) {
@@ -401,7 +403,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = ({ onClose, closeGu
   // Anything filled in that would be lost on close
   const [showDiscardPrompt, setShowDiscardPrompt] = useState<boolean>(false);
   const snapshot = () =>
-    JSON.stringify([title, category, subcategories, servings, difficulty, cookingTimeMinutes, coverImageUrl, notes, ingredientsText, instructionsText, pastedRecipeText.trim(), sourceUrl.trim(), ocrReviewText.trim()]);
+    JSON.stringify([title, category, subcategories, servings, difficulty, cookingTimeMinutes, coverImageUrl, coverFocus, notes, ingredientsText, instructionsText, pastedRecipeText.trim(), sourceUrl.trim(), ocrReviewText.trim()]);
   const initialSnapshotRef = React.useRef<string | null>(null);
   if (initialSnapshotRef.current === null) initialSnapshotRef.current = snapshot();
   const isDirty = snapshot() !== initialSnapshotRef.current;
@@ -428,6 +430,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = ({ onClose, closeGu
       title: title.trim(),
       description: '',
       coverImageUrl: coverImageUrl.trim(),
+      coverFocus: coverImageUrl.trim() ? coverFocus : undefined,
       recipeDocumentUrl: recipeDocumentUrl.trim() || undefined,
       sourceUrl: sourceUrl.trim() || undefined,
       sourceType,
@@ -686,6 +689,8 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = ({ onClose, closeGu
             setCookingTimeMinutes={setCookingTimeMinutes}
             setDifficulty={setDifficulty}
             setCoverImageUrl={setCoverImageUrl}
+            coverFocus={coverFocus}
+            setCoverFocus={setCoverFocus}
             setNotes={setNotes}
             setIngredientsText={setIngredientsText}
             setInstructionsText={setInstructionsText}

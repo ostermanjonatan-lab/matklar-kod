@@ -38,6 +38,7 @@ import { DinnerBrowser } from '../recipes/DinnerBrowser';
 import { leftoverLunchText, leftoverSourceDate, parseLeftoverLunch } from '../../utils/leftovers';
 import { RandomPickerModal } from '../recipes/RandomPickerModal';
 import { formatCookingTime, scaleIngredientAmount, formatAmount, formatRecipeTitle } from '../../utils/formatters';
+import { coverFocusStyle } from '../../utils/coverFocus';
 import {
   addDaysISO,
   dayNameForDate,
@@ -765,7 +766,7 @@ export const MealPlanView: React.FC = () => {
                         }`}
                       >
                         {recipe ? (
-                          <FadeImage src={recipe.coverImageUrl} alt={recipe.title} className="absolute inset-0 w-full h-full object-cover" />
+                          <FadeImage src={recipe.coverImageUrl} style={coverFocusStyle(recipe.coverFocus)} alt={recipe.title} className="absolute inset-0 w-full h-full object-cover" />
                         ) : hasCustomDinner ? (
                           <CustomMealImage name={dayData!.customDinner!.trim()} />
                         ) : (
@@ -901,7 +902,7 @@ export const MealPlanView: React.FC = () => {
                     onClick={() => openRecipeDetail(dinnerRecipe)}
                     className="relative aspect-16/10 rounded-t-3xl overflow-hidden cursor-pointer group touch-manipulation"
                   >
-                    <FadeImage src={dinnerRecipe.coverImageUrl} alt={dinnerRecipe.title} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105" />
+                    <FadeImage src={dinnerRecipe.coverImageUrl} style={coverFocusStyle(dinnerRecipe.coverFocus)} alt={dinnerRecipe.title} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105" />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/35 via-45% to-black/20" />
 
                     {/* Top Floating Badges & Action Buttons */}
@@ -1227,7 +1228,7 @@ export const MealPlanView: React.FC = () => {
                     className="flex items-center gap-3 min-w-0 flex-1 cursor-pointer group touch-manipulation"
                   >
                     <span className="relative w-12 h-12 rounded-xl overflow-hidden shrink-0 block">
-                      <FadeImage src={lunchRecipe.coverImageUrl} alt={lunchRecipe.title} className="absolute inset-0 w-full h-full object-cover" />
+                      <FadeImage src={lunchRecipe.coverImageUrl} style={coverFocusStyle(lunchRecipe.coverFocus)} alt={lunchRecipe.title} className="absolute inset-0 w-full h-full object-cover" />
                     </span>
                     <div className="min-w-0 flex-1">
                       <h4 className="font-serif font-bold text-sm leading-5 text-stone-900 truncate group-hover:text-emerald-900 transition-colors">
@@ -1294,6 +1295,7 @@ export const MealPlanView: React.FC = () => {
                       {leftoverRecipe(weekDates[selectedDayIndex], activeDayData.customLunch) ? (
                         <FadeImage
                           src={leftoverRecipe(weekDates[selectedDayIndex], activeDayData.customLunch)!.coverImageUrl}
+                          style={coverFocusStyle(leftoverRecipe(weekDates[selectedDayIndex], activeDayData.customLunch)!.coverFocus)}
                           alt=""
                           className="absolute inset-0 w-full h-full object-cover"
                         />
@@ -1440,7 +1442,7 @@ export const MealPlanView: React.FC = () => {
                   {/* Thumbnail */}
                   <div className="relative w-12 h-12 rounded-xl overflow-hidden bg-stone-100 shrink-0">
                     {dRecipe ? (
-                      <FadeImage src={dRecipe.coverImageUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
+                      <FadeImage src={dRecipe.coverImageUrl} style={coverFocusStyle(dRecipe.coverFocus)} alt="" className="absolute inset-0 w-full h-full object-cover" />
                     ) : hasCustomDinner ? (
                       <CustomMealImage name={dayData!.customDinner!.trim()} />
                     ) : (

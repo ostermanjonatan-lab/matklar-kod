@@ -7,6 +7,7 @@ import { useTimer } from '../../context/TimerContext';
 import { useRecipes } from '../../context/RecipeContext';
 import { formatRecipeTitle } from '../../utils/formatters';
 import { TimerRow, useCurvedShape } from '../timer/TimerBar';
+import { coverFocusStyle } from '../../utils/coverFocus';
 
 interface BottomDockProps {
   /** The recipes that were minimized, the last one first. They are still open in the background. */
@@ -136,14 +137,17 @@ const MinimizedRecipes: React.FC<{
               aria-label={`Visa ${formatRecipeTitle(recipe.title)}`}
             >
               {hasCoverImage(recipe.coverImageUrl) ? (
-                <img
-                  src={recipe.coverImageUrl}
-                  alt=""
-                  className="w-11 h-11 rounded-xl object-cover bg-stone-100 shrink-0"
-                  onError={(e) => {
-                    e.currentTarget.style.visibility = 'hidden';
-                  }}
-                />
+                <span className="w-11 h-11 rounded-xl overflow-hidden bg-stone-100 shrink-0">
+                  <img
+                    src={recipe.coverImageUrl}
+                    style={coverFocusStyle(recipe.coverFocus)}
+                    alt=""
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.currentTarget.style.visibility = 'hidden';
+                    }}
+                  />
+                </span>
               ) : (
                 <span className="relative block w-11 h-11 rounded-xl overflow-hidden shrink-0">
                   <NoImage />

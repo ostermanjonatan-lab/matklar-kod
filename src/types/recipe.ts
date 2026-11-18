@@ -25,6 +25,13 @@ export interface Instruction {
 
 export type RecipeDifficulty = 1 | 2 | 3;
 
+/** The point of the picture kept in view (per cent) and the zoom, 1 to 3 */
+export interface CoverFocus {
+  x: number;
+  y: number;
+  zoom: number;
+}
+
 export interface Recipe {
   id: string;
   title: string;
@@ -52,6 +59,8 @@ export interface Recipe {
   pageNutrition?: PageNutrition;
   /** Ingredients tied to packaged foods in Open Food Facts, whose values are used for them */
   productLinks?: ProductLink[];
+  /** The part of the picture shown in cards and thumbnails, see utils/coverFocus.ts */
+  coverFocus?: CoverFocus;
   createdAt?: string;
   updatedAt?: string;
 }

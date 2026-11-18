@@ -1,3 +1,4 @@
+import { normalizeCoverFocus } from '../utils/coverFocus';
 /**
  * Pure helpers for the app's data: cleaning up saved recipes and building the meal plan week.
  * They hold no state, so they are kept apart from RecipeContext.
@@ -124,6 +125,7 @@ export function sanitizeRecipe(recipe: Recipe): Recipe {
     // No picture is saved as none, and shown as the grey Ingen bild vald box. The photo of a
     // photographed recipe used to become its picture, which looked odd, so it is dropped too.
     coverImageUrl: hasCoverImage(coverImageUrl) && coverImageUrl !== recipe.recipeDocumentUrl ? coverImageUrl : '',
+    coverFocus: normalizeCoverFocus(recipe.coverFocus),
     category,
     subcategories: clean,
     subcategory: clean.join(', '),

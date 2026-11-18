@@ -4,6 +4,7 @@ import { FadeImage } from '../layout/FadeImage';
 import { CustomMealImage } from './CustomMealImage';
 import { MONTHS, addDaysISO, addMonths, formatMonth, getWeekStart, monthStartOf, parseISODate } from '../../utils/mealPlanDates';
 import { formatRecipeTitle } from '../../utils/formatters';
+import { coverFocusStyle } from '../../utils/coverFocus';
 
 const WEEKDAYS_SHORT = ['mån', 'tis', 'ons', 'tor', 'fre', 'lör', 'sön'];
 interface MonthViewProps {
@@ -144,7 +145,7 @@ const MonthGrid: React.FC<{
             >
               {recipe ? (
                 <FadeImage
-                  src={recipe.coverImageUrl}
+                  src={recipe.coverImageUrl} style={coverFocusStyle(recipe.coverFocus)}
                   alt=""
                   loading="lazy"
                   className="absolute inset-0 w-full h-full object-cover md:transition-transform md:duration-300 md:group-hover:scale-105"

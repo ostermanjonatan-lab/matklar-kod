@@ -11,6 +11,13 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.0.219',
+    date: '2026-11-18',
+    items: [
+      'Receptets bild går att flytta och zooma. Tryck på Justera bild under Redigera recept och dra i bilden, eller nyp för att zooma. Utsnittet används i korten, planeraren och de små bilderna.',
+    ],
+  },
+  {
     version: '1.0.218',
     date: '2026-11-18',
     items: [

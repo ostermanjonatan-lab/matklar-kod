@@ -9,6 +9,7 @@ import { useRecipes } from '../../context/RecipeContext';
 import { Heart, Check, ShoppingCart, Clock } from 'lucide-react';
 import { formatCookingTime, formatRecipeTitle } from '../../utils/formatters';
 import { categoryIcon } from './categoryIcon';
+import { coverFocusStyle } from '../../utils/coverFocus';
 
 interface RecipeCardProps {
   recipe: Recipe;
@@ -146,7 +147,7 @@ export const RecipeCard = React.memo<RecipeCardProps>(
         >
           <div className="relative w-16 h-14 rounded-xl overflow-hidden bg-stone-100 shrink-0">
             <FadeImage
-              src={recipe.coverImageUrl}
+              src={recipe.coverImageUrl} style={coverFocusStyle(recipe.coverFocus)}
               alt=""
               loading="lazy"
               className="absolute inset-0 w-full h-full object-cover"
@@ -194,7 +195,7 @@ export const RecipeCard = React.memo<RecipeCardProps>(
       >
         {/* Cover Image */}
         <FadeImage
-          src={recipe.coverImageUrl}
+          src={recipe.coverImageUrl} style={coverFocusStyle(recipe.coverFocus)}
           alt={recipe.title}
           loading="lazy"
           className="absolute inset-0 w-full h-full object-cover group-hover:scale-105"
@@ -248,6 +249,7 @@ export const RecipeCard = React.memo<RecipeCardProps>(
       prevProps.recipe.isFavorite === nextProps.recipe.isFavorite &&
       prevProps.recipe.title === nextProps.recipe.title &&
       prevProps.recipe.coverImageUrl === nextProps.recipe.coverImageUrl &&
+      JSON.stringify(prevProps.recipe.coverFocus) === JSON.stringify(nextProps.recipe.coverFocus) &&
       prevProps.recipe.notes === nextProps.recipe.notes &&
       prevProps.recipe.category === nextProps.recipe.category &&
       prevProps.recipe.subcategory === nextProps.recipe.subcategory &&

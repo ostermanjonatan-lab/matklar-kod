@@ -1,6 +1,6 @@
 ﻿import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Toast } from '../layout/Toast';
-import type { Recipe, Instruction, Ingredient, RecipeCategory, RecipeDifficulty } from '../../types/recipe';
+import type { Recipe, Instruction, Ingredient, RecipeCategory, RecipeDifficulty, CoverFocus } from '../../types/recipe';
 import { getRecipeSubcategories } from '../../types/recipe';
 import { useRecipes } from '../../context/RecipeContext';
 import { X, Check } from 'lucide-react';
@@ -45,6 +45,7 @@ export const EditRecipeModal: React.FC<EditRecipeModalProps> = ({
       : (Number(recipe.prepTimeMinutes) || 30)
   );
   const [coverImageUrl, setCoverImageUrl] = useState(recipe.coverImageUrl || '');
+  const [coverFocus, setCoverFocus] = useState<CoverFocus | undefined>(recipe.coverFocus);
   const [notes, setNotes] = useState(recipe.notes || '');
 
   const [ingredientsText, setIngredientsText] = useState<string>(() =>
@@ -85,6 +86,7 @@ export const EditRecipeModal: React.FC<EditRecipeModalProps> = ({
     try {
       const uploadedUrl = await uploadRecipePhoto(file);
       setCoverImageUrl(uploadedUrl);
+      setCoverFocus(undefined);
       setToastMessage('Bilden är bytt');
       setTimeout(() => setToastMessage(null), 3000);
     } catch (err) {
@@ -141,7 +143,7 @@ export const EditRecipeModal: React.FC<EditRecipeModalProps> = ({
 
   // Unsaved changes: compare with how the form looked when it opened
   const snapshot = () =>
-    JSON.stringify([title, category, subcategories, servings, difficulty, cookingTimeMinutes, coverImageUrl, notes, ingredientsText, instructionsText, nutritionEdit, nutritionCleared, productLinks]);
+    JSON.stringify([title, category, subcategories, servings, difficulty, cookingTimeMinutes, coverImageUrl, coverFocus, notes, ingredientsText, instructionsText, nutritionEdit, nutritionCleared, productLinks]);
   const initialSnapshotRef = useRef<string | null>(null);
   if (initialSnapshotRef.current === null) initialSnapshotRef.current = snapshot();
   const isDirty = snapshot() !== initialSnapshotRef.current;
@@ -169,6 +171,7 @@ export const EditRecipeModal: React.FC<EditRecipeModalProps> = ({
       title: title.trim(),
       description: '',
       coverImageUrl: coverImageUrl.trim(),
+      coverFocus: coverImageUrl.trim() ? coverFocus : undefined,
       recipeDocumentUrl: recipe.recipeDocumentUrl,
       servings: Number(servings) || 4,
       category,
@@ -235,6 +238,8 @@ export const EditRecipeModal: React.FC<EditRecipeModalProps> = ({
             setCookingTimeMinutes={setCookingTimeMinutes}
             setDifficulty={setDifficulty}
             setCoverImageUrl={setCoverImageUrl}
+            coverFocus={coverFocus}
+            setCoverFocus={setCoverFocus}
             setNotes={setNotes}
             setIngredientsText={setIngredientsText}
             setInstructionsText={setInstructionsText}

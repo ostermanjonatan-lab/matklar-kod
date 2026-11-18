@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { formatCookingTime, formatRecipeTitle } from '../../utils/formatters';
+import { coverFocusStyle } from '../../utils/coverFocus';
 
 interface RandomPickerModalProps {
   recipes: Recipe[];
@@ -511,10 +512,10 @@ export const RandomPickerModal: React.FC<RandomPickerModalProps> = ({
                       isRolling ? 'scale-[0.98] opacity-75' : 'hover:border-[#284235]'
                     }`}
                   >
-                    <div className="relative aspect-16/10 w-full bg-stone-100">
+                    <div className="relative aspect-16/10 w-full bg-stone-100 overflow-hidden">
                       {hasCoverImage(displayedRecipe.coverImageUrl) ? (
                         <img
-                          src={displayedRecipe.coverImageUrl}
+                          src={displayedRecipe.coverImageUrl} style={coverFocusStyle(displayedRecipe.coverFocus)}
                           alt={displayedRecipe.title}
                           className="w-full h-full object-cover"
                         />

@@ -1,7 +1,8 @@
+import { coverFocusStyle } from '../../utils/coverFocus';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { DIFFICULTY_LABELS } from '../../utils/recipeDifficulty';
 import { Check, ChevronLeft, Search } from 'lucide-react';
-import type { Recipe, RecipeDifficulty } from '../../types/recipe';
+import type { CoverFocus, Recipe, RecipeDifficulty } from '../../types/recipe';
 import { DifficultyFilter, matchesDifficulty } from './DifficultyPicker';
 import { getRecipeSubcategories } from '../../types/recipe';
 import { formatCookingTime, formatRecipeTitle } from '../../utils/formatters';
@@ -35,11 +36,12 @@ function recipeMinutes(r: Recipe): number {
 const timeLabel = (minutes: number) =>
   minutes < 60 ? `${minutes} min` : minutes % 60 === 0 ? `${minutes / 60} tim` : `${Math.floor(minutes / 60)} tim ${minutes % 60} min`;
 
-const thumbClass = 'w-11 h-11 rounded-xl object-cover bg-stone-200';
 
-const Thumb: React.FC<{ src?: string }> = ({ src }) =>
+const Thumb: React.FC<{ src?: string; focus?: CoverFocus }> = ({ src, focus }) =>
   hasCoverImage(src) ? (
-    <img src={smallImage(src)} alt="" loading="lazy" className={`${thumbClass} shrink-0`} />
+    <span className="block w-11 h-11 rounded-xl overflow-hidden bg-stone-200 shrink-0">
+      <img src={smallImage(src)} alt="" loading="lazy" className="w-full h-full object-cover" style={coverFocusStyle(focus)} />
+    </span>
   ) : (
     <span className="relative block w-11 h-11 rounded-xl overflow-hidden shrink-0">
       <NoImage />
@@ -437,7 +439,7 @@ export const DinnerBrowser: React.FC<DinnerBrowserProps> = ({ recipes, mealLabel
           ) : (
             recipeList.map((recipe) => (
               <button key={recipe.id} type="button" onClick={() => onSelect(recipe)} className={rowClass}>
-                <Thumb src={recipe.coverImageUrl} />
+                <Thumb src={recipe.coverImageUrl} focus={recipe.coverFocus} />
                 <span className="flex-1 min-w-0">
                   <span className="block text-sm font-semibold text-stone-900 truncate">
                     {formatRecipeTitle(recipe.title)}
