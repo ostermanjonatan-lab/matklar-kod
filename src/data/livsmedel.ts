@@ -162,4 +162,20 @@ export const LIVSMEDEL: Record<number, [number, number, number, number, number, 
   5916: [32, 1.9, 5.1, 0, 1.6, 1.6], // Tacosås
   6384: [110, 0.6, 25.7, 0.1, 1.6, 0], // Mango chutney
   7022: [146, 10.2, 2, 10.9, 0, 0.2], // Färskost ricotta fett ca 10%
+  6675: [48, 9.1, 2.6, 0.1, 0, 22.5], // Fisksås
+  908: [208, 9.7, 15.5, 10.5, 6.5, 10.8], // Miso sojabönspasta fermenterad
+  910: [193, 4.3, 38.5, 2.1, 0, 7], // Sojasås söt
+  4025: [280, 2.2, 40, 10.9, 6.1, 8.5], // Wasabi pasta
+  4042: [100, 0.9, 21.5, 0.4, 3, 0], // Vattenkastanj rå
+  7192: [19, 1.4, 1.8, 0.2, 1.9, 0.1], // Sellerikål pak choi
+  7269: [875, 0, 1.7, 98.2, 0, 0.1], // Klarnat smör ghee
+  1573: [644, 20.9, 2.7, 59.7, 10.4, 0.1], // Sesamfrö u. skal
+  502: [15, 1.2, 1.1, 0.1, 2.5, 1.5], // Grönsaker blandade fermenterade
+  2485: [361, 6.4, 80.2, 0.8, 1.1, 0], // Ris grötris rundkornigt okokt
+  4447: [360, 3.4, 83.2, 0.6, 1.6, 0.5], // Nudlar risnudlar okokta
+  819: [350, 0.2, 85.6, 0.1, 0.5, 0], // Nudlar glasnudlar okokta
+  870: [377, 14, 68.2, 4.2, 2.9, 0], // Nudlar äggnudlar okokta
+  358: [21, 1.3, 2.7, 0.1, 1.6, 0], // Salladskål
+  329: [34, 3, 3.2, 0.4, 3, 0], // Mungbönsgroddar
+  2007: [207, 0.8, 43.4, 2.9, 1.3, 2.9], // Sweet chilisås
 };

@@ -11,6 +11,13 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.0.215',
+    date: '2026-11-18',
+    items: [
+      'Näringsvärdet känner igen fler asiatiska ingredienser, som hoisinsås, ostronsås, gochujang, mirin, currypasta, rispapper, nori, kimchi, pak choi och kinakål. Fisksås, sweet chilisås, wasabi, vattenkastanjer och olika nudlar räknas nu som sig själva i stället för som något som liknar dem.',
+    ],
+  },
+  {
     version: '1.0.214',
     date: '2026-11-18',
     items: [

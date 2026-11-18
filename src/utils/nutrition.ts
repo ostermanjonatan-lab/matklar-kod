@@ -181,7 +181,7 @@ const FOODS: Food[] = [
   { lmv: 2481, words: ['ris', 'jasminris', 'basmatiris', 'arborioris', 'risottoris', 'grötris', 'fullkornsris'], v: [350, 7, 78, 0.6, 1.3, 0], density: 0.85 },
   { lmv: 655, words: ['risgrynsgröt'], v: [110, 3, 18, 3, 0.3, 0.3], density: 1 },
   { lmv: 845, words: ['risoni', 'orzo', 'pastaris'], v: [355, 12.5, 70, 1.5, 3.5, 0], density: 0.8 },
-  { lmv: 845, piece: 20, words: ['pasta', 'spaghetti', 'lasagneplattor', 'lasagneplatta', 'tagliatelle', 'penne', 'makaroner', 'fusilli', 'nudlar', 'äggnudlar', 'risnudlar', 'linguine', 'fettuccine', 'rigatoni', 'farfalle', 'snabbmakaroner', 'spagetti', 'spaghettini', 'tagliolini'], v: [355, 12.5, 70, 1.5, 3.5, 0], density: 0.5 },
+  { lmv: 845, piece: 20, words: ['pasta', 'spaghetti', 'lasagneplattor', 'lasagneplatta', 'tagliatelle', 'penne', 'makaroner', 'fusilli', 'nudlar', 'linguine', 'fettuccine', 'rigatoni', 'farfalle', 'snabbmakaroner', 'spagetti', 'spaghettini', 'tagliolini'], v: [355, 12.5, 70, 1.5, 3.5, 0], density: 0.5 },
   { lmv: 831, words: ['couscous', 'bulgur', 'matvete'], v: [360, 12, 72, 1.5, 6, 0], density: 0.75 },
   { lmv: 7025, words: ['quinoa'], v: [370, 14, 64, 6, 7, 0], density: 0.8 },
   { lmv: 244, words: ['pommes frites', 'pommes', 'frites', 'pommes strips', 'klyftpotatis', 'potatisklyftor'], v: [216, 3.2, 32, 7.6, 3.2, 0], pack: 750 },
@@ -209,7 +209,7 @@ const FOODS: Food[] = [
   { lmv: 6907, words: ['choklad', 'mörk choklad', 'blockchoklad'], v: [560, 8, 35, 40, 10, 0], pack: 100 },
   { lmv: 2055, words: ['mjölkchoklad', 'vit choklad'], v: [540, 7, 57, 31, 1, 0.2], pack: 100 },
   { lmv: 6087, words: ['mandel', 'mandlar', 'sötmandel', 'mandelspån', 'mandelmjöl'], v: [600, 21, 5, 52, 12, 0], density: 0.55 },
-  { lmv: 1576, words: ['nötter', 'valnötter', 'hasselnötter', 'cashewnötter', 'pistagenötter', 'pekannötter', 'jordnötter', 'pinjenötter', 'solrosfrön', 'pumpafrön', 'sesamfrön'], v: [620, 18, 10, 55, 8, 0], density: 0.55 },
+  { lmv: 1576, words: ['nötter', 'valnötter', 'hasselnötter', 'cashewnötter', 'pistagenötter', 'pekannötter', 'jordnötter', 'pinjenötter', 'solrosfrön', 'pumpafrön'], v: [620, 18, 10, 55, 8, 0], density: 0.55 },
   { lmv: 1564, words: ['kokos', 'kokosflingor', 'riven kokos'], v: [650, 6, 7, 62, 15, 0], density: 0.35 },
   { lmv: 603, words: ['dadlar', 'färska dadlar', 'medjooldadlar'], v: [280, 2, 66, 0.5, 7, 0], piece: 18 },
   { lmv: 610, words: ['russin', 'torkade aprikoser'], v: [300, 3, 70, 0.5, 5, 0], density: 0.6 },
@@ -244,13 +244,13 @@ const FOODS: Food[] = [
   { lmv: 362, words: ['zucchini', 'squash', 'aubergine', 'auberginer'], v: [22, 1.3, 3, 0.3, 1.5, 0], piece: 300 },
   { lmv: 336, words: ['fänkål', 'stjälkselleri', 'blekselleri', 'selleri'], v: [25, 1.2, 3.5, 0.2, 2.5, 0.1], piece: 250 },
   { lmv: 400, words: ['majs', 'majskorn'], v: [90, 3, 16, 1.5, 2.5, 0.4], density: 0.69, pack: 300 }, // PM 2024
-  { words: ['ärtor', 'gröna ärtor', 'sockerärtor', 'haricots verts', 'gröna bönor', 'edamamebönor'], v: [60, 4.5, 8, 0.4, 4, 0], density: 0.6 },
+  { words: ['ärtor', 'gröna ärtor', 'sockerärtor', 'haricots verts', 'gröna bönor'], v: [60, 4.5, 8, 0.4, 4, 0], density: 0.6 },
   { lmv: 320, words: ['avokado', 'avokador'], v: [200, 2, 1.8, 20, 6.5, 0], piece: 150 },
-  { words: ['chipotlepasta', 'chipotle paste', 'chipotlepaste', 'currypasta', 'röd currypasta', 'grön currypasta', 'gul currypasta', 'misopasta', 'kryddpasta'], v: [100, 2, 10, 5, 4, 6], density: 1.1 },
+  { words: ['chipotlepasta', 'chipotle paste', 'chipotlepaste', 'kryddpasta'], v: [100, 2, 10, 5, 4, 6], density: 1.1 },
   { lmv: 6384, words: ['chutney', 'mango chutney', 'mangochutney'], v: [110, 0.6, 25.7, 0.1, 1.6, 0], density: 1.2 },
   { words: ['sambal oelek', 'sambal', 'sriracha', 'harissa', 'chilipasta'], v: [60, 1.5, 8, 1, 3, 5], density: 1.1 },
   { lmv: 380, words: ['chili', 'chilifrukt', 'chilifrukter', 'jalapeño', 'jalapeños'], v: [40, 2, 7, 0.4, 1.5, 0], piece: 10 },
-  { lmv: 2269, words: ['ingefära'], v: [80, 1.8, 15, 0.8, 2, 0], piece: 20 },
+  { lmv: 2269, words: ['ingefära', 'galangal', 'galangarot'], v: [80, 1.8, 15, 0.8, 2, 0], piece: 20 },
   { lmv: 352, words: ['persilja', 'dill', 'koriander', 'basilika', 'gräslök', 'mynta', 'timjan', 'rosmarin', 'dragon', 'oregano', 'örter', 'dillvippa', 'körvel', 'hackad färsk körvel', 'salvia'], v: [40, 3, 5, 0.6, 3, 0], density: 0.15, piece: 2, pack: 25 },
   { words: ['äpple', 'äpplen', 'päron'], v: [55, 0.3, 12, 0.2, 2, 0], piece: 150 },
   { lmv: 553, words: ['banan', 'bananer'], v: [95, 1.2, 21, 0.3, 1.7, 0], piece: 120 },
@@ -285,7 +285,7 @@ const FOODS: Food[] = [
   { lmv: 1795, words: ['gelé', 'svartvinbärsgelé', 'vinbärsgelé', 'rödvinbärsgelé', 'äppelgelé'], v: [265, 0.2, 65, 0, 0.8, 0], density: 1.3 },
   { lmv: 273, words: ['potatisbullar', 'potatisbulle', 'färdiga potatisbullar'], v: [167, 4, 22, 6.3, 2.7, 1], piece: 45 },
   // Sauces, stock and drink
-  { lmv: 545, words: ['buljong', 'fond', 'grönsaksbuljong', 'kycklingbuljong', 'köttbuljong', 'fiskbuljong', 'hönsbuljong', 'kalvfond', 'fiskfond'], v: [5, 0.3, 0.4, 0.2, 0, 0.8], density: 1 },
+  { lmv: 545, words: ['buljong', 'fond', 'grönsaksbuljong', 'kycklingbuljong', 'köttbuljong', 'fiskbuljong', 'hönsbuljong', 'kalvfond', 'fiskfond', 'dashi', 'dashibuljong'], v: [5, 0.3, 0.4, 0.2, 0, 0.8], density: 1 },
   { lmv: 1212, words: ['buljongtärning', 'buljongtärningar', 'köttbuljongtärning', 'grönsaksbuljongtärning', 'hönsbuljongtärning', 'fiskbuljongtärning'], v: [250, 10, 20, 15, 0, 45], piece: 10 },
   { lmv: 1908, words: ['vin', 'vitt vin', 'rött vin', 'rödvin', 'vitvin', 'torrt vitt vin', 'portvin', 'marsala', 'matlagningsvin', 'vitt matlagningsvin', 'rött matlagningsvin'], v: [72, 0.1, 2.5, 0, 0, 0], density: 1, pack: 750 },
   { lmv: 1957, words: ['kaffe', 'espresso', 'te'], v: [2, 0.1, 0.3, 0, 0, 0], density: 1 },
@@ -293,12 +293,42 @@ const FOODS: Food[] = [
   { lmv: 1972, words: ['senap', 'dijonsenap', 'skånsk senap', 'grovkornig senap'], v: [140, 6, 12, 8, 3, 3.5], density: 1.1 },
   { lmv: 490, words: ['saltgurka', 'saltgurkor', 'inlagd gurka', 'pickles', 'picklad gurka'], v: [15, 0.9, 1.4, 0.2, 1.8, 3.5], piece: 60, pack: 400 },
   { lmv: 488, words: ['bostongurka', 'smörgåsgurka', 'gurkmajonnäs'], v: [78, 1, 16.6, 0.4, 1.8, 1.5], density: 1.02 }, // PM 2024
-  { lmv: 1969, words: ['ketchup', 'chilisås', 'sweet chili', 'sweet chilisås', 'grillsås', 'bbq-sås', 'sweet sour', 'sweet and sour', 'sötsur sås', 'sweet sour-sås', 'sweetchilli', 'sweetchilisås', 'sweetchillisås', 'sweet chilli', 'sweetsoursås', 'sötsursås'], v: [130, 1.2, 30, 0.2, 1, 2], density: 1.2 }, // PM 2024
-  { lmv: 909, words: ['soja', 'sojasås', 'japansk soja', 'kinesisk soja', 'tamari', 'fisksås', 'ostronsås'], v: [60, 8, 6, 0, 0, 14], density: 1.15 },
+  { lmv: 1969, words: ['ketchup', 'chilisås', 'grillsås', 'bbq-sås', 'sweet sour', 'sweet and sour', 'sötsur sås', 'sweet sour-sås', 'sweetsoursås', 'sötsursås'], v: [130, 1.2, 30, 0.2, 1, 2], density: 1.2 }, // PM 2024
+  { lmv: 2007, words: ['sweet chili', 'sweet chilisås', 'sweetchilli', 'sweetchilisås', 'sweetchillisås', 'sweet chilli', 'sweet chillisås', 'söt chilisås'], v: [207, 0.8, 43.4, 2.9, 1.3, 2.9], density: 1.25 },
+  { lmv: 909, words: ['soja', 'sojasås', 'japansk soja', 'kinesisk soja', 'tamari'], v: [60, 8, 6, 0, 0, 14], density: 1.15 },
+  // Asian sauces, pastes and the like. Livsmedelsverket's values where it has the food, otherwise
+  // the usual values on the packets (marked "förpackning")
+  { lmv: 6675, words: ['fisksås', 'fish sauce'], v: [48, 9.1, 2.6, 0.1, 0, 22.5], density: 1.2 },
+  { lmv: 910, words: ['söt soja', 'ketjap manis', 'kecap manis', 'ketjap'], v: [193, 4.3, 38.5, 2.1, 0, 7], density: 1.25 },
+  { words: ['ostronsås', 'oyster sauce'], v: [110, 2.5, 24, 0.3, 0.5, 10], density: 1.25 }, // förpackning
+  { words: ['hoisinsås', 'hoisin'], v: [220, 2.5, 45, 3.5, 2, 4.5], density: 1.25 }, // förpackning
+  { words: ['gochujang', 'koreansk chilipasta'], v: [220, 4, 45, 1.5, 2.5, 7], density: 1.2 }, // förpackning
+  { lmv: 908, words: ['miso', 'misopasta', 'vit miso', 'röd miso', 'shiro miso'], v: [208, 9.7, 15.5, 10.5, 6.5, 10.8], density: 1.2 },
+  { words: ['currypasta', 'röd currypasta', 'grön currypasta', 'gul currypasta', 'massamancurrypasta', 'panangcurrypasta', 'thai currypasta'], v: [130, 2.5, 12, 7.5, 5, 7], density: 1.1 }, // förpackning
+  { words: ['tamarindpasta', 'tamarind', 'tamarindkoncentrat'], v: [240, 2.8, 57, 0.6, 5, 0.1], density: 1.2 }, // förpackning
+  { words: ['mirin'], v: [230, 0.3, 43, 0, 0, 0], density: 1.15 }, // förpackning, med alkoholen
+  { words: ['sake', 'risvin', 'shaoxingvin', 'shaoxing'], v: [134, 0.5, 5, 0, 0, 0], density: 1 },
+  { lmv: 4025, words: ['wasabi', 'wasabipasta'], v: [280, 2.2, 40, 10.9, 6.1, 8.5], density: 1.1 },
+  { lmv: 502, words: ['kimchi'], v: [15, 1.2, 1.1, 0.1, 2.5, 1.5], density: 0.8 },
+  { lmv: 4042, words: ['vattenkastanjer', 'vattenkastanj'], v: [100, 0.9, 21.5, 0.4, 3, 0], density: 0.65 },
+  { lmv: 329, words: ['böngroddar', 'mungbönsgroddar', 'groddar'], v: [34, 3, 3.2, 0.4, 3, 0], density: 0.3 },
+  { lmv: 7192, piece: 150, words: ['pak choi', 'pak choy', 'bok choy', 'paksoi', 'sellerikål', 'minipak choi'], v: [19, 1.4, 1.8, 0.2, 1.9, 0.1], density: 0.3 },
+  { lmv: 358, piece: 600, words: ['kinakål', 'salladskål', 'napakål'], v: [21, 1.3, 2.7, 0.1, 1.6, 0], density: 0.3 },
+  { lmv: 7269, words: ['ghee', 'klarnat smör'], v: [875, 0, 1.7, 98.2, 0, 0.1], density: 0.9 },
+  { lmv: 1573, words: ['sesamfrön', 'sesamfrö', 'sesam', 'svarta sesamfrön', 'rostade sesamfrön'], v: [644, 20.9, 2.7, 59.7, 10.4, 0.1], density: 0.6 },
+  { words: ['edamamebönor', 'edamame', 'sojabönor', 'gröna sojabönor'], v: [121, 11.9, 3.7, 5.2, 5.2, 0], density: 0.6 },
+  { lmv: 2485, words: ['sushiris', 'klibbris', 'rundkornigt ris', 'japanskt ris', 'sticky rice'], v: [361, 6.4, 80.2, 0.8, 1.1, 0], density: 0.85 },
+  { lmv: 4447, piece: 20, words: ['risnudlar', 'risnudel', 'vermicelli', 'pad thai-nudlar'], v: [360, 3.4, 83.2, 0.6, 1.6, 0.5], density: 0.4 },
+  { lmv: 819, piece: 20, words: ['glasnudlar'], v: [350, 0.2, 85.6, 0.1, 0.5, 0], density: 0.4 },
+  { lmv: 870, piece: 20, words: ['äggnudlar', 'ramennudlar', 'wokknudlar'], v: [377, 14, 68.2, 4.2, 2.9, 0], density: 0.4 },
+  { words: ['rispapper', 'risark', 'vårrullsark'], v: [340, 0.5, 83, 0.5, 1, 0.6], piece: 9 }, // förpackning
+  { words: ['wontonplattor', 'wontonplatta', 'dumplingplattor', 'gyozaplattor', 'vårrulledeg'], v: [290, 9, 58, 1.5, 2, 1.2], piece: 8 }, // förpackning
+  { words: ['nori', 'noriark', 'noriblad', 'sushinori'], v: [290, 40, 10, 3, 33, 1.3], piece: 3 }, // förpackning
+  { words: ['wakame', 'torkad wakame'], v: [150, 13, 9, 3, 35, 15], density: 0.3 }, // förpackning, torkad
   { lmv: 1988, words: ['ostsås', 'cheddarsås', 'nachosås', 'cheesesås', 'cheese sauce', 'fyra ostar', 'kelda fyra ostar', 'ostsås fyra ostar', 'cheddarsås kelda'], v: [154, 7.3, 7.3, 10.6, 0.1, 0.9], density: 1.05 },
   { lmv: 50, words: ['chipotlemayo', 'chipotlemajonnäs', 'mayo', 'srirachamayo', 'vitlöksmayo'], v: [666, 1.3, 5, 72.4, 0, 1.1], density: 0.96 },
   { lmv: 50, words: ['majonnäs', 'aioli', 'srirachamajonnäs', 'tryffelmajonnäs', 'remoulad', 'bearnaisesås', 'burgersås'], v: [680, 1.5, 3, 74, 0, 1.3], density: 0.96, pack: 200 }, // PM 2024
-  { lmv: 45, words: ['dressing', 'caesardressing', 'vinägrett', 'salladsdressing', 'wasabi', 'wasabisås', 'wasabi & sesame'], v: [450, 2, 5, 47, 0, 2], density: 1, pack: 250 },
+  { lmv: 45, words: ['dressing', 'caesardressing', 'vinägrett', 'salladsdressing', 'wasabisås', 'wasabi & sesame'], v: [450, 2, 5, 47, 0, 2], density: 1, pack: 250 },
   { lmv: 2004, words: ['pesto'], v: [450, 5, 5, 45, 2, 2], density: 0.99 }, // PM 2024
   { lmv: 1965, words: ['ättiksprit'], v: [49, 0, 12, 0, 0, 0], density: 1 },
   { lmv: 1966, words: ['vinäger', 'vitvinsvinäger', 'balsamvinäger', 'äppelcidervinäger', 'ättika', 'rödvinsvinäger'], v: [20, 0, 1, 0, 0, 0], density: 1 },
@@ -313,7 +343,7 @@ const FOODS: Food[] = [
       'ingefärspulver', 'bakpulver', 'bikarbonat', 'kryddor', 'stjärnanis', 'fänkålsfrö', 'koriander frö', 'senapsfrö',
       'torkad timjan', 'torkad oregano', 'torkad basilika', 'italiensk salladskrydda', 'tacokrydda', 'grillkrydda',
       'gelatin', 'gelatinblad', 'citronskal', 'limeskal', 'apelsinskal', 'zest', 'kryddmix', 'kryddblandning',
-      'fajitakrydda', 'fajita-kryddmix', 'buljongpulver', 'lökpulver', 'vitlökspulver', 'spice mix', 'burrito spice mix', 'taco spice mix',
+      'fajitakrydda', 'fajita-kryddmix', 'kaffirlimeblad', 'limeblad', 'femkryddspulver', 'citrongräs', 'buljongpulver', 'lökpulver', 'vitlökspulver', 'spice mix', 'burrito spice mix', 'taco spice mix',
     ],
     v: [0, 0, 0, 0, 0, 0],
     density: 0.5,
