@@ -43,7 +43,14 @@ export function formatRecipeToShareText(recipe: Recipe, targetServings?: number)
   if (recipe.ingredients && recipe.ingredients.length > 0) {
     lines.push('');
     lines.push('INGREDIENSER:');
+    let section: string | undefined;
     recipe.ingredients.forEach((ing) => {
+      // The heading of a part of the recipe, before its ingredients
+      if ((ing.section || undefined) !== section) {
+        section = ing.section || undefined;
+        lines.push('');
+        lines.push(section ? `${section}:` : 'Övrigt:');
+      }
       const scaledAmount = scaleIngredientAmount(ing.amount, recipe.servings, portions);
       const amountStr = formatAmount(scaledAmount);
       const unit = formatUnit(ing.unit || '', scaledAmount).trim();

@@ -310,6 +310,8 @@ const NOISE_START =
 const LABEL_LINE = /^(?:\d+\s*[-–]\s*\d+\s*min|servering|förberedelse|\d+\s*min)\.?$/i;
 const INGREDIENT_HEADING =
   /ingrediens|r[åa]var|du behöver|det här behöver|kryddor|smaksätt|tillbehör|komponent|^del\s*\d|^till\s+\w+:?$|^sås:?$|^deg:?$|^fyllning|^topping|^garnering|^dressing:?$|ingredients/i;
+/** The heading over all the ingredients, not over one part of them */
+const GENERAL_INGREDIENT_HEADING = /^(?:ingredienser|ingredients|r[åa]varor|du behöver|det här behöver du|kryddor|komponenter|tillbehör)\b/i;
 const STEP_HEADING = /g[öo]r s[åa] h[äa]r|s[åa] g[öo]r du|tillagning|tillredning|metod|arbets|moment(?!\s*\d)|instruktion|^steg(?!\s*\d)|method|instructions|directions|beredning/i;
 /** A column of tips or notes beside the recipe ("Anteckningar: Läs igenom hela receptet först") */
 const NOTES_HEADING = /^(?:anteckningar|tips|tips och råd|att tänka på|bra att veta|kockens tips|notera|obs)\b/i;
@@ -613,7 +615,7 @@ export function recipeTextFromBlocks(readBlocks: ReadBlock[], pageHeight: number
 
     let current: Kind = 'unknown';
     let otherLanguage = false;
-    const found: { text: string; kind: Kind }[] = [];
+    const found: { text: string; kind: Kind; heading?: boolean }[] = [];
     for (const { text, top } of kept) {
       const hasTime = /\b\d+\s*(?:min|minuter|tim|timmar|timme|h)\b/i.test(text);
       // A first step that mentions minutes ("Blanda ... Låt dra 10-15 min") is a step, not the time
@@ -640,6 +642,10 @@ export function recipeTextFromBlocks(readBlocks: ReadBlock[], pageHeight: number
       if (isHeading(text)) {
         otherLanguage = OTHER_LANGUAGE.test(text) || NOTES_HEADING.test(text.trim());
         current = STEP_HEADING.test(text) ? 'step' : INGREDIENT_HEADING.test(text) ? 'ingredient' : current;
+        // A part of the ingredients ("Sås", "Till servering") keeps its heading
+        if (!otherLanguage && INGREDIENT_HEADING.test(text) && !GENERAL_INGREDIENT_HEADING.test(text.trim())) {
+          found.push({ text: `${sentenceCase(text.trim().replace(/\s*:$/, ''))}:`, kind: 'ingredient', heading: true });
+        }
         continue;
       }
       if (otherLanguage) continue;
@@ -661,9 +667,14 @@ export function recipeTextFromBlocks(readBlocks: ReadBlock[], pageHeight: number
     }
     // Most of a block is one kind: the unclear items follow the rest
     const counts = { ingredient: 0, step: 0 };
-    for (const it of found) if (it.kind !== 'unknown') counts[it.kind]++;
+    for (const it of found) if (it.kind !== 'unknown' && !it.heading) counts[it.kind]++;
     const blockKind: Kind = counts.step > counts.ingredient ? 'step' : counts.ingredient > 0 ? 'ingredient' : 'unknown';
     for (const it of found) {
+      // A heading of a part of the ingredients goes in as it is ("Sås:")
+      if (it.heading) {
+        ingredients.push(it.text);
+        continue;
+      }
       let kind = it.kind === 'unknown' ? blockKind : it.kind;
       // A short line among steps is usually a label, not an ingredient
       if (blockKind === 'step' && kind === 'ingredient' && counts.ingredient === 1 && counts.step >= 2) kind = 'step';

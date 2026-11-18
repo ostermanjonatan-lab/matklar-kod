@@ -779,10 +779,19 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
             const swappedFrom = swappedIndexes.has(idx) ? recipe.ingredients[idx].name : null;
             const scaledAmount = scaleIngredientAmount(ing.amount, recipe.servings, servings);
             const formattedAmountStr = formatAmount(scaledAmount);
+            // A new part of the recipe ("Chilimajonnäs") starts with its heading
+            const section = ing.section || undefined;
+            const startsSection = section !== (shownRecipe.ingredients[idx - 1]?.section || undefined);
+            const heading = startsSection && (section || idx > 0) ? section || 'Övrigt' : null;
 
             return (
+              <React.Fragment key={idx}>
+              {heading && (
+                <div className="px-4 pt-4 pb-1.5 bg-[#FCFAF5]">
+                  <h3 className="font-serif font-bold text-[15px] text-stone-900 leading-snug">{heading}</h3>
+                </div>
+              )}
               <div
-                key={idx}
                 onClick={() => {
                   if (ingredientPressRef.current?.fired) {
                     ingredientPressRef.current = null;
@@ -854,6 +863,7 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
                   </span>
                 </div>
               </div>
+              </React.Fragment>
             );
           })}
         </div>

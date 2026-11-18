@@ -421,13 +421,24 @@ export function formatIngredientToLine(ing: { name: string; amount?: number | nu
  * Formats an array of ingredients into a newline-separated string for multi-line editing.
  */
 export function formatIngredientsToText(
-  ingredients?: Array<{ name: string; amount?: number | null; unit?: string }> | null
+  ingredients?: Array<{ name: string; amount?: number | null; unit?: string; section?: string }> | null
 ): string {
   if (!ingredients || ingredients.length === 0) return '';
-  return ingredients
-    .map(formatIngredientToLine)
-    .filter((line) => line.length > 0)
-    .join('\n');
+  // A part of the recipe starts with its heading and a colon on a line of its own ("Chilimajonnäs:"),
+  // after an empty line
+  const lines: string[] = [];
+  let section: string | undefined;
+  for (const ing of ingredients) {
+    const line = formatIngredientToLine(ing);
+    if (!line) continue;
+    if ((ing.section || undefined) !== section) {
+      section = ing.section || undefined;
+      if (lines.length > 0) lines.push('');
+      lines.push(section ? `${section}:` : 'Övrigt:');
+    }
+    lines.push(line);
+  }
+  return lines.join('\n');
 }
 
 

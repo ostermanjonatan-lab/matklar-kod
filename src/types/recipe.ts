@@ -11,6 +11,11 @@ export interface Ingredient {
   unit: string;
   aisle: string;
   isPantryStaple: boolean;
+  /**
+   * The part of the recipe the ingredient belongs to, its heading ("Chilimajonnäs"). Ingredients
+   * with the same section follow each other. Without it, the ingredient is in no part.
+   */
+  section?: string;
 }
 
 export interface Instruction {

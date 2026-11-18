@@ -22,8 +22,8 @@ interface SharedRecipe {
   difficulty?: RecipeDifficulty;
   coverImageUrl?: string;
   sourceUrl?: string;
-  /** [name, amount, unit] */
-  ingredients: [string, number | null, string][];
+  /** [name, amount, unit, heading of its part]. The heading is left out when there is none. */
+  ingredients: ([string, number | null, string] | [string, number | null, string, string])[];
   steps: string[];
 }
 
@@ -76,7 +76,9 @@ export async function createRecipeLink(recipe: Recipe): Promise<string> {
     // Uploaded photos are public web addresses. Pictures kept inside the app are too big for a link.
     coverImageUrl: isWebAddress(recipe.coverImageUrl) ? recipe.coverImageUrl : undefined,
     sourceUrl: isWebAddress(recipe.sourceUrl) ? recipe.sourceUrl : undefined,
-    ingredients: recipe.ingredients.map((i) => [i.name, i.amount, i.unit || '']),
+    ingredients: recipe.ingredients.map((i) =>
+      i.section ? [i.name, i.amount, i.unit || '', i.section] : [i.name, i.amount, i.unit || '']
+    ),
     steps: recipe.instructions.map((s) => s.text),
   };
   const json = new TextEncoder().encode(JSON.stringify(data));
@@ -107,13 +109,14 @@ export async function readRecipeLink(text: string): Promise<RecipeFromLink | nul
     }
     const ingredients: Ingredient[] = data.ingredients
       .filter((row) => Array.isArray(row) && typeof row[0] === 'string')
-      .map(([name, amount, unit]) => ({
+      .map(([name, amount, unit, section]) => ({
         name,
         amount: typeof amount === 'number' ? amount : null,
         unit: typeof unit === 'string' ? unit : '',
         // Set again from the name when the recipe is saved
         aisle: '',
         isPantryStaple: false,
+        ...(typeof section === 'string' && section.trim() ? { section: section.trim() } : {}),
       }));
     const instructions: Instruction[] = data.steps
       .filter((t) => typeof t === 'string' && t.trim())

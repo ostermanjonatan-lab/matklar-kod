@@ -1,6 +1,6 @@
 import type { Ingredient, Instruction, RecipeCategory } from '../types/recipe';
 import { nutritionFromSchema, nutritionFromText, type PageNutrition } from '../utils/nutrition';
-import { isIngredientSubheading, parseIngredientLine, parseRawRecipeText, splitCombinedIngredientLine } from '../utils/ingredientParser';
+import { cleanSectionHeading, dropLoneSection, isIngredientSubheading, parseIngredientLine, parseRawRecipeText, splitCombinedIngredientLine } from '../utils/ingredientParser';
 import { DEFAULT_SUBCATEGORIES } from '../data/categories';
 import { detectCategory, detectSubcategory, detectSubcategories } from '../utils/categoryDetector';
 
@@ -994,14 +994,23 @@ function extractIngredientsFromDom(doc: Document): Ingredient[] {
       if (elements && elements.length >= 2) {
         const ingredients: Ingredient[] = [];
         const texts = Array.from(elements).map((el) => cleanHtmlText(el.textContent || ''));
+        // A sub-heading in the list ("Sås") is the heading of the ingredients after it
+        let section: string | undefined;
         texts.forEach((text, idx) => {
-          if (text && text.length > 1 && !isIngredientSubheading(text, texts[idx + 1] || '')) {
-            const parsed = parseIngredientLine(text);
-            if (parsed) ingredients.push(parsed);
+          if (!text || text.length <= 1) return;
+          if (isIngredientSubheading(text, texts[idx + 1] || '')) {
+            section = cleanSectionHeading(text) || undefined;
+            return;
+          }
+          const parsed = parseIngredientLine(text);
+          if (parsed) {
+            if (section) parsed.section = section;
+            ingredients.push(parsed);
           }
         });
 
         if (ingredients.length >= 2) {
+          dropLoneSection(ingredients);
           return ingredients;
         }
       }
@@ -2024,15 +2033,27 @@ function parseJsonLdRecipe(schema: any, sourceUrl: string, doc: Document, engine
       .filter((item: unknown): item is string => typeof item === 'string')
       .map((item: string) => cleanHtmlText(item))
       .filter(Boolean);
+    let section: string | undefined;
     lines.forEach((cleaned: string, idx: number) => {
-      // Sub-headings like "Deg", "Fyllning:" or "Till pensling" are not ingredients
-      if (isIngredientSubheading(cleaned, lines[idx + 1] || '')) return;
+      // Sub-headings like "Deg", "Fyllning:" or "Till pensling" are not ingredients, but the
+      // heading of the ingredients after them
+      if (isIngredientSubheading(cleaned, lines[idx + 1] || '')) {
+        section = cleanSectionHeading(cleaned) || undefined;
+        return;
+      }
       // "6 dl vatten + 1 buljongtärning" is two things
       for (const part of splitCombinedIngredientLine(cleaned)) {
         const parsed = parseIngredientLine(part);
-        if (parsed) ingredients.push(parsed);
+        if (parsed) {
+          if (section) parsed.section = section;
+          ingredients.push(parsed);
+        }
       }
     });
+    dropLoneSection(ingredients);
+    // The recipe data has no headings, but the page shows the ingredients in lists under headings
+    // ("Hoisin-köttfärs", "Chilimajonnäs")
+    if (!ingredients.some((i) => i.section)) sectionsFromPage(doc, lines, ingredients);
   }
 
   // Fallback to DOM ingredients if JSON-LD had none or too few (e.g. Brinken Bakar, blogs with empty schema)
@@ -2143,6 +2164,54 @@ function parseHtmlFallback(doc: Document, sourceUrl: string, engineName = 'DOM P
 /**
  * Parse HTML document for recipes (JSON-LD or DOM)
  */
+/** Headings over a list that are not the name of a part of the recipe */
+const GENERIC_LIST_HEADING =
+  /^(ingredienser|ingredients|du behöver|det här behöver du|det behöver du|recept|recipe|så gör du|gör så här|instruktioner|tillagning|tips|näringsvärde|portioner)\b/i;
+
+/**
+ * Gives the ingredients the headings they have on the page, when the recipe data only has a plain
+ * list. The page is read from the top: each list of ingredients gets the last heading above it.
+ * Only used when there are at least two parts and most of the ingredients are found in the lists.
+ */
+function sectionsFromPage(doc: Document, rawLines: string[], ingredients: Ingredient[]): void {
+  if (ingredients.length < 3) return;
+  const norm = (t: string) => cleanHtmlText(t).toLowerCase().replace(/\s+/g, ' ').replace(/[.,;:]$/, '').trim();
+  const headingOf = new Map<string, string>();
+  try {
+    let heading: string | undefined;
+    for (const el of Array.from(doc.querySelectorAll('h1, h2, h3, h4, h5, h6, ul, ol'))) {
+      const tag = el.tagName.toLowerCase();
+      if (tag !== 'ul' && tag !== 'ol') {
+        const text = cleanHtmlText(el.textContent || '');
+        heading = text && text.length <= 40 && !/\d/.test(text) && !GENERIC_LIST_HEADING.test(text) ? cleanSectionHeading(text) : undefined;
+        continue;
+      }
+      if (!heading) continue;
+      for (const li of Array.from(el.children).filter((c) => c.tagName.toLowerCase() === 'li')) {
+        const key = norm(li.textContent || '');
+        if (key && !headingOf.has(key)) headingOf.set(key, heading);
+      }
+    }
+  } catch {
+    return;
+  }
+  if (headingOf.size === 0) return;
+
+  // Which raw line each ingredient came from: lines that are split ("vatten + buljong") give several
+  const sections: (string | undefined)[] = [];
+  for (const [idx, line] of rawLines.entries()) {
+    if (isIngredientSubheading(line, rawLines[idx + 1] || '')) continue;
+    const parts = splitCombinedIngredientLine(line).filter((p) => parseIngredientLine(p));
+    for (let k = 0; k < parts.length; k++) sections.push(headingOf.get(norm(line)));
+  }
+  if (sections.length !== ingredients.length) return;
+  const found = sections.filter(Boolean).length;
+  if (new Set(sections.filter(Boolean)).size < 2 || found < ingredients.length * 0.8) return;
+  ingredients.forEach((ing, i) => {
+    if (sections[i]) ing.section = sections[i];
+  });
+}
+
 export function parseHtmlRecipe(html: string, targetUrl: string, engineName: string): ScrapedRecipe | null {
   if (!html || html.length < 200 || isSpaFallbackHtml(html) || isAntiBotBlockPage(html)) return null;
 

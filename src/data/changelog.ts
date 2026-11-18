@@ -11,6 +11,13 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.0.214',
+    date: '2026-11-18',
+    items: [
+      'Ingredienserna i ett recept kan delas upp under rubriker, till exempel Hoisin-köttfärs och Chilimajonnäs. Skriv rubriken med kolon på en egen rad i rutan för ingredienser, som Chilimajonnäs:. Rubrikerna följer med från webbsidor, inklistrad text och foton, och syns i den sparade bilden.',
+    ],
+  },
+  {
     version: '1.0.213',
     date: '2026-11-18',
     items: [

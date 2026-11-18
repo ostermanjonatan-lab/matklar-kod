@@ -1708,15 +1708,22 @@ export function splitCombinedIngredientLine(line: string): string[] {
 export function parseIngredientsText(rawText: string): Ingredient[] {
   if (!rawText || !rawText.trim()) return [];
 
-  const lines = rawText.split('\n').flatMap((l) => splitCombinedIngredientLine(l.trim()));
+  const lines = rawText.split('\n').flatMap((l) => (isTypedSectionHeading(l) ? [l.trim()] : splitCombinedIngredientLine(l.trim())));
   const result: Ingredient[] = [];
+  // "Chilimajonnäs:" on its own line is the heading of the ingredients under it
+  let currentSection: string | undefined;
 
   for (const rawLine of lines) {
     const trimmed = rawLine.trim();
     if (!trimmed) continue;
+    if (isTypedSectionHeading(trimmed)) {
+      currentSection = cleanSectionHeading(trimmed) || undefined;
+      continue;
+    }
 
     const parsed = parseIngredientLine(trimmed);
     if (parsed && parsed.name && parsed.name.trim().length > 0) {
+      if (currentSection) parsed.section = currentSection;
       result.push(parsed);
     } else {
       // Robust fallback for any line that parseIngredientLine might have discarded as noise
@@ -1736,12 +1743,24 @@ export function parseIngredientsText(rawText: string): Ingredient[] {
           unit,
           aisle: detectAisle(finalName),
           isPantryStaple: isCommonPantryStaple(finalName),
+          ...(currentSection ? { section: currentSection } : {}),
         });
       }
     }
   }
 
   return result;
+}
+
+/**
+ * One heading over all the ingredients (the name of the dish over its only list) says nothing about
+ * parts, so it is taken away. A heading over only some of them is kept.
+ */
+export function dropLoneSection(ingredients: Ingredient[]): void {
+  const sections = new Set(ingredients.map((i) => i.section || ''));
+  if (sections.size === 1 && !sections.has('')) {
+    for (const ing of ingredients) delete ing.section;
+  }
 }
 
 /**
@@ -1854,7 +1873,9 @@ export function mergeIngredientLines(lines: string[], loose: boolean = true): st
     const line = lines[i].trim();
     if (!line) continue;
 
-    if (merged.length > 0 && shouldMergeWithPreviousIngredient(merged[merged.length - 1], line, loose)) {
+    // A heading is never joined with an ingredient
+    const isMark = (l: string) => l.startsWith(SECTION_MARK);
+    if (merged.length > 0 && !isMark(line) && !isMark(merged[merged.length - 1]) && shouldMergeWithPreviousIngredient(merged[merged.length - 1], line, loose)) {
       merged[merged.length - 1] = merged[merged.length - 1] + ' ' + line;
     } else {
       merged.push(line);
@@ -1990,7 +2011,30 @@ const INGREDIENT_HEADER =
 const INSTRUCTION_HEADER =
   /^(gör så här|gör såhär|så här gör du|så gör du|tillagning|instruktioner|instruktion|tillvägagångssätt|tillredning|beredning|arbetsgång|metod|steg för steg|steg|instructions|directions|method|preparation)\s*:?$/i;
 
-/** Sub-headings inside the ingredient list ("Sås", "Till servering"). They are skipped. */
+/**
+ * A heading line among the ingredients, as it is carried through the reading: a mark first, so it
+ * is not taken for an ingredient or joined with one, then the heading ("Chilimajonnäs").
+ */
+const SECTION_MARK = '\u0000';
+const sectionLine = (heading: string) => SECTION_MARK + heading;
+
+/** The heading as it is shown: without the colon, with a capital first letter ("Chilimajonnäs") */
+export function cleanSectionHeading(line: string): string {
+  const t = line.trim().replace(/^[#*\s]+/, '').replace(/[*\s]+$/, '').replace(/\s*:$/, '').trim();
+  return t.charAt(0).toUpperCase() + t.slice(1);
+}
+
+/**
+ * Whether a line typed in the ingredient box is a heading: it ends with a colon ("Chilimajonnäs:"),
+ * or is a usual one ("Sås", "Till servering").
+ */
+export function isTypedSectionHeading(line: string): boolean {
+  const t = line.trim();
+  if (!t || t.length > 40 || /\d/.test(t)) return false;
+  return (/:$/.test(t) && t.split(/\s+/).length <= 5) || INGREDIENT_SUBHEADER.test(t);
+}
+
+/** Sub-headings inside the ingredient list ("Sås", "Till servering"). They become the heading of the ingredients after them. */
 const INGREDIENT_SUBHEADER =
   /^(sås(en)?|dressing(en)?|garnering|servering|till servering|tillbehör|marinad(en)?|glasyr(en)?|fyllning(en)?|pajskal(et)?|botten|bottnen|kräm(en)?|topping|deg(en)?|smet(en)?|gryta(n)?|ris(et)?|pasta|röra|röran|salsa|salladen|sallad|till (såsen|garnering|servering|panering|gratinering|stekning|toppingen|degen|fyllningen|botten|krämen))\s*:?$/i;
 
@@ -2321,6 +2365,8 @@ export function parseRawRecipeText(
           !/(salt|peppar|olja|smör|vatten|socker|citron|lime)/i.test(line));
       if (isSubheader) {
         if (section === 'header') section = 'ingredients';
+        // Kept as the heading of the ingredients after it
+        ingredientLines.push(sectionLine(cleanSectionHeading(line)));
         continue;
       }
     }
@@ -2369,13 +2415,24 @@ export function parseRawRecipeText(
 
   // Ingredients
   const ingredients: Ingredient[] = [];
-  for (const m of (linesDone ? ingredientLines : mergeIngredientLines(ingredientLines, fromOcr)).flatMap(splitCombinedIngredientLine)) {
+  let currentSection: string | undefined;
+  for (const m of (linesDone ? ingredientLines : mergeIngredientLines(ingredientLines, fromOcr)).flatMap((l) =>
+    l.startsWith(SECTION_MARK) ? [l] : splitCombinedIngredientLine(l)
+  )) {
+    if (m.startsWith(SECTION_MARK)) {
+      currentSection = m.slice(SECTION_MARK.length) || undefined;
+      continue;
+    }
     const ing = parseIngredientLine(m);
     if (ing) {
       ing.name = ing.name.replace(/\(\s+/g, '(').replace(/\s+\)/g, ')').replace(/\s{2,}/g, ' ').trim();
+      if (currentSection) ing.section = currentSection;
       ingredients.push(ing);
     }
   }
+  // A heading with no ingredients after it, or only one heading that covers everything (the name
+  // of the dish over its only list), says nothing about parts
+  dropLoneSection(ingredients);
 
   // Steps written as one block of several sentences become one step per sentence
   let stepTexts = steps;

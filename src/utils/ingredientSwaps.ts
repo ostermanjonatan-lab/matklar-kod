@@ -60,6 +60,8 @@ export function applySwaps(recipe: Recipe, swaps: IngredientSwap[] | undefined):
         unit: swap.unit,
         aisle: detectAisle(swap.name),
         isPantryStaple: isCommonPantryStaple(swap.name),
+        // A swapped ingredient stays in its part of the recipe
+        ...(ing.section ? { section: ing.section } : {}),
       };
     }),
   };

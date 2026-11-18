@@ -190,12 +190,27 @@ function layout(
   const lineHeight = Math.round(bodySize * 1.42);
   const bodyFont = `400 ${bodySize}px ${SANS}`;
   const boldFont = `700 ${bodySize}px ${SANS}`;
+  // The heading of a part of the recipe, a little bigger than the ingredients
+  const sectionFont = `700 ${Math.round(bodySize * 1.08)}px ${SERIF}`;
 
   // Ingredients: "400 g Spaghetti" with the amount in green
   let ly = columnTop + px(36);
   text(headingFont, COLORS.text, 'Ingredienser', LEFT, ly);
   ly += px(20);
-  for (const ing of recipe.ingredients) {
+  let section: string | undefined;
+  for (const [idx, ing] of recipe.ingredients.entries()) {
+    // A new part of the recipe ("Chilimajonnäs") starts with its heading
+    if ((ing.section || undefined) !== section) {
+      section = ing.section || undefined;
+      if (section || idx > 0) {
+        ctx.font = sectionFont;
+        for (const line of wrap(ctx, section || 'Övrigt', leftW)) {
+          ly += px(idx === 0 ? 14 : 26) + bodySize;
+          text(sectionFont, COLORS.text, line, LEFT, ly);
+        }
+        ly += px(2);
+      }
+    }
     const scaled = scaleIngredientAmount(ing.amount, recipe.servings, servings);
     const amount = scaled !== null ? `${formatAmount(scaled)} ${formatUnit(ing.unit, scaled)}`.trim() : ing.unit || '';
     const name = capitalizeFirst(formatIngredientName(ing.name, scaled, ing.unit));
