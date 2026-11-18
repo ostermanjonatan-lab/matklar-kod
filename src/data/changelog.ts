@@ -14,6 +14,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     version: '1.0.216',
     date: '2026-11-18',
     items: [
+      'Recepten kan sorteras på Lagat flest gånger och Lagat minst gånger. Det räknas från planeraren: de dagar före i dag som receptet var middag eller lunch.',
       'Ett öppnat recept har en knapp med en penna högst upp för att redigera receptet.',
       'Bröd är en egen kategori, med underkategorierna Matbröd & Limpor, Frallor & Småbröd, Surdeg, Focaccia & Flatbröd, Knäckebröd & Tunnbröd och Scones & Snabbröd. Bröd du sparat under Frukost visas där nu, och nya brödrecept hamnar där av sig själva.',
     ],

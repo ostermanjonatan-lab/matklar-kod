@@ -40,6 +40,8 @@ export interface RecipeContextType {
   setActiveTab: (tab: TabType) => void;
   openRecipeDetail: (recipe: Recipe) => void;
   closeRecipeDetail: () => void;
+  /** How many times each recipe was made (planned for a day before today, dinner or lunch), by its id */
+  cookedCounts: Map<string, number>;
   /**
    * Shows the recipes on the start screen with a category and subcategory chosen, for example
    * when a category is tapped in an open recipe. The open recipe closes.

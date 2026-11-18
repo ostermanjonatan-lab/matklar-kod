@@ -27,7 +27,7 @@ import {
 } from 'lucide-react';
 
 
-type SortOption = 'default' | 'oldest' | 'time_asc' | 'time_desc' | 'difficulty_asc' | 'difficulty_desc' | 'name_asc' | 'name_desc';
+type SortOption = 'default' | 'oldest' | 'time_asc' | 'time_desc' | 'difficulty_asc' | 'difficulty_desc' | 'name_asc' | 'name_desc' | 'cooked_desc' | 'cooked_asc';
 
 interface SortItem {
   id: SortOption;
@@ -42,6 +42,8 @@ const SORT_OPTIONS: SortItem[] = [
   { id: 'time_desc', label: 'Längst tid', shortLabel: 'Längst tid' },
   { id: 'difficulty_asc', label: 'Lättast först', shortLabel: 'Lättast först' },
   { id: 'difficulty_desc', label: 'Mest avancerade först', shortLabel: 'Avancerade först' },
+  { id: 'cooked_desc', label: 'Lagat flest gånger', shortLabel: 'Lagat flest gånger' },
+  { id: 'cooked_asc', label: 'Lagat minst gånger', shortLabel: 'Lagat minst gånger' },
   { id: 'name_asc', label: 'Namn A–Ö', shortLabel: 'Namn A–Ö' },
   { id: 'name_desc', label: 'Namn Ö–A', shortLabel: 'Namn Ö–A' },
 ];
@@ -68,6 +70,7 @@ export const RecipeList: React.FC = () => {
     setActiveShoppingListId,
     searchQuery,
     setSearchQuery,
+    cookedCounts,
     recipeBrowseRequest,
     clearRecipeBrowseRequest,
   } = useRecipes();
@@ -401,6 +404,14 @@ export const RecipeList: React.FC = () => {
           return totalTimeA - totalTimeB;
         case 'time_desc':
           return totalTimeB - totalTimeA;
+        case 'cooked_desc':
+        case 'cooked_asc': {
+          // Times made, from the planner's days before today. Equal ones by name.
+          const ca = cookedCounts.get(a.id) || 0;
+          const cb = cookedCounts.get(b.id) || 0;
+          if (ca !== cb) return sortBy === 'cooked_desc' ? cb - ca : ca - cb;
+          return a.title.localeCompare(b.title, 'sv', { sensitivity: 'base' });
+        }
         case 'name_asc':
           return a.title.localeCompare(b.title, 'sv', { sensitivity: 'base' });
         case 'name_desc':
@@ -436,6 +447,7 @@ export const RecipeList: React.FC = () => {
     return result;
   }, [
     recipes,
+    cookedCounts,
     search,
     selectedCategory,
     selectedSubcategories,

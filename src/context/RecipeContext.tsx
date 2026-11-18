@@ -235,6 +235,18 @@ export const RecipeProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     };
   }, []);
   const weekMealPlan = useMemo(() => buildWeek(mealPlan, planWeekStart), [mealPlan, planWeekStart]);
+  // How many times each recipe was made: the days before today it was planned for, dinner or lunch
+  const cookedCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const day of mealPlan) {
+      if (!day.dateStr || day.dateStr >= today) continue;
+      for (const id of [day.dinnerRecipeId, day.lunchRecipeId]) {
+        if (id) counts.set(id, (counts.get(id) || 0) + 1);
+      }
+    }
+    return counts;
+  }, [mealPlan, today]);
+
   const getMealPlanForDate = useCallback(
     (dateStr: string) => mealPlan.find((d) => d.dateStr === dateStr),
     [mealPlan]
@@ -2139,6 +2151,7 @@ export const RecipeProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         setPlanWeekStart,
         today,
         getMealPlanForDate,
+        cookedCounts,
         shoppingList: mainShoppingList,
         allShoppingItems: shoppingList,
         activeShoppingList,
