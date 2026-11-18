@@ -2,6 +2,7 @@
  * Pure helpers for the app's data: cleaning up saved recipes and building the meal plan week.
  * They hold no state, so they are kept apart from RecipeContext.
  */
+import { getDefaultServings } from '../utils/defaultServings';
 import { withBreadCategory } from '../utils/categoryDetector';
 import { hasCoverImage } from '../utils/coverImage';
 import { cleanLeadingStepNumber } from '../utils/formatters';
@@ -28,7 +29,7 @@ export function emptyPlanDay(dateStr: string): MealPlanDay {
     dayName: dayNameForDate(dateStr),
     dateStr,
     dinnerRecipeId: null,
-    dinnerServings: 4,
+    dinnerServings: getDefaultServings(),
     lunchRecipeId: null,
     lunchServings: 2,
     customDinner: '',
@@ -68,7 +69,7 @@ export function normalizeMealPlan(
       dayName: dayNameForDate(dateStr),
       dateStr,
       dinnerRecipeId: cleanId(d.dinnerRecipeId),
-      dinnerServings: d.dinnerServings && d.dinnerServings > 0 ? d.dinnerServings : 4,
+      dinnerServings: d.dinnerServings && d.dinnerServings > 0 ? d.dinnerServings : getDefaultServings(),
       lunchRecipeId: cleanId(d.lunchRecipeId),
       lunchServings: d.lunchServings && d.lunchServings > 0 ? d.lunchServings : 2,
       customDinner: d.customDinner || '',

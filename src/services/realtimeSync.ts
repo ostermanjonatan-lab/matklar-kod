@@ -1,3 +1,4 @@
+import { getDefaultServings } from '../utils/defaultServings';
 import { withBreadCategory } from '../utils/categoryDetector';
 import { cleanLeadingStepNumber } from '../utils/formatters';
 import { getSupabase } from './supabaseClient';
@@ -245,7 +246,7 @@ async function migrateLegacyMealPlanRows(householdId: string, rows: any[]): Prom
         dinnerRecipeId: row.dinner_recipe_id || null,
         customLunch: row.custom_lunch || '',
         customDinner: row.custom_dinner || '',
-        dinnerServings: 4,
+        dinnerServings: getDefaultServings(),
         lunchServings: 2,
       });
     });
@@ -675,7 +676,7 @@ export async function fetchHouseholdDataFromSupabase(householdId: string): Promi
           dinnerRecipeId: row.dinner_recipe_id || null,
           customLunch: row.custom_lunch || '',
           customDinner: row.custom_dinner || '',
-          dinnerServings: 4,
+          dinnerServings: getDefaultServings(),
           lunchServings: 2,
         }));
       const migrated = await migrateLegacyMealPlanRows(householdId, mealPlansRes.data);

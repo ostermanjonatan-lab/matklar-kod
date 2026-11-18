@@ -1,3 +1,4 @@
+import { getDefaultServings } from '../utils/defaultServings';
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { isErasing } from '../utils/eraseAll';
 import type { ReactNode } from 'react';
@@ -884,6 +885,11 @@ export const RecipeProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       mealType === 'dinner'
         ? {
             ...item,
+            // A dinner on a day without one gets the usual number of portions (Inställningar).
+            // Changing the dish keeps the portions chosen.
+            ...(!item.dinnerRecipeId && !item.customDinner?.trim() && (recipeId || customText?.trim())
+              ? { dinnerServings: getDefaultServings() }
+              : {}),
             dinnerRecipeId: recipeId,
             customDinner: customText !== undefined ? customText : (recipeId ? '' : item.customDinner || ''),
           }

@@ -11,6 +11,13 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.0.218',
+    date: '2026-11-18',
+    items: [
+      'Planeraren följer inställningen Portioner som standard: en middag på en dag som saknar middag får det antalet portioner. Byter du rätt behålls de portioner du valt.',
+    ],
+  },
+  {
     version: '1.0.217',
     date: '2026-11-18',
     items: [

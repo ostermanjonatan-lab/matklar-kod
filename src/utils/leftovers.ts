@@ -1,3 +1,4 @@
+import { getDefaultServings } from './defaultServings';
 import type { MealPlanDay } from '../types/recipe';
 import { addDaysISO, dayNameForDate } from './mealPlanDates';
 
@@ -37,7 +38,7 @@ export function withLeftoverPortions(days: MealPlanDay[]): MealPlanDay[] {
     if (!source) continue;
     const dinner = copy.find((d) => d.dateStr === source);
     if (dinner && dinner.dinnerRecipeId) {
-      dinner.dinnerServings = (dinner.dinnerServings || 4) + (day.lunchServings || 2);
+      dinner.dinnerServings = (dinner.dinnerServings || getDefaultServings()) + (day.lunchServings || 2);
     }
   }
   return copy;

@@ -1,3 +1,4 @@
+import { getDefaultServings } from '../../utils/defaultServings';
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { FadeImage } from '../layout/FadeImage';
 import { CustomMealImage } from './CustomMealImage';
@@ -61,6 +62,8 @@ const DAYS_OF_WEEK: MealPlanDay['dayName'][] = [
 ];
 
 export const MealPlanView: React.FC = () => {
+  // Portions for a dinner that has none set (Inställningar, Portioner som standard)
+  const defaultServings = getDefaultServings();
   const {
     recipes,
     mealPlan,
@@ -315,7 +318,7 @@ export const MealPlanView: React.FC = () => {
   const activeDayName = DAYS_OF_WEEK[selectedDayIndex];
   const activeDayData = mealPlan.find((d) => d.dayName === activeDayName) || {
     dayName: activeDayName,
-    dinnerServings: 4,
+    dinnerServings: defaultServings,
     lunchServings: 2,
   };
 
@@ -813,10 +816,10 @@ export const MealPlanView: React.FC = () => {
                                 {formatCookingTime(recipe.prepTimeMinutes, recipe.cookTimeMinutes)}
                               </span>
                               <span>•</span>
-                              <span>{dayData?.dinnerServings || 4} portioner</span>
+                              <span>{dayData?.dinnerServings || defaultServings} portioner</span>
                             </>
                           ) : hasCustomDinner ? (
-                            <span>{dayData?.dinnerServings || 4} portioner</span>
+                            <span>{dayData?.dinnerServings || defaultServings} portioner</span>
                           ) : (
                             <span className="text-emerald-800 font-medium">+ Välj middag</span>
                           )}
@@ -987,7 +990,7 @@ export const MealPlanView: React.FC = () => {
                               setMealPlanServings(
                                 activeDayName,
                                 'dinner',
-                                Math.max(1, (activeDayData.dinnerServings || 4) - 1)
+                                Math.max(1, (activeDayData.dinnerServings || defaultServings) - 1)
                               )
                             }
                             className="w-7 h-7 rounded-xl bg-white border border-[#EBE7DF] flex items-center justify-center font-bold text-stone-700 active:scale-90 touch-manipulation shadow-2xs"
@@ -996,7 +999,7 @@ export const MealPlanView: React.FC = () => {
                             <Minus className="w-3 h-3" />
                           </button>
                           <span className="font-bold text-sm w-5 text-center tabular-nums text-stone-900">
-                            {activeDayData.dinnerServings || 4}
+                            {activeDayData.dinnerServings || defaultServings}
                           </span>
                           <button
                             type="button"
@@ -1004,7 +1007,7 @@ export const MealPlanView: React.FC = () => {
                               setMealPlanServings(
                                 activeDayName,
                                 'dinner',
-                                (activeDayData.dinnerServings || 4) + 1
+                                (activeDayData.dinnerServings || defaultServings) + 1
                               )
                             }
                             className="w-7 h-7 rounded-xl bg-white border border-[#EBE7DF] flex items-center justify-center font-bold text-stone-700 active:scale-90 touch-manipulation shadow-2xs"
@@ -1064,7 +1067,7 @@ export const MealPlanView: React.FC = () => {
                             setMealPlanServings(
                               activeDayName,
                               'dinner',
-                              Math.max(1, (activeDayData.dinnerServings || 4) - 1)
+                              Math.max(1, (activeDayData.dinnerServings || defaultServings) - 1)
                             )
                           }
                           className="w-7 h-7 rounded-xl bg-white border border-[#EBE7DF] flex items-center justify-center font-bold text-stone-700 active:scale-90 touch-manipulation shadow-2xs"
@@ -1073,7 +1076,7 @@ export const MealPlanView: React.FC = () => {
                           <Minus className="w-3 h-3" />
                         </button>
                         <span className="font-bold text-sm w-5 text-center tabular-nums text-stone-900">
-                          {activeDayData.dinnerServings || 4}
+                          {activeDayData.dinnerServings || defaultServings}
                         </span>
                         <button
                           type="button"
@@ -1081,7 +1084,7 @@ export const MealPlanView: React.FC = () => {
                             setMealPlanServings(
                               activeDayName,
                               'dinner',
-                              (activeDayData.dinnerServings || 4) + 1
+                              (activeDayData.dinnerServings || defaultServings) + 1
                             )
                           }
                           className="w-7 h-7 rounded-xl bg-white border border-[#EBE7DF] flex items-center justify-center font-bold text-stone-700 active:scale-90 touch-manipulation shadow-2xs"
@@ -1157,7 +1160,7 @@ export const MealPlanView: React.FC = () => {
                   <div className="flex items-center gap-2">
                     <ChefHat className="w-4 h-4 text-emerald-800" />
                     <h4 className="font-serif font-bold text-sm text-stone-900">
-                      Ingredienser för {activeDayData.dinnerServings || 4} portioner
+                      Ingredienser för {activeDayData.dinnerServings || defaultServings} portioner
                     </h4>
                     <span className="text-[11px] text-stone-400">
                       ({dinnerRecipe.ingredients.length} st)
@@ -1179,7 +1182,7 @@ export const MealPlanView: React.FC = () => {
                     const scaledAmount = scaleIngredientAmount(
                       ing.amount,
                       dinnerRecipe.servings,
-                      activeDayData.dinnerServings || 4
+                      activeDayData.dinnerServings || defaultServings
                     );
                     return (
                       <div
@@ -1465,7 +1468,7 @@ export const MealPlanView: React.FC = () => {
                         {hasDinnerHere && (
                           <span className="shrink-0">
                             {dRecipe ? `${formatCookingTime(dRecipe.prepTimeMinutes, dRecipe.cookTimeMinutes)}, ` : ''}
-                            {dayData?.dinnerServings || 4} port
+                            {dayData?.dinnerServings || defaultServings} port
                             {isInList(day, 'dinner', dayData?.dinnerRecipeId) && (
                               <span className="text-[#284235]"> · i listan</span>
                             )}
