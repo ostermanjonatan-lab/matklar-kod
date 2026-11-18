@@ -1,5 +1,6 @@
 ﻿import React, { useMemo, useState } from 'react';
 import { Toast } from '../layout/Toast';
+import { getDefaultServings, setDefaultServings, MIN_SERVINGS, MAX_SERVINGS } from '../../utils/defaultServings';
 import { useRecipes } from '../../context/RecipeContext';
 import { HouseholdShareModal } from '../auth/HouseholdShareModal';
 import { HouseholdOnboarding } from '../auth/HouseholdOnboarding';
@@ -15,7 +16,7 @@ import { eraseThisDevice } from '../../utils/eraseAll';
 import { getThemeChoice, setThemeChoice, type ThemeChoice } from '../../utils/theme';
 import { OPEN_STORE_ORDER_KEY } from '../shopping/storeOrderLink';
 import { saveRecipeBackup, readRecipeBackup } from '../../utils/recipeBackup';
-import { Check, Copy, ChevronRight, ChevronDown, Clock, ShieldAlert } from 'lucide-react';
+import { Check, Copy, ChevronRight, ChevronDown, Clock, Minus, Plus, ShieldAlert } from 'lucide-react';
 
 /** A plain row in a list: text on the left, optional detail and arrow on the right. */
 const Row: React.FC<{
@@ -66,6 +67,13 @@ const Confirm: React.FC<{
 const sectionHeading = 'text-xs font-semibold text-stone-500 pt-6 pb-1';
 
 export const SettingsView: React.FC = () => {
+  // Portions recipes open with, on this phone
+  const [defaultServings, setDefaultServingsState] = useState<number>(() => getDefaultServings());
+  const changeDefaultServings = (n: number) => {
+    const next = Math.min(MAX_SERVINGS, Math.max(MIN_SERVINGS, n));
+    setDefaultServingsState(next);
+    setDefaultServings(next);
+  };
   const {
     recipes,
     household,
@@ -436,6 +444,34 @@ export const SettingsView: React.FC = () => {
             </button>
           ))}
         </div>
+
+        {/* How many portions recipes open with and are bought for from the start screen */}
+        <h2 className={sectionHeading}>Recept</h2>
+        <div className="border-y border-[#EBE7DF] min-h-[52px] py-2 flex items-center gap-3">
+          <span className="flex-1 min-w-0 text-sm text-stone-900">Portioner som standard</span>
+          <div className="flex items-center gap-1" role="group" aria-label="Portioner som standard">
+            <button
+              type="button"
+              onClick={() => changeDefaultServings(defaultServings - 1)}
+              disabled={defaultServings <= MIN_SERVINGS}
+              className="w-10 h-10 rounded-full bg-stone-100 text-stone-700 flex items-center justify-center disabled:opacity-40 touch-manipulation"
+              aria-label="Färre portioner"
+            >
+              <Minus className="w-4 h-4" />
+            </button>
+            <span className="w-8 text-center text-sm font-semibold tabular-nums text-stone-900" aria-live="polite">{defaultServings}</span>
+            <button
+              type="button"
+              onClick={() => changeDefaultServings(defaultServings + 1)}
+              disabled={defaultServings >= MAX_SERVINGS}
+              className="w-10 h-10 rounded-full bg-stone-100 text-stone-700 flex items-center justify-center disabled:opacity-40 touch-manipulation"
+              aria-label="Fler portioner"
+            >
+              <Plus className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+        <p className="text-xs text-stone-500 pt-1.5">Ett recept öppnas för så många portioner, och kundvagnen på receptkortet handlar för lika många.</p>
 
         {/* Other settings in the app */}
         <h2 className={sectionHeading}>Inköpslistan</h2>

@@ -11,6 +11,13 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.0.217',
+    date: '2026-11-18',
+    items: [
+      'Ett recept öppnas alltid för 4 portioner, och kundvagnen på receptkortet lägger till ingredienser för 4 portioner, oavsett hur många receptet är skrivet för. Antalet ändras under Inställningar, Recept, Portioner som standard.',
+    ],
+  },
+  {
     version: '1.0.216',
     date: '2026-11-18',
     items: [

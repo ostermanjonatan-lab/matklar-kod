@@ -1,5 +1,6 @@
+import { getDefaultServings } from '../../utils/defaultServings';
 import { matchesSearch, parseSearch } from '../../utils/recipeSearch';
-import { formatRecipeTitle } from '../../utils/formatters';
+import { formatRecipeTitle, scaleIngredientAmount } from '../../utils/formatters';
 import { categoryLabel } from '../../data/categories';
 import React, { useState, useMemo, useDeferredValue, useCallback, useRef, useEffect } from 'react';
 import { Toast } from '../layout/Toast';
@@ -171,9 +172,14 @@ export const RecipeList: React.FC = () => {
       // Snapshot prior state of the list added to, for Ångra
       const snapshot = allShoppingItems.filter((item) => (item.listId || null) === listId);
 
+      // For the usual number of portions (4, or what is chosen under Inställningar), not the recipe's own
+      const portions = getDefaultServings();
       const count = addIngredientsToShoppingList(
         // With the ingredients swapped on this phone
-        withStoredSwaps(recipe).ingredients,
+        withStoredSwaps(recipe).ingredients.map((ing) => ({
+          ...ing,
+          amount: scaleIngredientAmount(ing.amount, recipe.servings || portions, portions),
+        })),
         recipe.title,
         skipPantryStaples,
         listId

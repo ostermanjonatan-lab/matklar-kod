@@ -1,3 +1,4 @@
+import { getDefaultServings } from '../../utils/defaultServings';
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { FadeImage } from '../layout/FadeImage';
 import { hasCoverImage } from '../../utils/coverImage';
@@ -224,7 +225,8 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
   };
 
   // Local interactive state
-  const [servings, setServings] = useState<number>(recipe.servings || 4);
+  // Every recipe opens for the same number of portions (4, or what is chosen under Inställningar)
+  const [servings, setServings] = useState<number>(() => getDefaultServings());
   const [checkedIngredients, setCheckedIngredients] = useState<Record<number, boolean>>({});
   const [completedSteps, setCompletedSteps] = useState<Record<number, boolean>>({});
   const [isEditingRecipe, setIsEditingRecipe] = useState<boolean>(false);
