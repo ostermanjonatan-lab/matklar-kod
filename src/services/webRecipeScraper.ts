@@ -1277,6 +1277,12 @@ function extractDescriptionFromDom(doc: Document, title?: string): string {
  * Smartly extracts total cooking time from an HTML Document using meta tags,
  * Microdata, schema attributes, and known Swedish/international recipe site DOM selectors.
  */
+/**
+ * How long a blog post takes to read ("3 min läsning", "Lästid 4 min", "5 min read"), which blogs
+ * show at the top of the post. It is never the time to cook.
+ */
+const READING_TIME = /läsning|lästid|läs\s*tid|att läsa|\bread(ing)?\b|\bläs\b/i;
+
 function extractCookingTimeFromDom(doc: Document): number | undefined {
   // 1. Check meta tags
   const metaSelectors = [
@@ -1292,7 +1298,8 @@ function extractCookingTimeFromDom(doc: Document): number | undefined {
     try {
       const el = doc.querySelector(sel);
       const content = el?.getAttribute('content') || el?.getAttribute('value');
-      if (content) {
+      // Blogs put the reading time in twitter:data ("3 min read")
+      if (content && !READING_TIME.test(content)) {
         const parsed = parseRecipeTimeString(content);
         if (parsed && parsed > 0) return parsed;
       }
@@ -1309,7 +1316,7 @@ function extractCookingTimeFromDom(doc: Document): number | undefined {
         if (parsed && parsed > 0) return parsed;
       }
       const text = el.textContent?.trim();
-      if (text) {
+      if (text && !READING_TIME.test(text)) {
         const parsed = parseRecipeTimeString(text);
         if (parsed && parsed > 0) return parsed;
       }
@@ -1353,7 +1360,7 @@ function extractCookingTimeFromDom(doc: Document): number | undefined {
       const els = doc.querySelectorAll(sel);
       for (const el of Array.from(els)) {
         const text = el.textContent?.trim();
-        if (text && text.length < 100) {
+        if (text && text.length < 100 && !READING_TIME.test(text)) {
           const parsed = parseRecipeTimeString(text);
           if (parsed && parsed > 0) return parsed;
         }
@@ -1366,7 +1373,7 @@ function extractCookingTimeFromDom(doc: Document): number | undefined {
     const candidateElements = doc.querySelectorAll('header span, header div, .recipe-header span, .recipe-header div, .meta span, .recipe-meta span');
     for (const el of Array.from(candidateElements)) {
       const text = el.textContent?.trim();
-      if (text && text.length < 50 && (text.includes('min') || text.includes('tim') || text.includes('h'))) {
+      if (text && text.length < 50 && (text.includes('min') || text.includes('tim') || text.includes('h')) && !READING_TIME.test(text)) {
         const parsed = parseRecipeTimeString(text);
         if (parsed && parsed > 0) return parsed;
       }

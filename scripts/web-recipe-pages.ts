@@ -74,4 +74,15 @@ inlinenumbers: { url: 'https://www.ica.se/recept/potatisbullar-med-ost/', html: 
     recipeYield: '4 portioner', totalTime: 'PT30M', recipeIngredient: ['810 g potatisbullar', '3 dl riven ost', '½ dl jalapeños'],
     recipeInstructions: '1. Sätt ugnen på 225 grader. 2. Dela varje potatisbulle i 4. Lägg bitarna på en plåt. 3. Strö över ost och gratinera ca 10 minuter.' }),
   `<h1>Potatisbullar med ost</h1>${filler}`) },
+// A recipe blog (Wix): recipe data without a time, and the post's reading time at the top, which
+// must not be read as the time to cook
+blogreadingtime: { url: 'https://www.matblogg.se/post/klibbig-hoisinkottfars', html: wrap(
+  `<title>Klibbig hoisinköttfärs</title><meta name="twitter:data1" content="3 min read">` + ld({
+    '@context': 'https://schema.org', '@type': 'Recipe', name: 'Klibbig hoisinköttfärs', recipeYield: '4',
+    recipeIngredient: ['500 g nötfärs', '2 gula lökar', '3 msk hoisinsås', '1 msk japansk soja', '1 kruka basilika'],
+    recipeInstructions: [
+      { '@type': 'HowToStep', text: 'Stek köttfärsen krispig i en het panna.' },
+      { '@type': 'HowToStep', text: 'Lägg i löken och låt den bli mjuk under lock i 15–20 minuter.' },
+      { '@type': 'HowToStep', text: 'Rör ner hoisin och soja. Lägg ner basilikan och låt den mjukna.' }],
+  }), `<header><div><span title="18 aug." class="time-ago">18 aug.</span></div><div><span title="3 min läsning" data-hook="time-to-read">3 min läsning</span></div></header><h1>Klibbig hoisinköttfärs</h1>${filler}`) },
 };

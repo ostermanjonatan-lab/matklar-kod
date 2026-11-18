@@ -11,6 +11,13 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.0.213',
+    date: '2026-11-18',
+    items: [
+      'Recept från matbloggar får inte längre lästiden som tillagningstid, till exempel 3 min när inlägget tar 3 minuter att läsa.',
+    ],
+  },
+  {
     version: '1.0.212',
     date: '2026-11-15',
     items: [

@@ -1,5 +1,5 @@
 /**
- * Checks how recipe web pages are read (parseHtmlRecipe) against 10 test pages, and one page
+ * Checks how recipe web pages are read (parseHtmlRecipe) against 11 test pages, and one page
  * through the reader service (scrapeRecipeFromUrl): recipe data
  * for search engines (JSON-LD, also in @graph and with sections), microdata, a WordPress recipe
  * plugin and a page with only headings and lists.
@@ -24,6 +24,21 @@ interface Expected {
 }
 
 const EXPECTED: Record<string, Expected> = {
+  // The reading time at the top of a blog post ("3 min läsning") is not the time to cook
+  "blogreadingtime": {
+    "title": "Klibbig hoisinköttfärs",
+    "servings": 4,
+    "cookTimeMinutes": 0,
+    "category": "Middag",
+    "ingredients": [
+      "Nötfärs",
+      "Gula lökar",
+      "Hoisinsås",
+      "Japansk soja",
+      "Basilika"
+    ],
+    "steps": 3
+  },
   "ica": {
     "title": "Krämig kycklingpasta",
     "servings": 4,
