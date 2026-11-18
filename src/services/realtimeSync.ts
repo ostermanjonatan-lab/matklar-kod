@@ -1,3 +1,4 @@
+import { withBreadCategory } from '../utils/categoryDetector';
 import { cleanLeadingStepNumber } from '../utils/formatters';
 import { getSupabase } from './supabaseClient';
 import type { Recipe, MealPlanDay, ShoppingItem, ShoppingListInfo, Household, UserProfile, PantryItem, HouseholdJoinRequest } from '../types/recipe';
@@ -61,13 +62,15 @@ export function subscribeToLocalChanges(onMessage: (msg: SyncMessageType) => voi
  * Maps Supabase row to local Recipe object
  */
 export function mapRowToRecipe(row: any): Recipe {
-  const subcategories = getRecipeSubcategories({
+  const readSubcategories = getRecipeSubcategories({
     title: row.title,
     description: row.description,
     notes: row.notes,
     subcategory: row.subcategory,
     subcategories: row.subcategories,
   });
+  // Bread saved under Frukost is shown under its own category Bröd
+  const { category, subcategories } = withBreadCategory({ category: row.category || 'Middag', title: row.title }, readSubcategories);
 
   return {
     id: row.id,
@@ -79,8 +82,8 @@ export function mapRowToRecipe(row: any): Recipe {
     sourceUrl: row.source_url || undefined,
     sourceType: row.source_type || 'manual',
     servings: row.servings || 4,
-    category: row.category || 'Middag',
-    subcategory: row.subcategory || (subcategories.join(', ') || ''),
+    category,
+    subcategory: category !== (row.category || 'Middag') ? subcategories.join(', ') : row.subcategory || (subcategories.join(', ') || ''),
     subcategories: subcategories.length > 0 ? subcategories : (row.subcategory ? [row.subcategory] : []),
     rating: row.rating ?? 5,
     isFavorite: Boolean(row.is_favorite),

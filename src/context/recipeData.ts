@@ -2,6 +2,7 @@
  * Pure helpers for the app's data: cleaning up saved recipes and building the meal plan week.
  * They hold no state, so they are kept apart from RecipeContext.
  */
+import { withBreadCategory } from '../utils/categoryDetector';
 import { hasCoverImage } from '../utils/coverImage';
 import { cleanLeadingStepNumber } from '../utils/formatters';
 import { estimateDifficulty, isRecipeDifficulty } from '../utils/recipeDifficulty';
@@ -83,7 +84,8 @@ export function buildWeek(plan: MealPlanDay[], weekStart: string): MealPlanDay[]
 }
 
 export function sanitizeRecipe(recipe: Recipe): Recipe {
-  const clean = getRecipeSubcategories(recipe);
+  // Bread saved under Frukost is shown under its own category Bröd
+  const { category, subcategories: clean } = withBreadCategory(recipe, getRecipeSubcategories(recipe));
   const cleanIngredients = (recipe.ingredients || []).map(repairIngredient).map((ing) => ({
     ...ing,
     aisle: resolveSavedAisle(ing.name, ing.aisle),
@@ -121,6 +123,7 @@ export function sanitizeRecipe(recipe: Recipe): Recipe {
     // No picture is saved as none, and shown as the grey Ingen bild vald box. The photo of a
     // photographed recipe used to become its picture, which looked odd, so it is dropped too.
     coverImageUrl: hasCoverImage(coverImageUrl) && coverImageUrl !== recipe.recipeDocumentUrl ? coverImageUrl : '',
+    category,
     subcategories: clean,
     subcategory: clean.join(', '),
     ingredients: cleanIngredients,

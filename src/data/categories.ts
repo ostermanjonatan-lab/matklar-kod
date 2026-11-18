@@ -4,6 +4,7 @@ export const STANDARD_CATEGORIES: RecipeCategory[] = [
   'Middag',
   'Förrätt',
   'Efterrätt',
+  'Bröd',
   'Såser',
   'Dryck',
   'Frukost',
@@ -55,6 +56,15 @@ export const DEFAULT_SUBCATEGORIES: Record<string, string[]> = {
     'Choklad & Godis',
     'Dessert i glas',
   ],
+  // Bread has a category of its own (it was a subcategory of Frukost before 1.0.216)
+  Bröd: [
+    'Matbröd & Limpor',
+    'Frallor & Småbröd',
+    'Surdeg',
+    'Focaccia & Flatbröd',
+    'Knäckebröd & Tunnbröd',
+    'Scones & Snabbröd',
+  ],
   Såser: [
     'Kalla såser',
     'Varma såser',
@@ -78,7 +88,6 @@ export const DEFAULT_SUBCATEGORIES: Record<string, string[]> = {
     'Gröt & Müsli',
     'Ägg & Omelett',
     'Smörgåsar & Mackor',
-    'Bröd',
     'Yoghurt & Fil',
     'Pannkakor & Våfflor',
     'Smoothies & Bowls',

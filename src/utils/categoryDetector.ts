@@ -3,7 +3,10 @@ import { detectMeatKinds } from './meatKinds';
 
 /** Bread you bake: not "pitabröd" or "naanbröd", which go with a dish */
 const BREAD =
-  /(^|[^a-zåäö])bröd([^a-zåäö]|$)|limpa|fralla|frallor|focaccia|surdeg|baguette|ciabatta|tunnbröd|knäckebröd|formbröd|grovbröd|rågbröd|lantbröd|levain|brioche|kavring/;
+  /(^|[^a-zåäö])bröd([^a-zåäö]|$)|limpa|fralla|frallor|focaccia|surdeg|baguette|ciabatta|tunnbröd|knäckebröd|formbröd|grovbröd|rågbröd|lantbröd|levain|brioche|kavring|frukostbull|grovbull|grahamsbull|fröbull|scones|bagel|flatbröd|hamburgerbröd/;
+
+/** Buns that are bread, not cakes: "frukostbullar", "grahamsbullar" */
+const BREAD_BUNS = /frukostbull|grovbull|grahamsbull|fröbull|fiberbull|hamburgerbröd/;
 
 /** Words that make a name a sauce, dressing or dip */
 const SAUCE_WORDS =
@@ -56,7 +59,7 @@ export function detectCategory(rawText?: string): RecipeCategory {
     c.includes('efterrätt') ||
     c.includes('dessert') ||
     /mousse|fruktsallad|pannacotta|panna cotta|brûlée|brulee|tiramisu|cheesecake|brownie|parfait|sorbet|ris à la malta|smulpaj|crumble/.test(c) ||
-    /bananbröd|wienerbröd|kanelbröd|längd\b|kokosboll|chokladboll|havreboll|pralin|fudge|tryffel(?!pasta|risotto)|knäck|kola\b|marängsviss|maräng/.test(c) ||
+    /bananbröd|wienerbröd|kanelbröd|längd\b|kokosboll|chokladboll|havreboll|pralin|fudge|tryffel(?!pasta|risotto)|knäck(?!ebröd)|kola\b|marängsviss|maräng/.test(c) ||
     c.includes('kladdkaka') ||
     c.includes('kaka') ||
     c.includes('kakor') ||
@@ -67,11 +70,10 @@ export function detectCategory(rawText?: string): RecipeCategory {
     c.includes('godis') ||
     c.includes('godsaker') ||
     c.includes('paj') ||
-    // Buns, but not "köttbullar", "fiskbullar" or "potatisbullar"
-    (/bull(e|ar)/.test(c) && !/(kött|fisk|kyckling|fläsk|vego|lamm|kalkon|potatis|färs|ost)bull/.test(c)) ||
+    // Buns, but not "köttbullar", "fiskbullar" or "potatisbullar", and not bread buns ("frukostbullar")
+    (/bull(e|ar)/.test(c) && !/(kött|fisk|kyckling|fläsk|vego|lamm|kalkon|potatis|färs|ost)bull/.test(c) && !BREAD_BUNS.test(c)) ||
     c.includes('våffl') ||
     c.includes('muffin') ||
-    c.includes('scones') ||
     c.includes('cookies') ||
     c.includes('bakelse') ||
     c.includes('mazarin') ||
@@ -81,10 +83,13 @@ export function detectCategory(rawText?: string): RecipeCategory {
     return 'Efterrätt';
   }
 
-  // Bread is filed under breakfast: "Lantbröd", "Focaccia", "Frallor med frön". Only when the
-  // dish itself is bread, not "Soppa med bröd"
-  if (BREAD.test(c.split(/\s(?:med|och|i|till)\s/)[0])) {
-    return 'Frukost';
+  // Bread has its own category: "Lantbröd", "Focaccia", "Frallor med frön". Only when the dish
+  // itself is bread, not "Soppa med bröd"
+  const dish = c.split(/\s(?:med|och|i|till)\s/)[0];
+  // A bread on its own, also one that is usually eaten with a dish ("Naanbröd", "Grytbröd"), but
+  // not with the dish ("Pitabröd med falafel")
+  if (BREAD.test(dish) || (dish === c && /[a-zåäö]bröd$|(^|\s)naan$/.test(dish))) {
+    return 'Bröd';
   }
 
   if (
@@ -192,10 +197,22 @@ export function detectSubcategories(
     if (/ägg|omelett|scrambled|äggröra|frittata/i.test(titleLower)) matches.push('Ägg & Omelett');
     if (/pannkak|våffl/i.test(titleLower)) matches.push('Pannkakor & Våfflor');
     if (/macka|smörgås|toast|bagel/i.test(titleLower)) matches.push('Smörgåsar & Mackor');
-    if (BREAD.test(titleLower) || /scones/i.test(titleLower)) matches.push('Bröd');
     if (/yoghurt|fil([^a-zåäö]|$)|kvarg|skyr/i.test(titleLower)) matches.push('Yoghurt & Fil');
     if (/smoothie|juice|bowl/i.test(titleLower)) matches.push('Smoothies & Bowls');
     if (matches.length === 0) matches.push('Gröt & Müsli');
+  }
+
+  // Bröd
+  else if (category === 'Bröd') {
+    if (/surdeg|levain/i.test(titleLower)) matches.push('Surdeg');
+    if (/fralla|frallor|småfranska|bull(e|ar)|bagel|hamburgerbröd|minibröd|småbröd/i.test(titleLower)) matches.push('Frallor & Småbröd');
+    if (/focaccia|pita|naan|tortilla|flatbröd|libabröd|chapati|lavash|pizzadeg|pizzabotten/i.test(titleLower)) matches.push('Focaccia & Flatbröd');
+    if (/knäck|tunnbröd|hårt bröd|hårdbröd|kex/i.test(titleLower)) matches.push('Knäckebröd & Tunnbröd');
+    if (/scones|snabbröd|grytbröd|soda bread|bröd utan jäst|bakpulverbröd/i.test(titleLower)) matches.push('Scones & Snabbröd');
+    // Loaves, and any bread that is none of the above
+    if (matches.length === 0 || /limpa|formbröd|lantbröd|rågbröd|grovbröd|baguette|ciabatta|brioche|kavring|matbröd|fullkornsbröd/i.test(titleLower)) {
+      matches.push('Matbröd & Limpor');
+    }
   }
 
   // 3. Dryck
@@ -364,3 +381,20 @@ export function detectSubcategory(
   const subcats = detectSubcategories(title, category, ingredients, description, keywords);
   return subcats[0] || 'Husmanskost';
 }
+
+/**
+ * Bread got its own category in 1.0.216. A recipe saved under Frukost with the subcategory Bröd
+ * is shown under Bröd, with the bread subcategories its name gives.
+ */
+export function withBreadCategory<T extends { category: RecipeCategory; title?: string; subcategories?: string[] }>(
+  recipe: T,
+  subcategories: string[]
+): { category: RecipeCategory; subcategories: string[] } {
+  if (recipe.category !== 'Frukost' || !subcategories.includes('Bröd')) return { category: recipe.category, subcategories };
+  const kept = subcategories.filter((s) => s !== 'Bröd' && !BREAKFAST_ONLY.has(s));
+  const bread = detectSubcategories(recipe.title || '', 'Bröd');
+  return { category: 'Bröd', subcategories: [...bread, ...kept.filter((s) => !bread.includes(s))] };
+}
+
+/** Breakfast subcategories that do not belong on a bread */
+const BREAKFAST_ONLY = new Set(['Gröt & Müsli', 'Ägg & Omelett', 'Smörgåsar & Mackor', 'Yoghurt & Fil', 'Pannkakor & Våfflor', 'Smoothies & Bowls']);

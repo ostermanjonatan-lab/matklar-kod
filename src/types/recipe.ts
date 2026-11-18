@@ -3,7 +3,7 @@ import { detectMeatKinds, OLD_MEAT_SUBCATEGORY } from '../utils/meatKinds';
 import { RENAMED_SUBCATEGORIES } from '../data/categories';
 export type RecipeSourceType = 'manual' | 'url' | 'pdf' | 'recipe_image';
 
-export type RecipeCategory = 'Middag' | 'Förrätt' | 'Efterrätt' | 'Såser' | 'Dryck' | 'Frukost' | 'Mellanmål' | string;
+export type RecipeCategory = 'Middag' | 'Förrätt' | 'Efterrätt' | 'Bröd' | 'Såser' | 'Dryck' | 'Frukost' | 'Mellanmål' | string;
 
 export interface Ingredient {
   name: string;
