@@ -33,7 +33,8 @@ import {
   Sun,
   ShoppingCart,
   Minus,
-  Plus
+  Plus,
+  Pencil,
 } from 'lucide-react';
 import { PortionScaler } from './PortionScaler';
 import { NutritionPanel } from './NutritionPanel';
@@ -613,6 +614,17 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
                 <Sun className={`w-4 h-4 transition-transform ${isLocked ? 'scale-110 text-amber-700 fill-amber-300' : ''}`} />
               </button>
             )}
+
+            {/* Edit the recipe, the same as Redigera receptet further down */}
+            <button
+              type="button"
+              onClick={() => setIsEditingRecipe(true)}
+              className="w-10 h-10 rounded-full bg-white border border-[#EBE7DF] hover:bg-stone-50 active:scale-90 flex items-center justify-center text-stone-700 shadow-xs transition-all touch-manipulation cursor-pointer"
+              aria-label="Redigera receptet"
+              title="Redigera receptet"
+            >
+              <Pencil className="w-4 h-4" />
+            </button>
 
             <button
               type="button"

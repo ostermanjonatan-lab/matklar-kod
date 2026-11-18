@@ -14,6 +14,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     version: '1.0.216',
     date: '2026-11-18',
     items: [
+      'Ett öppnat recept har en knapp med en penna högst upp för att redigera receptet.',
       'Bröd är en egen kategori, med underkategorierna Matbröd & Limpor, Frallor & Småbröd, Surdeg, Focaccia & Flatbröd, Knäckebröd & Tunnbröd och Scones & Snabbröd. Bröd du sparat under Frukost visas där nu, och nya brödrecept hamnar där av sig själva.',
     ],
   },
