@@ -73,6 +73,10 @@ export interface RecipeContextType {
     recipeId: string | null,
     customText?: string
   ) => void;
+  /** More dishes at a day's dinner, each a recipe with its own portions */
+  addDinnerExtra: (dateStr: string, recipeId: string) => void;
+  removeDinnerExtra: (dateStr: string, recipeId: string) => void;
+  setDinnerExtraServings: (dateStr: string, recipeId: string, servings: number) => void;
   clearMealPlan: () => void;
   generateShoppingListFromWeek: (skipPantryStaples: boolean) => number;
   addIngredientsToShoppingList: (

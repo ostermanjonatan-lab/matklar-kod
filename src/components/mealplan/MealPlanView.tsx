@@ -8,7 +8,7 @@ import { categoryLabel } from '../../data/categories';
 import { Toast } from '../layout/Toast';
 import { ConfirmSheet } from '../layout/ConfirmSheet';
 import { flushSync } from 'react-dom';
-import type { MealPlanDay } from '../../types/recipe';
+import type { DinnerExtra, MealPlanDay, Recipe } from '../../types/recipe';
 import { useRecipes } from '../../context/RecipeContext';
 import { mealsInShoppingList, plannedMealKey } from '../../utils/shoppingAggregator';
 import { useModalBackHandler } from '../../hooks/useModalBackHandler';
@@ -35,6 +35,7 @@ import {
 } from 'lucide-react';
 import { LunchboxIcon } from '../icons/LunchboxIcon';
 import { DinnerBrowser } from '../recipes/DinnerBrowser';
+import { DinnerExtras } from './DinnerExtras';
 import { leftoverLunchText, leftoverSourceDate, parseLeftoverLunch } from '../../utils/leftovers';
 import { RandomPickerModal } from '../recipes/RandomPickerModal';
 import { formatCookingTime, scaleIngredientAmount, formatAmount, formatRecipeTitle } from '../../utils/formatters';
@@ -70,6 +71,9 @@ export const MealPlanView: React.FC = () => {
     mealPlan,
     setMealPlanForDay,
     setMealPlanServings,
+    addDinnerExtra,
+    removeDinnerExtra,
+    setDinnerExtraServings,
     clearMealPlan,
     generateShoppingListFromWeek,
     openRecipeDetail,
@@ -294,6 +298,8 @@ export const MealPlanView: React.FC = () => {
     isOpen: boolean;
     dayName: MealPlanDay['dayName'];
     mealType: 'lunch' | 'dinner';
+    /** Choosing one more dish for the dinner, not the dinner itself */
+    extra?: boolean;
   } | null>(null);
 
   const [pickerTab, setPickerTab] = useState<'recipe' | 'custom'>('recipe');
@@ -352,7 +358,9 @@ export const MealPlanView: React.FC = () => {
   // The shopping list is only made for today and later: earlier days are already eaten
   const upcomingDays = mealPlan.filter((d) => !d.dateStr || d.dateStr >= today);
   const upcomingDinnerCount = upcomingDays.filter(
-    (d) => d.dinnerRecipeId && recipes.some((r) => r.id === d.dinnerRecipeId) && !isInList(d.dayName, 'dinner', d.dinnerRecipeId)
+    (d) =>
+      (d.dinnerRecipeId && recipes.some((r) => r.id === d.dinnerRecipeId) && !isInList(d.dayName, 'dinner', d.dinnerRecipeId)) ||
+      (d.dinnerExtras || []).some((e) => recipes.some((r) => r.id === e.recipeId) && !isInList(d.dayName, 'dinner', e.recipeId))
   ).length;
   const upcomingLunchCount = upcomingDays.filter(
     (d) => d.lunchRecipeId && recipes.some((r) => r.id === d.lunchRecipeId) && !isInList(d.dayName, 'lunch', d.lunchRecipeId)
@@ -385,6 +393,11 @@ export const MealPlanView: React.FC = () => {
   // Recipe selection
   const handleSelectRecipe = (recipeId: string) => {
     if (!pickerState) return;
+    if (pickerState.extra) {
+      addDinnerExtra(weekDates[DAYS_OF_WEEK.indexOf(pickerState.dayName)], recipeId);
+      setPickerState(null);
+      return;
+    }
     setMealPlanForDay(
       pickerState.dayName,
       pickerState.mealType,
@@ -464,21 +477,27 @@ export const MealPlanView: React.FC = () => {
     day: MealPlanDay['dayName'];
     recipeId: string | null;
     custom: string;
+    extras: DinnerExtra[];
   } | null>(null);
   const removedTimer = useRef<number | undefined>(undefined);
   useEffect(() => () => window.clearTimeout(removedTimer.current), []);
   const removeDinner = (day: MealPlanDay['dayName']) => {
     const d = mealPlan.find((x) => x.dayName === day);
-    setRemovedDinner({ day, recipeId: d?.dinnerRecipeId || null, custom: d?.customDinner || '' });
+    setRemovedDinner({ day, recipeId: d?.dinnerRecipeId || null, custom: d?.customDinner || '', extras: d?.dinnerExtras || [] });
     handleClearMeal(day, 'dinner');
     window.clearTimeout(removedTimer.current);
     removedTimer.current = window.setTimeout(() => setRemovedDinner(null), 5000);
   };
   const undoRemoveDinner = () => {
     if (!removedDinner) return;
-    const { day, recipeId, custom } = removedDinner;
+    const { day, recipeId, custom, extras } = removedDinner;
     if (recipeId) setMealPlanForDay(day, 'dinner', recipeId);
     else if (custom) setMealPlanForDay(day, 'dinner', null, custom);
+    const date = weekDates[DAYS_OF_WEEK.indexOf(day)];
+    extras.forEach((e) => {
+      addDinnerExtra(date, e.recipeId);
+      setDinnerExtraServings(date, e.recipeId, e.servings);
+    });
     window.clearTimeout(removedTimer.current);
     setRemovedDinner(null);
   };
@@ -548,6 +567,20 @@ export const MealPlanView: React.FC = () => {
       setSavingImage(false);
     }
   };
+
+  // One more dish for the dinner: only recipes, since each brings its ingredients
+  const openExtraPicker = (dayName: MealPlanDay['dayName']) => {
+    setPickerTab('recipe');
+    setPickerState({ isOpen: true, dayName, mealType: 'dinner', extra: true });
+  };
+
+  // "Skagenröra, Tonfiskröra": the dishes served with a day's dinner
+  const extrasTitle = (day?: MealPlanDay) =>
+    (day?.dinnerExtras || [])
+      .map((e) => recipes.find((r) => r.id === e.recipeId))
+      .filter((r): r is Recipe => Boolean(r))
+      .map((r) => formatRecipeTitle(r.title))
+      .join(', ');
 
   const openPickerModal = (dayName: MealPlanDay['dayName'], mealType: 'lunch' | 'dinner') => {
     const dayObj = mealPlan.find((d) => d.dayName === dayName);
@@ -808,6 +841,7 @@ export const MealPlanView: React.FC = () => {
                           }`}
                         >
                           {recipe ? formatRecipeTitle(recipe.title) : hasCustomDinner ? dayData?.customDinner : 'Ingen middag planerad'}
+                          {extrasTitle(dayData) && <span className="font-normal text-stone-500"> + {extrasTitle(dayData)}</span>}
                         </div>
 
                         <div className="flex items-center gap-1.5 text-[10px] text-stone-400 mt-0.5">
@@ -1152,6 +1186,19 @@ export const MealPlanView: React.FC = () => {
                   </div>
                 </div>
               )}
+
+              {/* The dishes served with the dinner, like dips to baked potatoes */}
+              {(dinnerRecipe || activeDayData.customDinner?.trim()) && (
+                <DinnerExtras
+                  extras={activeDayData.dinnerExtras || []}
+                  recipes={recipes}
+                  onOpen={openRecipeDetail}
+                  onAdd={() => openExtraPicker(activeDayName)}
+                  onRemove={(id) => removeDinnerExtra(weekDates[selectedDayIndex], id)}
+                  onServings={(id, n) => setDinnerExtraServings(weekDates[selectedDayIndex], id, n)}
+                  isInList={(id) => isInList(activeDayName, 'dinner', id)}
+                />
+              )}
             </div>
 
             {/* Desktop Ingredients Quick-List (Widescreen Master-Detail Bonus) */}
@@ -1462,6 +1509,7 @@ export const MealPlanView: React.FC = () => {
                     <div className="h-5">
                       <div className={`text-sm leading-5 truncate ${hasDinnerHere ? 'font-semibold text-stone-900' : 'font-semibold text-[#284235]'}`}>
                         {dRecipe ? formatRecipeTitle(dRecipe.title) : hasCustomDinner ? dayData?.customDinner : 'Välj middag'}
+                        {extrasTitle(dayData) && <span className="font-normal text-stone-500"> + {extrasTitle(dayData)}</span>}
                       </div>
                     </div>
 
@@ -1581,7 +1629,7 @@ export const MealPlanView: React.FC = () => {
             <div className="flex items-center justify-between shrink-0">
               <div>
                 <h3 className="font-serif font-bold text-lg text-stone-900">
-                  Välj {pickerState.mealType === 'dinner' ? 'middag' : 'lunch'}
+                  {pickerState.extra ? 'Lägg till rätt till middagen' : `Välj ${pickerState.mealType === 'dinner' ? 'middag' : 'lunch'}`}
                 </h3>
                 <p className="text-xs text-stone-500">
                   {pickerState.dayName} {formatDayMonth(weekDates[DAYS_OF_WEEK.indexOf(pickerState.dayName)])}
@@ -1589,6 +1637,7 @@ export const MealPlanView: React.FC = () => {
               </div>
 
               <div className="flex items-center gap-1.5 shrink-0">
+                {!pickerState.extra && (
                 <button
                   type="button"
                   onClick={() => {
@@ -1602,6 +1651,7 @@ export const MealPlanView: React.FC = () => {
                   <Dices className="w-4 h-4" />
                   Slumpa
                 </button>
+                )}
                 <button
                   type="button"
                   onClick={() => setPickerState(null)}
@@ -1646,7 +1696,7 @@ export const MealPlanView: React.FC = () => {
               })()}
 
             {/* Mode Switcher: Recept ur samlingen / Egen måltid */}
-            <div className="flex rounded-2xl bg-[#FCFAF5] border border-[#EBE7DF] p-1 shrink-0">
+            <div className={`${pickerState.extra ? 'hidden' : 'flex'} rounded-2xl bg-[#FCFAF5] border border-[#EBE7DF] p-1 shrink-0`}>
               <button
                 type="button"
                 onClick={() => setPickerTab('recipe')}
@@ -1677,6 +1727,7 @@ export const MealPlanView: React.FC = () => {
                 recipes={recipes}
                 mealLabel={pickerState.mealType === 'dinner' ? 'middag' : 'lunch'}
                 currentRecipeId={(() => {
+                  if (pickerState.extra) return undefined;
                   const day = mealPlan.find((d) => d.dayName === pickerState.dayName);
                   return pickerState.mealType === 'dinner' ? day?.dinnerRecipeId : day?.lunchRecipeId;
                 })()}

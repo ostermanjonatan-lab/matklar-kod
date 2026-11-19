@@ -104,6 +104,7 @@ create table if not exists meal_plans (
   dinner_servings integer default 4,
   custom_lunch text,
   custom_dinner text,
+  dinner_extras jsonb default '[]'::jsonb,
   updated_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
@@ -119,6 +120,8 @@ create table if not exists shopping_items (
   recipe_source text,
   updated_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
+
+alter table meal_plans add column if not exists dinner_extras jsonb default '[]'::jsonb;
 
 alter publication supabase_realtime add table recipes;
 alter publication supabase_realtime add table meal_plans;

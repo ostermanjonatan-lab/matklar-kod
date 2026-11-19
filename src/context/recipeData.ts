@@ -9,6 +9,7 @@ import { hasCoverImage } from '../utils/coverImage';
 import { cleanLeadingStepNumber } from '../utils/formatters';
 import { estimateDifficulty, isRecipeDifficulty } from '../utils/recipeDifficulty';
 import type { Recipe, MealPlanDay } from '../types/recipe';
+import { cleanDinnerExtras } from '../utils/dinnerExtras';
 import { getRecipeSubcategories } from '../types/recipe';
 import { WEEKDAY_NAMES, dayNameForDate, getWeekDates, getWeekStart, isISODate } from '../utils/mealPlanDates';
 import { repairIngredient, isCommonPantryStaple, resolveSavedAisle } from '../utils/ingredientParser';
@@ -22,7 +23,9 @@ const STARTER_IMAGE_FIXES: Record<string, string> = {
 };
 
 export function hasMeal(d: MealPlanDay): boolean {
-  return Boolean(d.dinnerRecipeId || d.lunchRecipeId || d.customDinner?.trim() || d.customLunch?.trim());
+  return Boolean(
+    d.dinnerRecipeId || d.lunchRecipeId || d.customDinner?.trim() || d.customLunch?.trim() || d.dinnerExtras?.length
+  );
 }
 
 export function emptyPlanDay(dateStr: string): MealPlanDay {
@@ -35,8 +38,10 @@ export function emptyPlanDay(dateStr: string): MealPlanDay {
     lunchServings: 2,
     customDinner: '',
     customLunch: '',
+    dinnerExtras: [],
   };
 }
+
 
 /**
  * Cleans the stored meal plan. Every day has a date. Days saved by older versions only have a
@@ -75,6 +80,7 @@ export function normalizeMealPlan(
       lunchServings: d.lunchServings && d.lunchServings > 0 ? d.lunchServings : 2,
       customDinner: d.customDinner || '',
       customLunch: d.customLunch || '',
+      dinnerExtras: cleanDinnerExtras(d.dinnerExtras, recipeIdSet ? (id) => recipeIdSet.has(id) : undefined),
     }))
     .filter(hasMeal)
     .sort((x, y) => x.dateStr.localeCompare(y.dateStr));

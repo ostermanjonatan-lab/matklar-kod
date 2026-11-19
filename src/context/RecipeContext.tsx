@@ -64,6 +64,7 @@ import {
   setAisleOverride,
   clearAisleOverrides,
 } from '../utils/shoppingAggregator';
+import { keepLocalDinnerExtras } from '../utils/dinnerExtras';
 
 const RecipeContext = createContext<RecipeContextType | undefined>(undefined);
 
@@ -765,6 +766,7 @@ export const RecipeProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         ...item,
         dinnerRecipeId: item.dinnerRecipeId === id ? null : item.dinnerRecipeId,
         lunchRecipeId: item.lunchRecipeId === id ? null : item.lunchRecipeId,
+        dinnerExtras: (item.dinnerExtras || []).filter((e) => e.recipeId !== id),
       }));
       // Leftover lunches from a dinner that is now gone are removed too
       const emptiedDinners = prev.filter((d) => d.dinnerRecipeId === id && d.dateStr).map((d) => d.dateStr!);
@@ -892,6 +894,10 @@ export const RecipeProvider: React.FC<{ children: ReactNode }> = ({ children }) 
               : {}),
             dinnerRecipeId: recipeId,
             customDinner: customText !== undefined ? customText : (recipeId ? '' : item.customDinner || ''),
+            // Without a dinner the dishes that went with it go too
+            ...(!recipeId && !customText?.trim()
+              ? { dinnerExtras: [] }
+              : { dinnerExtras: (item.dinnerExtras || []).filter((e) => e.recipeId !== recipeId) }),
           }
         : {
             ...item,
@@ -925,6 +931,28 @@ export const RecipeProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     );
   }, [planWeekStart, updatePlanDay]);
 
+  const addDinnerExtra = useCallback((dateStr: string, recipeId: string) => {
+    updatePlanDay(dateStr, (item) => {
+      const extras = item.dinnerExtras || [];
+      if (item.dinnerRecipeId === recipeId || extras.some((e) => e.recipeId === recipeId)) return item;
+      // Starts with the dinner's portions, and can then be changed for this dish alone
+      return { ...item, dinnerExtras: [...extras, { recipeId, servings: item.dinnerServings || getDefaultServings() }] };
+    });
+  }, [updatePlanDay]);
+
+  const removeDinnerExtra = useCallback((dateStr: string, recipeId: string) => {
+    updatePlanDay(dateStr, (item) => ({ ...item, dinnerExtras: (item.dinnerExtras || []).filter((e) => e.recipeId !== recipeId) }));
+  }, [updatePlanDay]);
+
+  const setDinnerExtraServings = useCallback((dateStr: string, recipeId: string, servings: number) => {
+    updatePlanDay(dateStr, (item) => ({
+      ...item,
+      dinnerExtras: (item.dinnerExtras || []).map((e) =>
+        e.recipeId === recipeId ? { ...e, servings: Math.min(100, Math.max(1, Math.round(servings))) } : e
+      ),
+    }));
+  }, [updatePlanDay]);
+
   // Empties the week shown in the meal plan. Other weeks are kept.
   const clearMealPlan = useCallback(() => {
     const weekDates = new Set(getWeekDates(planWeekStart));
@@ -949,6 +977,7 @@ export const RecipeProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         ...d,
         dinnerRecipeId: d.dinnerRecipeId && inList.has(plannedMealKey(titleOf(d.dinnerRecipeId), d.dayName, 'dinner')) ? null : d.dinnerRecipeId,
         lunchRecipeId: d.lunchRecipeId && inList.has(plannedMealKey(titleOf(d.lunchRecipeId), d.dayName, 'lunch')) ? null : d.lunchRecipeId,
+        dinnerExtras: (d.dinnerExtras || []).filter((e) => !inList.has(plannedMealKey(titleOf(e.recipeId), d.dayName, 'dinner'))),
       }));
     // With the ingredients swapped on this phone
     const { items } = generateShoppingListFromMealPlan(upcoming, recipes.map(withStoredSwaps), {
@@ -1699,7 +1728,7 @@ export const RecipeProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         const fullData = await fetchHouseholdDataFromSupabase(hh.id);
         if (fullData.recipes !== undefined) setRecipes(fullData.recipes.map(sanitizeRecipe));
         if (fullData.mealPlan && fullData.mealPlan.length > 0) {
-          setMealPlan(normalizeMealPlan(fullData.mealPlan, fullData.recipes || recipes));
+          setMealPlan((prev) => normalizeMealPlan(keepLocalDinnerExtras(fullData.mealPlan, prev), fullData.recipes || recipes));
         }
         if (fullData.shoppingItems !== undefined) setShoppingList(fullData.shoppingItems);
 
@@ -1944,7 +1973,7 @@ export const RecipeProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         const currentRecs = data.recipes !== undefined ? data.recipes.map(sanitizeRecipe) : recipes;
         if (data.recipes !== undefined) setRecipes(currentRecs);
         if (data.mealPlan && data.mealPlan.length > 0) {
-          setMealPlan(normalizeMealPlan(data.mealPlan, currentRecs));
+          setMealPlan((prev) => normalizeMealPlan(keepLocalDinnerExtras(data.mealPlan, prev), currentRecs));
         }
         if (data.shoppingItems !== undefined) setShoppingList(data.shoppingItems);
       });
@@ -2197,6 +2226,9 @@ export const RecipeProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         setMealPlanForDay,
         setMealPlanForDate,
         setMealPlanServings,
+        addDinnerExtra,
+        removeDinnerExtra,
+        setDinnerExtraServings,
         clearMealPlan,
         generateShoppingListFromWeek,
         addIngredientsToShoppingList,

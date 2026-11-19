@@ -5,6 +5,7 @@ import { normalizeMealPlan, sanitizeRecipe } from './recipeData';
 import { HOUSEHOLDS_STORAGE_KEY, ACTIVE_HOUSEHOLD_ID_KEY } from './storageKeys';
 import { subscribeToLocalChanges, subscribeToSupabaseRealtime, syncAisleOverridesWithSupabase, subscribeToAisleOverrides, mapRowToShoppingItem, fetchHouseholdDataFromSupabase, mapRowToRecipe, fetchJoinRequestsFromSupabase, checkJoinRequestStatusInSupabase, subscribeToJoinRequestApproval } from '../services/realtimeSync';
 import { mergeIngredientsIntoShoppingList, getAisleOverride } from '../utils/shoppingAggregator';
+import { keepLocalDinnerExtras } from '../utils/dinnerExtras';
 
 export interface HouseholdSyncDeps {
   households: Household[];
@@ -222,7 +223,7 @@ export function useHouseholdSync(deps: HouseholdSyncDeps): void {
           setRecipes(currentRecs);
         }
         if (data.mealPlan !== undefined && data.mealPlan.length > 0) {
-          setMealPlan(normalizeMealPlan(data.mealPlan, currentRecs));
+          setMealPlan((prev) => normalizeMealPlan(keepLocalDinnerExtras(data.mealPlan, prev), currentRecs));
         }
         if (data.shoppingItems !== undefined && data.shoppingItems.length > 0) {
           setShoppingList(data.shoppingItems);
@@ -291,7 +292,7 @@ export function useHouseholdSync(deps: HouseholdSyncDeps): void {
             if (household?.id) {
               fetchHouseholdDataFromSupabase(household.id).then((data) => {
                 if (data.mealPlan && data.mealPlan.length > 0) {
-                  setMealPlan(normalizeMealPlan(data.mealPlan, data.recipes || recipes));
+                  setMealPlan((prev) => normalizeMealPlan(keepLocalDinnerExtras(data.mealPlan, prev), data.recipes || recipes));
                 }
               });
             }
@@ -522,7 +523,7 @@ export function useHouseholdSync(deps: HouseholdSyncDeps): void {
 
       if (data.recipes !== undefined) setRecipes(data.recipes.map(sanitizeRecipe));
       if (data.mealPlan && data.mealPlan.length > 0) {
-        setMealPlan(normalizeMealPlan(data.mealPlan, data.recipes || recipes));
+        setMealPlan((prev) => normalizeMealPlan(keepLocalDinnerExtras(data.mealPlan, prev), data.recipes || recipes));
       }
       if (data.shoppingItems !== undefined) setShoppingList(data.shoppingItems);
 

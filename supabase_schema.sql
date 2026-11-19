@@ -64,9 +64,13 @@ CREATE TABLE IF NOT EXISTS public.meal_plans (
   dinner_recipe_id TEXT,
   custom_lunch TEXT DEFAULT '',
   custom_dinner TEXT DEFAULT '',
+  dinner_extras JSONB DEFAULT '[]'::jsonb,
   created_at TIMESTAMPTZ DEFAULT now(),
   updated_at TIMESTAMPTZ DEFAULT now()
 );
+
+-- Fler rätter till middagen (t.ex. röror till bakpotatis), för tabeller skapade före 1.0.220
+ALTER TABLE public.meal_plans ADD COLUMN IF NOT EXISTS dinner_extras JSONB DEFAULT '[]'::jsonb;
 
 -- 5. Skapa tabell för Inköpslista
 CREATE TABLE IF NOT EXISTS public.shopping_items (

@@ -438,6 +438,24 @@ export function generateShoppingListFromMealPlan(
       }
     }
 
+    // The dishes served with the dinner, each for its own portions
+    for (const extra of day.dinnerExtras || []) {
+      const rec = recipeMap.get(extra.recipeId);
+      if (!rec) continue;
+      plannedMealCount++;
+      for (const ing of rec.ingredients) {
+        if (options.skipPantryStaples && ing.isPantryStaple) continue;
+        rawItemsToConsolidate.push({
+          name: ing.name,
+          amount: scaleIngredientAmount(ing.amount, rec.servings, extra.servings),
+          unit: ing.unit,
+          aisle: ing.aisle,
+          isPantryStaple: ing.isPantryStaple,
+          recipeTitle: `${rec.title} (${day.dayName}, ${extra.servings}p)`,
+        });
+      }
+    }
+
     if (day.lunchRecipeId && recipeMap.has(day.lunchRecipeId)) {
       const rec = recipeMap.get(day.lunchRecipeId)!;
       const plannedServings = day.lunchServings || rec.servings || 2;

@@ -201,6 +201,14 @@ export interface MealPlanDay {
   dinnerServings?: number;
   customLunch?: string;
   customDinner?: string;
+  /** More dishes at the dinner, each with its own portions (the dips to baked potatoes) */
+  dinnerExtras?: DinnerExtra[];
+}
+
+/** A dish served with the day's dinner, as a recipe of its own */
+export interface DinnerExtra {
+  recipeId: string;
+  servings: number;
 }
 
 export interface ShoppingItem {

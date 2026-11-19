@@ -1,8 +1,9 @@
 import { getDefaultServings } from '../utils/defaultServings';
+import { cleanDinnerExtras } from '../utils/dinnerExtras';
 import { withBreadCategory } from '../utils/categoryDetector';
 import { cleanLeadingStepNumber } from '../utils/formatters';
 import { getSupabase } from './supabaseClient';
-import type { Recipe, MealPlanDay, ShoppingItem, ShoppingListInfo, Household, UserProfile, PantryItem, HouseholdJoinRequest } from '../types/recipe';
+import type { Recipe, MealPlanDay, DinnerExtra, ShoppingItem, ShoppingListInfo, Household, UserProfile, PantryItem, HouseholdJoinRequest } from '../types/recipe';
 import { WEEKDAY_NAMES, getWeekDates, getWeekStart, isISODate } from '../utils/mealPlanDates';
 import { splitDifficultyTag, withDifficultyTag, estimateDifficulty } from '../utils/recipeDifficulty';
 import { splitNutritionTag, withNutritionTag, splitProductTags, withProductTags } from '../utils/nutrition';
@@ -203,11 +204,38 @@ export async function pushMealPlanToSupabase(mealPlan: MealPlanDay[], householdI
     }));
 
     if (rows.length === 0) return;
+    // The dinner's extra dishes need the column dinner_extras (supabase_schema.sql). Until it is
+    // added, the plan is saved without them, so the rest still syncs.
+    if (hasDinnerExtrasColumn !== false) {
+      const withExtras = rows.map((r, i) => ({ ...r, dinner_extras: extrasOf(mealPlan.filter((m) => isISODate(m.dateStr))[i]) }));
+      const { error } = await supabase.from('meal_plans').upsert(withExtras);
+      if (!error) {
+        hasDinnerExtrasColumn = true;
+        return;
+      }
+      if (!isMissingExtrasColumn(error)) {
+        console.warn('Failed to push meal plan to Supabase:', error);
+        return;
+      }
+      hasDinnerExtrasColumn = false;
+      console.warn('meal_plans has no column dinner_extras yet, the extra dishes are kept on this device only');
+    }
     const { error } = await supabase.from('meal_plans').upsert(rows);
     if (error) console.warn('Failed to push meal plan to Supabase:', error);
   } catch (err) {
     console.warn('Failed to push meal plan to Supabase:', err);
   }
+}
+
+/** Whether meal_plans has the column dinner_extras: unknown until a row is read or saved */
+let hasDinnerExtrasColumn: boolean | null = null;
+
+function isMissingExtrasColumn(error: { message?: string; code?: string } | null): boolean {
+  return Boolean(error && /dinner_extras/.test(error.message || '') && (error.code === 'PGRST204' || /column/i.test(error.message || '')));
+}
+
+function extrasOf(m: MealPlanDay | undefined): DinnerExtra[] {
+  return cleanDinnerExtras(m?.dinnerExtras);
 }
 
 function mealPlanRowId(householdId: string, dateStr: string): string {
@@ -681,7 +709,10 @@ export async function fetchHouseholdDataFromSupabase(householdId: string): Promi
           customDinner: row.custom_dinner || '',
           dinnerServings: getDefaultServings(),
           lunchServings: 2,
+          // Missing when the column is not there yet, and then this device's own are kept
+          dinnerExtras: 'dinner_extras' in row ? cleanDinnerExtras(row.dinner_extras) : undefined,
         }));
+      if (mealPlansRes.data.some((row: any) => 'dinner_extras' in row)) hasDinnerExtrasColumn = true;
       const migrated = await migrateLegacyMealPlanRows(householdId, mealPlansRes.data);
       result.mealPlan = [...dated, ...migrated];
     }
