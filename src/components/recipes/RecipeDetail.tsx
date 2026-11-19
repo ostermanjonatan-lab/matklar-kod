@@ -230,6 +230,12 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
   const [servings, setServings] = useState<number>(() => getDefaultServings());
   const [checkedIngredients, setCheckedIngredients] = useState<Record<number, boolean>>({});
   const [completedSteps, setCompletedSteps] = useState<Record<number, boolean>>({});
+  // What goes to the shopping list: the ingredients that are not ticked off (ticked ones are at hand)
+  const recipeToBuy = useMemo(
+    () => ({ ...shownRecipe, ingredients: shownRecipe.ingredients.filter((_, idx) => !checkedIngredients[idx]) }),
+    [shownRecipe, checkedIngredients]
+  );
+  const tickedCount = shownRecipe.ingredients.length - recipeToBuy.ingredients.length;
   const [isEditingRecipe, setIsEditingRecipe] = useState<boolean>(false);
   const [isEditingNotes, setIsEditingNotes] = useState<boolean>(false);
   const [notesDraft, setNotesDraft] = useState<string>(recipe.notes || '');
@@ -296,8 +302,13 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
     }
     shoppingTouchPosRef.current = null;
 
-    if (shownRecipe.ingredients && shownRecipe.ingredients.length > 0) {
-      if (needsAddChoice(shownRecipe, shoppingLists.length)) {
+    if (shownRecipe.ingredients.length > 0 && recipeToBuy.ingredients.length === 0) {
+      setShareToast('Alla ingredienser är bockade, inget lades till');
+      setTimeout(() => setShareToast(null), 3000);
+      return;
+    }
+    if (recipeToBuy.ingredients.length > 0) {
+      if (needsAddChoice(recipeToBuy, shoppingLists.length)) {
         setShowPantryChoice(true);
       } else {
         handleAddToShoppingList(true);
@@ -470,14 +481,15 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
 
   // Add Ingredients to Shopping List
   const handleAddToShoppingList = (excludePantry: boolean = true, listId: string | null = null) => {
-    const scaledIngredients = shownRecipe.ingredients.map((ing) => ({
+    const scaledIngredients = recipeToBuy.ingredients.map((ing) => ({
       ...ing,
       amount: scaleIngredientAmount(ing.amount, recipe.servings, servings),
     }));
     addIngredientsToShoppingList(scaledIngredients, recipe.title, excludePantry, listId);
     const listName = shoppingLists.find((l) => l.id === listId)?.name;
     setAddedToListId(listId);
-    setShoppingToast(listName ? `Tillagt i ${listName}` : 'Tillagt i inköpslistan');
+    const skipped = tickedCount > 0 ? `, utom ${tickedCount} bockade` : '';
+    setShoppingToast(`${listName ? `Tillagt i ${listName}` : 'Tillagt i inköpslistan'}${skipped}`);
     setAddedToCart(true);
     setTimeout(() => setAddedToCart(false), 2000);
     setTimeout(() => setShoppingToast(null), 4000);
@@ -1137,7 +1149,7 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
       {/* Ask whether pantry staples should be included */}
       {showPantryChoice && (
         <PantryChoiceDialog
-          recipe={shownRecipe}
+          recipe={recipeToBuy}
           onChoose={(skipPantryStaples, listId) => {
             setShowPantryChoice(false);
             handleAddToShoppingList(skipPantryStaples, listId);

@@ -11,6 +11,13 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.0.220',
+    date: '2026-11-19',
+    items: [
+      'Ingredienser som du bockat av i ett öppnat recept kommer inte med när receptet läggs i inköpslistan.',
+    ],
+  },
+  {
     version: '1.0.219',
     date: '2026-11-18',
     items: [
