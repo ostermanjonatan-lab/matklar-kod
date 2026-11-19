@@ -3,7 +3,7 @@ import { cleanDinnerExtras } from '../utils/dinnerExtras';
 import { withBreadCategory } from '../utils/categoryDetector';
 import { cleanLeadingStepNumber } from '../utils/formatters';
 import { getSupabase } from './supabaseClient';
-import type { Recipe, MealPlanDay, DinnerExtra, ShoppingItem, ShoppingListInfo, Household, UserProfile, PantryItem, HouseholdJoinRequest } from '../types/recipe';
+import type { Recipe, MealPlanDay, ShoppingItem, ShoppingListInfo, Household, UserProfile, PantryItem, HouseholdJoinRequest } from '../types/recipe';
 import { WEEKDAY_NAMES, getWeekDates, getWeekStart, isISODate } from '../utils/mealPlanDates';
 import { splitDifficultyTag, withDifficultyTag, estimateDifficulty } from '../utils/recipeDifficulty';
 import { splitNutritionTag, withNutritionTag, splitProductTags, withProductTags } from '../utils/nutrition';
@@ -204,38 +204,43 @@ export async function pushMealPlanToSupabase(mealPlan: MealPlanDay[], householdI
     }));
 
     if (rows.length === 0) return;
-    // The dinner's extra dishes need the column dinner_extras (supabase_schema.sql). Until it is
-    // added, the plan is saved without them, so the rest still syncs.
-    if (hasDinnerExtrasColumn !== false) {
-      const withExtras = rows.map((r, i) => ({ ...r, dinner_extras: extrasOf(mealPlan.filter((m) => isISODate(m.dateStr))[i]) }));
-      const { error } = await supabase.from('meal_plans').upsert(withExtras);
-      if (!error) {
-        hasDinnerExtrasColumn = true;
-        return;
-      }
-      if (!isMissingExtrasColumn(error)) {
+    // Portions and the dinner's extra dishes need columns of their own (supabase_schema.sql).
+    // A column that is not there yet is left out, so the rest still syncs.
+    const days = mealPlan.filter((m) => isISODate(m.dateStr));
+    for (let attempt = 0; attempt <= OPTIONAL_MEAL_PLAN_COLUMNS.length; attempt++) {
+      const withOptional = rows.map((r, i) => {
+        const row: Record<string, unknown> = { ...r };
+        const day = days[i];
+        if (!missingMealPlanColumns.has('dinner_extras')) row.dinner_extras = cleanDinnerExtras(day?.dinnerExtras);
+        if (!missingMealPlanColumns.has('dinner_servings')) row.dinner_servings = day?.dinnerServings || null;
+        if (!missingMealPlanColumns.has('lunch_servings')) row.lunch_servings = day?.lunchServings || null;
+        return row;
+      });
+      const { error } = await supabase.from('meal_plans').upsert(withOptional);
+      if (!error) return;
+      const missing = OPTIONAL_MEAL_PLAN_COLUMNS.find(
+        (c) => !missingMealPlanColumns.has(c) && new RegExp(`'?${c}'?`).test(error.message || '') && /column/i.test(error.message || '')
+      );
+      if (!missing) {
         console.warn('Failed to push meal plan to Supabase:', error);
         return;
       }
-      hasDinnerExtrasColumn = false;
-      console.warn('meal_plans has no column dinner_extras yet, the extra dishes are kept on this device only');
+      missingMealPlanColumns.add(missing);
+      console.warn(`meal_plans has no column ${missing} yet, it is kept on this device only`);
     }
-    const { error } = await supabase.from('meal_plans').upsert(rows);
-    if (error) console.warn('Failed to push meal plan to Supabase:', error);
   } catch (err) {
     console.warn('Failed to push meal plan to Supabase:', err);
   }
 }
 
-/** Whether meal_plans has the column dinner_extras: unknown until a row is read or saved */
-let hasDinnerExtrasColumn: boolean | null = null;
+/** Columns of meal_plans added after the first version, which a household's table may lack */
+const OPTIONAL_MEAL_PLAN_COLUMNS = ['dinner_extras', 'dinner_servings', 'lunch_servings'] as const;
+const missingMealPlanColumns = new Set<string>();
 
-function isMissingExtrasColumn(error: { message?: string; code?: string } | null): boolean {
-  return Boolean(error && /dinner_extras/.test(error.message || '') && (error.code === 'PGRST204' || /column/i.test(error.message || '')));
-}
-
-function extrasOf(m: MealPlanDay | undefined): DinnerExtra[] {
-  return cleanDinnerExtras(m?.dinnerExtras);
+/** A number of portions saved in a row, or undefined when the row has none (this device's are kept) */
+function servingsFromRow(value: unknown): number | undefined {
+  const n = Math.round(Number(value));
+  return value !== null && value !== undefined && n > 0 ? Math.min(n, 100) : undefined;
 }
 
 function mealPlanRowId(householdId: string, dateStr: string): string {
@@ -707,12 +712,12 @@ export async function fetchHouseholdDataFromSupabase(householdId: string): Promi
           dinnerRecipeId: row.dinner_recipe_id || null,
           customLunch: row.custom_lunch || '',
           customDinner: row.custom_dinner || '',
-          dinnerServings: getDefaultServings(),
-          lunchServings: 2,
-          // Missing when the column is not there yet, and then this device's own are kept
+          // Missing when the column is not there yet (or the row was saved before it), and then
+          // this device's own are kept, see keepLocalPlanFields
+          dinnerServings: servingsFromRow(row.dinner_servings),
+          lunchServings: servingsFromRow(row.lunch_servings),
           dinnerExtras: 'dinner_extras' in row ? cleanDinnerExtras(row.dinner_extras) : undefined,
         }));
-      if (mealPlansRes.data.some((row: any) => 'dinner_extras' in row)) hasDinnerExtrasColumn = true;
       const migrated = await migrateLegacyMealPlanRows(householdId, mealPlansRes.data);
       result.mealPlan = [...dated, ...migrated];
     }

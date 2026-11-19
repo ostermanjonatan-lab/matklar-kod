@@ -22,15 +22,21 @@ export function cleanDinnerExtras(raw: unknown, isKnown?: (id: string) => boolea
 }
 
 /**
- * The plan read from Supabase, with the extra dishes this device has for days whose row says
- * nothing about them (before the column dinner_extras is added in Supabase).
+ * The plan read from Supabase, with this device's own portions and extra dishes for days whose
+ * row says nothing about them (before their columns are added in Supabase, or rows saved before).
  */
-export function keepLocalDinnerExtras(remote: MealPlanDay[] | undefined, local: MealPlanDay[]): MealPlanDay[] {
+export function keepLocalPlanFields(remote: MealPlanDay[] | undefined, local: MealPlanDay[]): MealPlanDay[] {
   if (!remote) return [];
   const localByDate = new Map(local.map((d) => [d.dateStr, d]));
-  return remote.map((d) =>
-    d.dinnerExtras === undefined ? { ...d, dinnerExtras: localByDate.get(d.dateStr)?.dinnerExtras || [] } : d
-  );
+  return remote.map((d) => {
+    const own = localByDate.get(d.dateStr);
+    return {
+      ...d,
+      dinnerExtras: d.dinnerExtras ?? own?.dinnerExtras ?? [],
+      dinnerServings: d.dinnerServings ?? own?.dinnerServings,
+      lunchServings: d.lunchServings ?? own?.lunchServings,
+    };
+  });
 }
 
 /**

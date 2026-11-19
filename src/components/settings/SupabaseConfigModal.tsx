@@ -99,9 +99,9 @@ create table if not exists meal_plans (
   household_id text references households(id) on delete cascade,
   day_name text not null,
   lunch_recipe_id text,
-  lunch_servings integer default 2,
+  lunch_servings integer,
   dinner_recipe_id text,
-  dinner_servings integer default 4,
+  dinner_servings integer,
   custom_lunch text,
   custom_dinner text,
   dinner_extras jsonb default '[]'::jsonb,
@@ -122,6 +122,8 @@ create table if not exists shopping_items (
 );
 
 alter table meal_plans add column if not exists dinner_extras jsonb default '[]'::jsonb;
+alter table meal_plans add column if not exists dinner_servings integer;
+alter table meal_plans add column if not exists lunch_servings integer;
 
 alter publication supabase_realtime add table recipes;
 alter publication supabase_realtime add table meal_plans;

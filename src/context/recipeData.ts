@@ -71,17 +71,22 @@ export function normalizeMealPlan(
   const cleanId = (id?: string | null) => (id ? (recipeIdSet ? (recipeIdSet.has(id) ? id : null) : id) : null);
 
   return Array.from(byDate.entries())
-    .map(([dateStr, d]) => ({
+    .map(([dateStr, d]) => {
+      const dinnerRecipeId = cleanId(d.dinnerRecipeId);
+      // The dishes served with a dinner go when the dinner does (its recipe deleted)
+      const hasDinner = Boolean(dinnerRecipeId || d.customDinner?.trim());
+      return {
       dayName: dayNameForDate(dateStr),
       dateStr,
-      dinnerRecipeId: cleanId(d.dinnerRecipeId),
+      dinnerRecipeId,
       dinnerServings: d.dinnerServings && d.dinnerServings > 0 ? d.dinnerServings : getDefaultServings(),
       lunchRecipeId: cleanId(d.lunchRecipeId),
       lunchServings: d.lunchServings && d.lunchServings > 0 ? d.lunchServings : 2,
       customDinner: d.customDinner || '',
       customLunch: d.customLunch || '',
-      dinnerExtras: cleanDinnerExtras(d.dinnerExtras, recipeIdSet ? (id) => recipeIdSet.has(id) : undefined),
-    }))
+      dinnerExtras: hasDinner ? cleanDinnerExtras(d.dinnerExtras, recipeIdSet ? (id) => recipeIdSet.has(id) : undefined) : [],
+      };
+    })
     .filter(hasMeal)
     .sort((x, y) => x.dateStr.localeCompare(y.dateStr));
 }

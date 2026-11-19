@@ -64,7 +64,7 @@ import {
   setAisleOverride,
   clearAisleOverrides,
 } from '../utils/shoppingAggregator';
-import { keepLocalDinnerExtras } from '../utils/dinnerExtras';
+import { keepLocalPlanFields } from '../utils/dinnerExtras';
 
 const RecipeContext = createContext<RecipeContextType | undefined>(undefined);
 
@@ -766,7 +766,11 @@ export const RecipeProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         ...item,
         dinnerRecipeId: item.dinnerRecipeId === id ? null : item.dinnerRecipeId,
         lunchRecipeId: item.lunchRecipeId === id ? null : item.lunchRecipeId,
-        dinnerExtras: (item.dinnerExtras || []).filter((e) => e.recipeId !== id),
+        // Without the dinner the dishes served with it go too
+        dinnerExtras:
+          item.dinnerRecipeId === id && !item.customDinner?.trim()
+            ? []
+            : (item.dinnerExtras || []).filter((e) => e.recipeId !== id),
       }));
       // Leftover lunches from a dinner that is now gone are removed too
       const emptiedDinners = prev.filter((d) => d.dinnerRecipeId === id && d.dateStr).map((d) => d.dateStr!);
@@ -1728,7 +1732,7 @@ export const RecipeProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         const fullData = await fetchHouseholdDataFromSupabase(hh.id);
         if (fullData.recipes !== undefined) setRecipes(fullData.recipes.map(sanitizeRecipe));
         if (fullData.mealPlan && fullData.mealPlan.length > 0) {
-          setMealPlan((prev) => normalizeMealPlan(keepLocalDinnerExtras(fullData.mealPlan, prev), fullData.recipes || recipes));
+          setMealPlan((prev) => normalizeMealPlan(keepLocalPlanFields(fullData.mealPlan, prev), fullData.recipes || recipes));
         }
         if (fullData.shoppingItems !== undefined) setShoppingList(fullData.shoppingItems);
 
@@ -1973,7 +1977,7 @@ export const RecipeProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         const currentRecs = data.recipes !== undefined ? data.recipes.map(sanitizeRecipe) : recipes;
         if (data.recipes !== undefined) setRecipes(currentRecs);
         if (data.mealPlan && data.mealPlan.length > 0) {
-          setMealPlan((prev) => normalizeMealPlan(keepLocalDinnerExtras(data.mealPlan, prev), currentRecs));
+          setMealPlan((prev) => normalizeMealPlan(keepLocalPlanFields(data.mealPlan, prev), currentRecs));
         }
         if (data.shoppingItems !== undefined) setShoppingList(data.shoppingItems);
       });

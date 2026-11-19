@@ -11,6 +11,14 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.0.222',
+    date: '2026-11-19',
+    items: [
+      'Portionerna du väljer för middag och lunch i planeraren hoppar inte längre tillbaka till standard, och de synkas i hushållet.',
+      'När receptet för en middag tas bort försvinner också rätterna som hörde till middagen, så att de inte kommer med i inköpslistan.',
+    ],
+  },
+  {
     version: '1.0.221',
     date: '2026-11-19',
     items: [
