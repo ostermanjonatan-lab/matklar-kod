@@ -148,7 +148,7 @@ const MonthGrid: React.FC<{
                   recipe={recipe}
                   custom={custom}
                   extras={extras}
-                  max={3}
+                  max={4}
                   loading="lazy"
                   className="md:transition-transform md:duration-300 md:group-hover:scale-105"
                 />

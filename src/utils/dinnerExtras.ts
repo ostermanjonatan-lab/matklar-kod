@@ -32,3 +32,24 @@ export function keepLocalDinnerExtras(remote: MealPlanDay[] | undefined, local: 
     d.dinnerExtras === undefined ? { ...d, dinnerExtras: localByDate.get(d.dateStr)?.dinnerExtras || [] } : d
   );
 }
+
+/**
+ * The slices in rows: up to three side by side, then a grid (2 x 2, then 3 x 2 and so on).
+ * Rows that are not full come first, so the dinner gets a bigger slice: 5 is 2 over 3.
+ */
+export function splitIntoRows(n: number): number[][] {
+  if (n <= 3) return [Array.from({ length: n }, (_, i) => i)];
+  const cols = Math.ceil(Math.sqrt(n));
+  const rows = Math.ceil(n / cols);
+  const base = Math.floor(n / rows);
+  const extra = n % rows;
+  const out: number[][] = [];
+  let next = 0;
+  for (let r = 0; r < rows; r++) {
+    // The last rows take the one more each
+    const count = base + (r >= rows - extra ? 1 : 0);
+    out.push(Array.from({ length: count }, (_, i) => next + i));
+    next += count;
+  }
+  return out;
+}

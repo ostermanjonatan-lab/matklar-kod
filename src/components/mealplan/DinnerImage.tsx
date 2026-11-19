@@ -3,6 +3,7 @@ import type { Recipe } from '../../types/recipe';
 import { FadeImage } from '../layout/FadeImage';
 import { CustomMealImage } from './CustomMealImage';
 import { coverFocusStyle } from '../../utils/coverFocus';
+import { splitIntoRows } from '../../utils/dinnerExtras';
 
 interface DinnerImageProps {
   /** The dinner: a recipe, or the name of an own meal */
@@ -21,9 +22,9 @@ interface DinnerImageProps {
 
 /**
  * The picture of a day's dinner. Fills the box it is in (which needs position and a size). With
- * more dishes than one, each gets its own slice side by side, the dinner first.
+ * more dishes than one, each gets its own slice, the dinner first: side by side up to three, then a grid.
  */
-export const DinnerImage: React.FC<DinnerImageProps> = ({ recipe, custom, extras = [], max = 6, onSelectExtra, className = '', loading }) => {
+export const DinnerImage: React.FC<DinnerImageProps> = ({ recipe, custom, extras = [], max = 9, onSelectExtra, className = '', loading }) => {
   const main = recipe ? (
     <FadeImage
       src={recipe.coverImageUrl}
@@ -38,29 +39,46 @@ export const DinnerImage: React.FC<DinnerImageProps> = ({ recipe, custom, extras
   if (extras.length === 0) return main;
 
   const shown = extras.slice(0, Math.max(0, max - 1));
+  const slices: { key: string; content: React.ReactNode; recipe?: Recipe }[] = [
+    { key: 'main', content: main },
+    ...shown.map((r) => ({
+      key: r.id,
+      recipe: r,
+      content: (
+        <FadeImage
+          src={r.coverImageUrl}
+          style={coverFocusStyle(r.coverFocus)}
+          alt=""
+          loading={loading}
+          className="absolute inset-0 w-full h-full object-cover"
+        />
+      ),
+    })),
+  ];
   return (
-    <span className="absolute inset-0 flex gap-0.5 bg-white" aria-hidden="true">
-      <span className="relative flex-1 min-w-0 overflow-hidden">{main}</span>
-      {shown.map((r) => (
-        <span
-          key={r.id}
-          className={`relative flex-1 min-w-0 overflow-hidden ${onSelectExtra ? 'cursor-pointer' : ''}`}
-          onClick={
-            onSelectExtra
-              ? (e) => {
-                  e.stopPropagation();
-                  onSelectExtra(r);
+    <span className="absolute inset-0 flex flex-col gap-0.5 bg-white" aria-hidden="true">
+      {splitIntoRows(slices.length).map((row, ri) => (
+        <span key={ri} className="relative flex-1 min-h-0 flex gap-0.5">
+          {row.map((idx) => {
+            const slice = slices[idx];
+            const r = slice.recipe;
+            return (
+              <span
+                key={slice.key}
+                className={`relative flex-1 min-w-0 overflow-hidden ${r && onSelectExtra ? 'cursor-pointer' : ''}`}
+                onClick={
+                  r && onSelectExtra
+                    ? (e) => {
+                        e.stopPropagation();
+                        onSelectExtra(r);
+                      }
+                    : undefined
                 }
-              : undefined
-          }
-        >
-          <FadeImage
-            src={r.coverImageUrl}
-            style={coverFocusStyle(r.coverFocus)}
-            alt=""
-            loading={loading}
-            className="absolute inset-0 w-full h-full object-cover"
-          />
+              >
+                {slice.content}
+              </span>
+            );
+          })}
         </span>
       ))}
     </span>

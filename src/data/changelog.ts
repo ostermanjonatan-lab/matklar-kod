@@ -11,6 +11,13 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.0.221',
+    date: '2026-11-19',
+    items: [
+      'En middag med fler än tre rätter får bilden som ett rutnät: fyra rätter blir 2 x 2, fem blir två rutor över tre och så vidare.',
+    ],
+  },
+  {
     version: '1.0.220',
     date: '2026-11-19',
     items: [
