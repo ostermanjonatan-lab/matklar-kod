@@ -16,6 +16,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     items: [
       'Ingredienser som du bockat av i ett öppnat recept kommer inte med när receptet läggs i inköpslistan.',
       'En middag i planeraren kan ha flera rätter, till exempel bakpotatis med olika röror. Tryck på Lägg till rätt under middagen. Varje rätt har egna portioner och kommer med i inköpslistan.',
+      'En middag med flera rätter får bilden delad i en del per rätt, i dagvyn, veckan och månadsvyn. Trycker du på en rätts del i dagvyn öppnas det receptet.',
     ],
   },
   {

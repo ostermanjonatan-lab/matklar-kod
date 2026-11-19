@@ -36,6 +36,7 @@ import {
 import { LunchboxIcon } from '../icons/LunchboxIcon';
 import { DinnerBrowser } from '../recipes/DinnerBrowser';
 import { DinnerExtras } from './DinnerExtras';
+import { DinnerImage } from './DinnerImage';
 import { leftoverLunchText, leftoverSourceDate, parseLeftoverLunch } from '../../utils/leftovers';
 import { RandomPickerModal } from '../recipes/RandomPickerModal';
 import { formatCookingTime, scaleIngredientAmount, formatAmount, formatRecipeTitle } from '../../utils/formatters';
@@ -574,11 +575,13 @@ export const MealPlanView: React.FC = () => {
     setPickerState({ isOpen: true, dayName, mealType: 'dinner', extra: true });
   };
 
-  // "Skagenröra, Tonfiskröra": the dishes served with a day's dinner
-  const extrasTitle = (day?: MealPlanDay) =>
+  // The dishes served with a day's dinner, and their names: "Skagenröra, Tonfiskröra"
+  const extraRecipes = (day?: MealPlanDay) =>
     (day?.dinnerExtras || [])
       .map((e) => recipes.find((r) => r.id === e.recipeId))
-      .filter((r): r is Recipe => Boolean(r))
+      .filter((r): r is Recipe => Boolean(r));
+  const extrasTitle = (day?: MealPlanDay) =>
+    extraRecipes(day)
       .map((r) => formatRecipeTitle(r.title))
       .join(', ');
 
@@ -798,10 +801,8 @@ export const MealPlanView: React.FC = () => {
                             : 'border-2 border-dashed border-stone-200 bg-stone-50 text-stone-400'
                         }`}
                       >
-                        {recipe ? (
-                          <FadeImage src={recipe.coverImageUrl} style={coverFocusStyle(recipe.coverFocus)} alt={recipe.title} className="absolute inset-0 w-full h-full object-cover" />
-                        ) : hasCustomDinner ? (
-                          <CustomMealImage name={dayData!.customDinner!.trim()} />
+                        {hasDinner ? (
+                          <DinnerImage recipe={recipe} custom={dayData?.customDinner?.trim()} extras={extraRecipes(dayData)} max={4} />
                         ) : (
                           <span className="text-base font-bold text-stone-300 group-hover:text-stone-400">
                             +
@@ -936,7 +937,12 @@ export const MealPlanView: React.FC = () => {
                     onClick={() => openRecipeDetail(dinnerRecipe)}
                     className="relative aspect-16/10 rounded-t-3xl overflow-hidden cursor-pointer group touch-manipulation"
                   >
-                    <FadeImage src={dinnerRecipe.coverImageUrl} style={coverFocusStyle(dinnerRecipe.coverFocus)} alt={dinnerRecipe.title} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105" />
+                    <DinnerImage
+                      recipe={dinnerRecipe}
+                      extras={extraRecipes(activeDayData as MealPlanDay)}
+                      onSelectExtra={openRecipeDetail}
+                      className="group-hover:scale-105"
+                    />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/35 via-45% to-black/20" />
 
                     {/* Top Floating Badges & Action Buttons */}
@@ -1071,7 +1077,11 @@ export const MealPlanView: React.FC = () => {
                     onClick={() => openPickerModal(activeDayName, 'dinner')}
                     className="relative aspect-16/10 rounded-t-3xl overflow-hidden cursor-pointer touch-manipulation"
                   >
-                    <CustomMealImage name={activeDayData.customDinner.trim()} />
+                    <DinnerImage
+                      custom={activeDayData.customDinner.trim()}
+                      extras={extraRecipes(activeDayData as MealPlanDay)}
+                      onSelectExtra={openRecipeDetail}
+                    />
 
                     <div className="absolute top-3 left-3 right-3 flex items-center justify-between z-10">
                       <span className="bg-white/95 text-stone-900 text-[11px] font-bold px-2.5 py-1 rounded-full shadow-xs">
@@ -1488,10 +1498,8 @@ export const MealPlanView: React.FC = () => {
                 >
                   {/* Thumbnail */}
                   <div className="relative w-12 h-12 rounded-xl overflow-hidden bg-stone-100 shrink-0">
-                    {dRecipe ? (
-                      <FadeImage src={dRecipe.coverImageUrl} style={coverFocusStyle(dRecipe.coverFocus)} alt="" className="absolute inset-0 w-full h-full object-cover" />
-                    ) : hasCustomDinner ? (
-                      <CustomMealImage name={dayData!.customDinner!.trim()} />
+                    {dRecipe || hasCustomDinner ? (
+                      <DinnerImage recipe={dRecipe} custom={dayData?.customDinner?.trim()} extras={extraRecipes(dayData)} max={4} />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-stone-400">
                         <Plus className="w-4 h-4" />

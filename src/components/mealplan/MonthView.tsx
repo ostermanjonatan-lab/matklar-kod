@@ -1,10 +1,8 @@
 import React, { useEffect, useRef } from 'react';
 import type { MealPlanDay, Recipe } from '../../types/recipe';
-import { FadeImage } from '../layout/FadeImage';
-import { CustomMealImage } from './CustomMealImage';
+import { DinnerImage } from './DinnerImage';
 import { MONTHS, addDaysISO, addMonths, formatMonth, getWeekStart, monthStartOf, parseISODate } from '../../utils/mealPlanDates';
 import { formatRecipeTitle } from '../../utils/formatters';
-import { coverFocusStyle } from '../../utils/coverFocus';
 
 const WEEKDAYS_SHORT = ['mån', 'tis', 'ons', 'tor', 'fre', 'lör', 'sön'];
 interface MonthViewProps {
@@ -129,7 +127,9 @@ const MonthGrid: React.FC<{
           const customLunch = day?.customLunch?.trim();
           const recipe = dinner || (!customDinner ? lunch : undefined);
           const custom = !recipe ? customDinner || customLunch : undefined;
-          const meal = recipe ? formatRecipeTitle(recipe.title) : custom;
+          // The dishes served with the dinner split the picture
+          const extras = dinner || customDinner ? (day?.dinnerExtras || []).map((e) => byId.get(e.recipeId)).filter((r): r is Recipe => Boolean(r)) : [];
+          const meal = [recipe ? formatRecipeTitle(recipe.title) : custom, ...extras.map((r) => formatRecipeTitle(r.title))].filter(Boolean).join(' + ');
           const isToday = date === today;
           const dateNumber = parseISODate(date).getDate();
           return (
@@ -143,15 +143,15 @@ const MonthGrid: React.FC<{
                 meal ? 'bg-stone-100' : 'border border-[#EBE7DF] md:border-transparent md:bg-stone-100 md:hover:bg-stone-200/70'
               } ${isToday ? 'ring-2 ring-[#284235]' : ''}`}
             >
-              {recipe ? (
-                <FadeImage
-                  src={recipe.coverImageUrl} style={coverFocusStyle(recipe.coverFocus)}
-                  alt=""
+              {recipe || custom ? (
+                <DinnerImage
+                  recipe={recipe}
+                  custom={custom}
+                  extras={extras}
+                  max={3}
                   loading="lazy"
-                  className="absolute inset-0 w-full h-full object-cover md:transition-transform md:duration-300 md:group-hover:scale-105"
+                  className="md:transition-transform md:duration-300 md:group-hover:scale-105"
                 />
-              ) : custom ? (
-                <CustomMealImage name={custom} />
               ) : null}
               {/* The date: on the phone only on days without a meal, on wide screens on every day */}
               {meal ? (
