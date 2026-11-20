@@ -1,5 +1,6 @@
 import type { Ingredient, Instruction, RecipeCategory } from '../types/recipe';
 import { nutritionFromSchema, nutritionFromText, type PageNutrition } from '../utils/nutrition';
+import { convertImperialMeasures } from '../utils/imperialUnits';
 import { cleanSectionHeading, dropLoneSection, isIngredientSubheading, parseIngredientLine, parseRawRecipeText, splitCombinedIngredientLine } from '../utils/ingredientParser';
 import { DEFAULT_SUBCATEGORIES } from '../data/categories';
 import { detectCategory, detectSubcategory, detectSubcategories } from '../utils/categoryDetector';
@@ -2234,7 +2235,7 @@ export function parseHtmlRecipe(html: string, targetUrl: string, engineName: str
               parsed.instructions.length >= 2 ||
               (parsed.ingredients.length >= 1 && parsed.instructions.length >= 1))
           ) {
-            return parsed;
+            return withMetricSteps(parsed);
           }
         }
       }
@@ -2246,10 +2247,15 @@ export function parseHtmlRecipe(html: string, targetUrl: string, engineName: str
   // Fallback to DOM parsing
   const fallback = parseHtmlFallback(doc, targetUrl, engineName);
   if (fallback && fallback.title && fallback.title.length >= 2 && (fallback.ingredients.length >= 2 || fallback.instructions.length >= 2)) {
-    return fallback;
+    return withMetricSteps(fallback);
   }
 
   return null;
+}
+
+/** The steps with American measures and °F as Swedish ones (the ingredients are done as they are read) */
+function withMetricSteps(recipe: ScrapedRecipe): ScrapedRecipe {
+  return { ...recipe, instructions: recipe.instructions.map((s) => ({ ...s, text: convertImperialMeasures(s.text) })) };
 }
 
 /**
@@ -2344,7 +2350,7 @@ export async function scrapeRecipeFromUrl(
         const parsedMd = parseMarkdownRecipe(content, targetUrl);
         if (parsedMd && parsedMd.ingredients.length > 0) {
           onProgress?.(100, 'Recept klart!');
-          return parsedMd;
+          return withMetricSteps(parsedMd);
         }
 
         // If markdown yielded no ingredients, try HTML format once

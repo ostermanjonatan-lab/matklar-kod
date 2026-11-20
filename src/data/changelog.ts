@@ -11,6 +11,13 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.0.223',
+    date: '2026-11-20',
+    items: [
+      'Recept från engelska sidor får svenska mått: cups blir dl, ounces och pounds blir gram, °F blir °C och inches blir cm. Texten översätts inte.',
+    ],
+  },
+  {
     version: '1.0.222',
     date: '2026-11-19',
     items: [

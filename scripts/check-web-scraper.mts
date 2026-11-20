@@ -1,5 +1,5 @@
 /**
- * Checks how recipe web pages are read (parseHtmlRecipe) against 11 test pages, and one page
+ * Checks how recipe web pages are read (parseHtmlRecipe) against 12 test pages, and one page
  * through the reader service (scrapeRecipeFromUrl): recipe data
  * for search engines (JSON-LD, also in @graph and with sections), microdata, a WordPress recipe
  * plugin and a page with only headings and lists.
@@ -36,6 +36,21 @@ const EXPECTED: Record<string, Expected> = {
       "Hoisinsås",
       "Japansk soja",
       "Basilika"
+    ],
+    "steps": 3
+  },
+  "english": {
+    "title": "Easy Banana Bread",
+    "servings": 8,
+    "cookTimeMinutes": 70,
+    "category": "Middag",
+    "ingredients": [
+      "All-purpose flour",
+      "Unsalted butter, melted",
+      "Brown sugar",
+      "Sour cream",
+      "Ripe bananas",
+      "Baking soda"
     ],
     "steps": 3
   },
@@ -202,6 +217,28 @@ for (const [key, page] of Object.entries(MARKDOWN_PAGES)) {
 }
 
 let failures = 0;
+
+// The English page's measures as Swedish ones, in the ingredients and the steps
+const WANT_METRIC: Record<string, { ingredients: string[]; steps: string[] }> = {
+  english: {
+    ingredients: ['4,5 dl', '110 g', '1,8 dl', '230 g', '450 g', '1 tsk'],
+    steps: [
+      'Preheat the oven to 175 °C and grease a 23 x 13 cm loaf pan.',
+      'Mix the flour and baking soda. Stir in 1,2 dl of the sugar.',
+      'Bake at 175 °C for 60 minutes.',
+    ],
+  },
+};
+for (const [key, want] of Object.entries(WANT_METRIC)) {
+  const r = results.find(([k]) => k === key)?.[1];
+  const amounts = (r?.ingredients || []).map((i) => `${String(i.amount).replace('.', ',')} ${i.unit}`);
+  const steps = (r?.instructions || []).map((s) => s.text);
+  if (JSON.stringify(amounts) !== JSON.stringify(want.ingredients) || JSON.stringify(steps) !== JSON.stringify(want.steps)) {
+    failures++;
+    console.log(`FEL   ${key} (mått): väntade ${JSON.stringify(want)}, fick ${JSON.stringify({ ingredients: amounts, steps })}`);
+  } else console.log(`ok    ${key} (mått)`);
+}
+
 for (const [key, r] of results) {
   const want = EXPECTED[key];
   if (!want) continue;

@@ -85,4 +85,14 @@ blogreadingtime: { url: 'https://www.matblogg.se/post/klibbig-hoisinkottfars', h
       { '@type': 'HowToStep', text: 'Lägg i löken och låt den bli mjuk under lock i 15–20 minuter.' },
       { '@type': 'HowToStep', text: 'Rör ner hoisin och soja. Lägg ner basilikan och låt den mjukna.' }],
   }), `<header><div><span title="18 aug." class="time-ago">18 aug.</span></div><div><span title="3 min läsning" data-hook="time-to-read">3 min läsning</span></div></header><h1>Klibbig hoisinköttfärs</h1>${filler}`) },
+// An English page with American measures: cups, ounces, sticks of butter and °F
+english: { url: 'https://www.example-food.com/banana-bread/', html: wrap(
+  `<title>Easy Banana Bread</title>` + ld({
+    '@context': 'https://schema.org', '@type': 'Recipe', name: 'Easy Banana Bread', recipeYield: '8 servings', totalTime: 'PT1H10M',
+    recipeIngredient: ['2 cups all-purpose flour', '1 stick unsalted butter, melted', '3/4 cup brown sugar', '8 oz sour cream (227 g)', '1 lb ripe bananas', '1 teaspoon baking soda'],
+    recipeInstructions: [
+      { '@type': 'HowToStep', text: 'Preheat the oven to 350°F (175°C) and grease a 9x5-inch loaf pan.' },
+      { '@type': 'HowToStep', text: 'Mix the flour and baking soda. Stir in 1/2 cup of the sugar.' },
+      { '@type': 'HowToStep', text: 'Bake at 350 degrees F for 60 minutes.' }],
+  }), `<h1>Easy Banana Bread</h1>${filler}`) },
 };

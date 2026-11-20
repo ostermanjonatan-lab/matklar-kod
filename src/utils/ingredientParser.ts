@@ -1,6 +1,7 @@
 import type { Ingredient, Instruction, RecipeCategory } from '../types/recipe';
 import { capitalizeFirst, cleanLeadingStepNumber, parseRecipeTimeString } from './formatters';
 import { detectCategory, detectSubcategories } from './categoryDetector';
+import { convertImperialMeasures } from './imperialUnits';
 
 export interface ParsedRecipeData {
   title: string;
@@ -1260,7 +1261,8 @@ export const VALID_UNITS = [
  * Parse a raw text ingredient line into amount, unit, and name.
  */
 export function parseIngredientLine(rawLine: string): Ingredient | null {
-  const result = parseIngredientLineInner(rawLine);
+  // American measures from English pages as Swedish ones: "1 cup flour" -> "2,5 dl flour"
+  const result = parseIngredientLineInner(convertImperialMeasures(rawLine));
   if (result) {
     // "(à 400 g )" -> "(à 400 g)"
     result.name = result.name.replace(/\(\s+/g, '(').replace(/\s+\)/g, ')').replace(/\s{2,}/g, ' ').trim();
@@ -2439,7 +2441,7 @@ export function parseRawRecipeText(
   if (stepTexts.length === 1 && splitSentences(stepTexts[0]).length >= 3) {
     stepTexts = splitSentences(stepTexts[0]);
   }
-  const instructions: Instruction[] = stepTexts.map((t, idx) => ({ stepNumber: idx + 1, text: t }));
+  const instructions: Instruction[] = stepTexts.map((t, idx) => ({ stepNumber: idx + 1, text: convertImperialMeasures(t) }));
 
   const description = descriptionParts.join(' ').trim();
   const category = detectCategory(title || description);
