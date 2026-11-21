@@ -7,6 +7,7 @@ import { addDaysISO, formatDayMonth, monthStartOf } from '../../utils/mealPlanDa
 import { formatRecipeTitle } from '../../utils/formatters';
 import { detectMeatKinds } from '../../utils/meatKinds';
 import { coverFocusStyle } from '../../utils/coverFocus';
+import { customMealIcon } from './CustomMealImage';
 
 type Period = '30' | 'month' | 'year' | 'all';
 
@@ -36,6 +37,24 @@ function kindOf(recipe: Recipe): string {
   return KINDS.find(has) ?? OTHER;
 }
 
+/**
+ * Meals written in words, gathered under one name when they mean the same thing, so that Sushi
+ * and Foodora both count as Hämtmat. The first that matches decides.
+ */
+const CUSTOM_GROUPS: [RegExp, string][] = [
+  [/hämtmat|take ?away|beställ|leverans|foodora|wolt|uber ?eats|sushi|thai|kebab/i, 'Hämtmat'],
+  [/äta ute|restaurang|krog|lunchställe/i, 'Äta ute'],
+  [/bortbjud|middag hos|kalas|hos (mormor|farmor|morfar|farfar|mamma|pappa|vänner)/i, 'Bortbjudna'],
+  [/hos \p{Lu}/u, 'Bortbjudna'],
+  [/rester|matlåd/i, 'Rester'],
+];
+
+function customGroupOf(name: string): string {
+  const text = name.trim().replace(/\s+/g, ' ');
+  const group = CUSTOM_GROUPS.find(([re]) => re.test(text))?.[1];
+  return group ?? text.charAt(0).toUpperCase() + text.slice(1);
+}
+
 interface StatsViewProps {
   today: string;
   recipes: Recipe[];
@@ -45,7 +64,8 @@ interface StatsViewProps {
 
 /**
  * Statistics on the dinners planned up to and including yesterday: the dishes made most often,
- * and how the dinners split into fish, chicken, beef and so on. A planned day counts as eaten.
+ * how the dinners split into fish, chicken, beef and so on, and how often a meal written in
+ * words (Hämtmat, Äta ute) came up. A planned day counts as eaten.
  */
 export const StatsView: React.FC<StatsViewProps> = ({ today, recipes, getMealPlanForDate, onOpenRecipe }) => {
   const [period, setPeriod] = useStoredState<Period>('matklar_stats_period', '30', (v) =>
@@ -65,6 +85,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ today, recipes, getMealPla
     const byId = new Map(recipes.map((r) => [r.id, r]));
     const counts = new Map<string, { recipe: Recipe; count: number; last: string }>();
     const kinds = new Map<string, number>();
+    const customCounts = new Map<string, { name: string; count: number; last: string }>();
     let dinners = 0;
     let custom = 0;
     let first: string | null = null;
@@ -84,6 +105,14 @@ export const StatsView: React.FC<StatsViewProps> = ({ today, recipes, getMealPla
       } else if (day?.customDinner?.trim()) {
         custom++;
         first ??= date;
+        const name = customGroupOf(day.customDinner);
+        // Pizza and pizza are the same meal
+        const key = name.toLowerCase();
+        const entry = customCounts.get(key);
+        if (entry) {
+          entry.count++;
+          entry.last = date;
+        } else customCounts.set(key, { name, count: 1, last: date });
       }
     }
     const top = [...counts.values()]
@@ -94,8 +123,11 @@ export const StatsView: React.FC<StatsViewProps> = ({ today, recipes, getMealPla
       .map(([kind, count]) => ({ kind, count }))
       // Most first, Annat always last
       .sort((a, b) => (a.kind === OTHER ? 1 : b.kind === OTHER ? -1 : b.count - a.count));
+    const customRows = [...customCounts.values()].sort(
+      (a, b) => b.count - a.count || b.last.localeCompare(a.last)
+    );
     // "Allt" starts at the first planned day, the others at the start of the period
-    return { from: period === 'all' ? first : from, yesterday, dinners, custom, top, kindRows };
+    return { from: period === 'all' ? first : from, yesterday, dinners, custom, top, kindRows, customRows };
   }, [period, today, recipes, getMealPlanForDate]);
 
   const maxKind = Math.max(1, ...stats.kindRows.map((r) => r.count));
@@ -122,22 +154,26 @@ export const StatsView: React.FC<StatsViewProps> = ({ today, recipes, getMealPla
         ))}
       </div>
 
-      {stats.dinners === 0 ? (
-        <p className="mt-6 text-sm text-stone-500">
-          {stats.custom > 0
-            ? `Bara egna måltider under den här tiden (${stats.custom} st), inga recept.`
-            : 'Inga middagar planerade före i dag under den här tiden.'}
-        </p>
+      {stats.dinners === 0 && stats.custom === 0 ? (
+        <p className="mt-6 text-sm text-stone-500">Inga middagar planerade före i dag under den här tiden.</p>
       ) : (
         <>
           <p className="mt-4 text-sm text-stone-600">
-            <span className="font-semibold text-stone-900">{stats.dinners} middagar</span>
-            {range ? `, ${range}` : ''}
-            {stats.custom > 0 ? `. ${stats.custom} egna måltider räknas inte med.` : '.'}
+            <span className="font-semibold text-stone-900">
+              {[
+                stats.dinners > 0 ? `${stats.dinners} ${stats.dinners === 1 ? 'middag' : 'middagar'} efter recept` : '',
+                stats.custom > 0 ? `${stats.custom} ${stats.custom === 1 ? 'egen måltid' : 'egna måltider'}` : '',
+              ]
+                .filter(Boolean)
+                .join(' och ')}
+            </span>
+            {range ? `, ${range}` : ''}.
           </p>
 
-          {/* The two kinds of statistics under each other, and side by side on wide screens */}
+          {/* The statistics under each other, and two side by side on wide screens */}
           <div className="lg:grid lg:grid-cols-2 lg:gap-x-12 xl:gap-x-16 lg:items-start">
+          {stats.dinners > 0 && (
+          <>
           <section>
           {/* 1. The dishes made most often */}
           <h2 className="mt-6 font-serif font-bold text-lg text-stone-900">Oftast lagat</h2>
@@ -166,6 +202,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ today, recipes, getMealPla
           </ol>
           </section>
 
+
           <section>
           {/* 2. The kinds of dinner, one bar each */}
           <h2 className="mt-8 lg:mt-6 font-serif font-bold text-lg text-stone-900">Sorter</h2>
@@ -187,6 +224,34 @@ export const StatsView: React.FC<StatsViewProps> = ({ today, recipes, getMealPla
           </ul>
           <p className="mt-3 text-xs text-stone-500">Varje middag räknas en gång, efter det första som stämmer: fisk, kyckling, kött eller vegetariskt.</p>
           </section>
+          </>
+          )}
+
+          {stats.customRows.length > 0 && (
+          <section>
+          {/* 3. Meals written in words: Hämtmat, Äta ute, Rester and the like */}
+          <h2 className="mt-8 lg:mt-6 font-serif font-bold text-lg text-stone-900">Egna måltider</h2>
+          <ul className="mt-1 divide-y divide-[#EBE7DF] border-y border-[#EBE7DF]">
+            {stats.customRows.map(({ name, count, last }) => {
+              const Icon = customMealIcon(name);
+              return (
+                <li key={name} className="py-2.5 flex items-center gap-3">
+                  <span className="w-11 h-11 rounded-lg bg-stone-100 flex items-center justify-center shrink-0">
+                    <Icon className="w-5 h-5 text-stone-400 stroke-[1.75]" aria-hidden="true" />
+                  </span>
+                  <span className="flex-1 min-w-0">
+                    <span className="block text-sm font-semibold text-stone-900 truncate">{name}</span>
+                    <span className="block text-xs text-stone-500">Senast {formatDayMonth(last)}</span>
+                  </span>
+                  <span className="text-sm tabular-nums text-stone-900 shrink-0">
+                    {count} {count === 1 ? 'gång' : 'gånger'}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+          </section>
+          )}
           </div>
         </>
       )}
