@@ -49,10 +49,19 @@ const CUSTOM_GROUPS: [RegExp, string][] = [
   [/rester|matlåd/i, 'Rester'],
 ];
 
-function customGroupOf(name: string): string {
+const capitalize = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
+
+/**
+ * The group of a meal written in words, and for a meal in a group the place when there is one:
+ * what comes after a dash, colon or comma, or after från, på or hos
+ * ("Hämtmat - Brödernas", "Äta ute på Pinchos").
+ */
+function customGroupOf(name: string): { group: string; place: string | null } {
   const text = name.trim().replace(/\s+/g, ' ');
   const group = CUSTOM_GROUPS.find(([re]) => re.test(text))?.[1];
-  return group ?? text.charAt(0).toUpperCase() + text.slice(1);
+  if (!group) return { group: capitalize(text), place: null };
+  const place = text.match(/(?:\s[-–—]\s*|[:,]\s*|\s(?:från|på|hos)\s+)(.+)$/i)?.[1].trim();
+  return { group, place: place ? capitalize(place) : null };
 }
 
 interface StatsViewProps {
@@ -85,7 +94,10 @@ export const StatsView: React.FC<StatsViewProps> = ({ today, recipes, getMealPla
     const byId = new Map(recipes.map((r) => [r.id, r]));
     const counts = new Map<string, { recipe: Recipe; count: number; last: string }>();
     const kinds = new Map<string, number>();
-    const customCounts = new Map<string, { name: string; count: number; last: string }>();
+    const customCounts = new Map<
+      string,
+      { name: string; count: number; last: string; places: Map<string, { name: string; count: number }> }
+    >();
     let dinners = 0;
     let custom = 0;
     let first: string | null = null;
@@ -105,14 +117,22 @@ export const StatsView: React.FC<StatsViewProps> = ({ today, recipes, getMealPla
       } else if (day?.customDinner?.trim()) {
         custom++;
         first ??= date;
-        const name = customGroupOf(day.customDinner);
+        const { group: name, place } = customGroupOf(day.customDinner);
         // Pizza and pizza are the same meal
         const key = name.toLowerCase();
-        const entry = customCounts.get(key);
+        let entry = customCounts.get(key);
         if (entry) {
           entry.count++;
           entry.last = date;
-        } else customCounts.set(key, { name, count: 1, last: date });
+        } else {
+          entry = { name, count: 1, last: date, places: new Map() };
+          customCounts.set(key, entry);
+        }
+        if (place) {
+          const placeEntry = entry.places.get(place.toLowerCase());
+          if (placeEntry) placeEntry.count++;
+          else entry.places.set(place.toLowerCase(), { name: place, count: 1 });
+        }
       }
     }
     const top = [...counts.values()]
@@ -123,9 +143,16 @@ export const StatsView: React.FC<StatsViewProps> = ({ today, recipes, getMealPla
       .map(([kind, count]) => ({ kind, count }))
       // Most first, Annat always last
       .sort((a, b) => (a.kind === OTHER ? 1 : b.kind === OTHER ? -1 : b.count - a.count));
-    const customRows = [...customCounts.values()].sort(
-      (a, b) => b.count - a.count || b.last.localeCompare(a.last)
-    );
+    const customRows = [...customCounts.values()]
+      .sort((a, b) => b.count - a.count || b.last.localeCompare(a.last))
+      .map(({ places, ...row }) => ({
+        ...row,
+        // The places most often first, as "Brödernas 5, Max 2"
+        places: [...places.values()]
+          .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, 'sv'))
+          .map((pl) => `${pl.name} ${pl.count}`)
+          .join(', '),
+      }));
     // "Allt" starts at the first planned day, the others at the start of the period
     return { from: period === 'all' ? first : from, yesterday, dinners, custom, top, kindRows, customRows };
   }, [period, today, recipes, getMealPlanForDate]);
@@ -232,7 +259,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ today, recipes, getMealPla
           {/* 3. Meals written in words: Hämtmat, Äta ute, Rester and the like */}
           <h2 className="mt-8 lg:mt-6 font-serif font-bold text-lg text-stone-900">Egna måltider</h2>
           <ul className="mt-1 divide-y divide-[#EBE7DF] border-y border-[#EBE7DF]">
-            {stats.customRows.map(({ name, count, last }) => {
+            {stats.customRows.map(({ name, count, last, places }) => {
               const Icon = customMealIcon(name);
               return (
                 <li key={name} className="py-2.5 flex items-center gap-3">
@@ -242,6 +269,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ today, recipes, getMealPla
                   <span className="flex-1 min-w-0">
                     <span className="block text-sm font-semibold text-stone-900 truncate">{name}</span>
                     <span className="block text-xs text-stone-500">Senast {formatDayMonth(last)}</span>
+                    {places && <span className="block text-xs text-stone-600 mt-0.5 break-words">{places}</span>}
                   </span>
                   <span className="text-sm tabular-nums text-stone-900 shrink-0">
                     {count} {count === 1 ? 'gång' : 'gånger'}
