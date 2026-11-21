@@ -94,7 +94,7 @@ export async function uploadRecipePhoto(file: File | Blob): Promise<string> {
         .from('recipe-media')
         .upload(filePath, blob, {
           contentType: 'image/jpeg',
-          upsert: true,
+          upsert: false,
         });
 
       let bucketName = 'recipe-media';
@@ -105,7 +105,7 @@ export async function uploadRecipePhoto(file: File | Blob): Promise<string> {
           .from('recipe-images')
           .upload(filePath, blob, {
             contentType: 'image/jpeg',
-            upsert: true,
+            upsert: false,
           });
 
         if (!legacyResult.error) {
@@ -153,7 +153,7 @@ export async function persistRecipeDocument(file: File | Blob): Promise<string> 
           .from('recipe-media')
           .upload(filePath, blob, {
             contentType: 'image/jpeg',
-            upsert: true,
+            upsert: false,
           });
 
         if (!error) {

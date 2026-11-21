@@ -175,5 +175,18 @@ INSERT INTO storage.buckets (id, name, public)
 VALUES ('recipe-media', 'recipe-media', true)
 ON CONFLICT (id) DO NOTHING;
 
-CREATE POLICY "Public Access for Recipe Media" ON storage.objects
-  FOR ALL USING (bucket_id = 'recipe-media');
+-- Bara JPEG-bilder upp till 2 MB. Appen komprimerar bilder till några hundra kB innan de laddas upp.
+UPDATE storage.buckets
+SET file_size_limit = 2097152, allowed_mime_types = ARRAY['image/jpeg']
+WHERE id = 'recipe-media';
+
+-- Bilderna visas via sina publika adresser, som inte kräver någon regel.
+-- Appen lägger bara till nya filer, så det är det enda som tillåts:
+-- ingen kan lista, skriva över eller radera filer.
+DROP POLICY IF EXISTS "Public Access for Recipe Media" ON storage.objects;
+DROP POLICY IF EXISTS "Upload recipe images" ON storage.objects;
+CREATE POLICY "Upload recipe images" ON storage.objects
+  FOR INSERT WITH CHECK (
+    bucket_id = 'recipe-media'
+    AND name ~ '^(covers/recipe|documents/doc)_[0-9]+_[a-z0-9]+\.jpg$'
+  );
