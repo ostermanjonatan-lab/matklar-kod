@@ -782,6 +782,11 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
               <div className="flex items-center justify-between mb-2">
                 <h2 className="font-serif text-lg font-bold text-stone-900">
                   Ingredienser
+                  {shownRecipe.ingredients.length > 0 && (
+                    <span className="ml-2 font-sans text-sm font-normal text-stone-500">
+                      {shownRecipe.ingredients.length}
+                    </span>
+                  )}
                 </h2>
                 <button
                   type="button"
