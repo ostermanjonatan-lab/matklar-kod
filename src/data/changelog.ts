@@ -11,6 +11,13 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.0.225',
+    date: '2026-11-21',
+    items: [
+      'Statistik i Planerare visar hur ofta det blivit egna måltider. Hämtmat, Äta ute, Bortbjudna och Rester samlas på var sin rad, och ställen som "Hämtmat - Brödernas" räknas under raden.',
+    ],
+  },
+  {
     version: '1.0.224',
     date: '2026-11-21',
     items: [
