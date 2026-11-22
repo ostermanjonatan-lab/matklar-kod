@@ -36,13 +36,22 @@ export const MonthView: React.FC<MonthViewProps> = ({ target, today, recipes, ge
   const byId = new Map(recipes.map((r) => [r.id, r]));
 
   const sections = useRef(new Map<string, HTMLElement>());
-  const scrolled = useRef(false);
+  // The month asked for when the view opened, which is scrolled to without animation
+  const firstTarget = useRef(target.key);
   // Scroll to the month asked for: straight there when the view opens, smoothly after that
   useEffect(() => {
     const el = sections.current.get(target.month);
     if (!el) return;
-    el.scrollIntoView({ block: 'start', behavior: scrolled.current ? 'smooth' : 'auto' });
-    scrolled.current = true;
+    if (target.key !== firstTarget.current) {
+      el.scrollIntoView({ block: 'start', behavior: 'smooth' });
+      return;
+    }
+    const scroll = () => el.scrollIntoView({ block: 'start', behavior: 'auto' });
+    scroll();
+    // The app puts the page back at the top when the tab changes and when it starts, also a moment
+    // later (App.tsx), so the month is scrolled to again after that
+    const timer = setTimeout(scroll, 60);
+    return () => clearTimeout(timer);
   }, [target.key, target.month]);
 
   // The month at the top of the screen goes in the header
