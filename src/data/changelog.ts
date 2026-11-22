@@ -11,6 +11,13 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.0.226',
+    date: '2026-11-22',
+    items: [
+      'Månadsvyn i Planerare öppnar vid den här månaden igen. Den började ett år bakåt när appen startade eller fliken byttes.',
+    ],
+  },
+  {
     version: '1.0.225',
     date: '2026-11-21',
     items: [
