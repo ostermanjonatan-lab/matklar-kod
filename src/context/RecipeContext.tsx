@@ -65,6 +65,7 @@ import {
   clearAisleOverrides,
 } from '../utils/shoppingAggregator';
 import { keepLocalPlanFields } from '../utils/dinnerExtras';
+import { isInlineImage, moveInlineImage } from '../utils/imageService';
 
 const RecipeContext = createContext<RecipeContextType | undefined>(undefined);
 
@@ -854,6 +855,38 @@ export const RecipeProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   // The name of a day's dinner, for leftover lunches that come from it
   const recipesRef = useRef(recipes);
   recipesRef.current = recipes;
+
+  // Pictures saved inside a recipe (when uploading failed as it was added) make every sync of the
+  // recipes slow, so once the household's recipes have been fetched they are moved to storage, one
+  // at a time and once per start
+  const updateRecipeRef = useRef(updateRecipe);
+  updateRecipeRef.current = updateRecipe;
+  const inlineImagesMoved = useRef(false);
+  useEffect(() => {
+    if (!isLiveSupabase || !household?.id || !householdLoaded || inlineImagesMoved.current) return;
+    inlineImagesMoved.current = true;
+    (async () => {
+      const ids = recipesRef.current
+        .filter((r) => isInlineImage(r.coverImageUrl) || isInlineImage(r.recipeDocumentUrl))
+        .map((r) => r.id);
+      for (const id of ids) {
+        const before = recipesRef.current.find((r) => r.id === id);
+        if (!before) continue;
+        const cover = isInlineImage(before.coverImageUrl) ? await moveInlineImage(before.coverImageUrl, 'cover') : null;
+        const doc = isInlineImage(before.recipeDocumentUrl) ? await moveInlineImage(before.recipeDocumentUrl, 'document') : null;
+        // Stop if uploading does not work at all now, and try again at the next start
+        if (!cover && !doc) break;
+        // The recipe as it is now, in case it was changed while the picture was uploaded
+        const now = recipesRef.current.find((r) => r.id === id);
+        if (!now) continue;
+        updateRecipeRef.current({
+          ...now,
+          ...(cover && now.coverImageUrl === before.coverImageUrl ? { coverImageUrl: cover } : {}),
+          ...(doc && now.recipeDocumentUrl === before.recipeDocumentUrl ? { recipeDocumentUrl: doc } : {}),
+        });
+      }
+    })();
+  }, [isLiveSupabase, household?.id, householdLoaded]);
   const dinnerTitleOf = useCallback((day: MealPlanDay): string | null | undefined => {
     if (day.dinnerRecipeId) {
       return recipesRef.current.find((r) => r.id === day.dinnerRecipeId)?.title;

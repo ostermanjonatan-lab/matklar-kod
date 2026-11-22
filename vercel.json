@@ -11,8 +11,30 @@
       "destination": "/api/$1"
     },
     {
-      "source": "/((?!api/|assets/|favicon|manifest|robots\\.txt|.*\\..*).*)",
+      "source": "/((?!api/|_vercel/|assets/|favicon|manifest|robots\\.txt|.*\\..*).*)",
       "destination": "/index.html"
     }
-  ]
+  ],
+  "images": {
+    "sizes": [
+      160,
+      400,
+      828,
+      1600
+    ],
+    "formats": [
+      "image/webp"
+    ],
+    "minimumCacheTTL": 2678400,
+    "remotePatterns": [
+      {
+        "protocol": "https",
+        "hostname": "**"
+      },
+      {
+        "protocol": "http",
+        "hostname": "**"
+      }
+    ]
+  }
 }

@@ -8,6 +8,7 @@ import { useRecipes } from '../../context/RecipeContext';
 import { formatRecipeTitle } from '../../utils/formatters';
 import { TimerRow, useCurvedShape } from '../timer/TimerBar';
 import { coverFocusStyle } from '../../utils/coverFocus';
+import { isSizedImage, sizedImage } from '../../utils/imageUrl';
 
 interface BottomDockProps {
   /** The recipes that were minimized, the last one first. They are still open in the background. */
@@ -139,12 +140,14 @@ const MinimizedRecipes: React.FC<{
               {hasCoverImage(recipe.coverImageUrl) ? (
                 <span className="w-11 h-11 rounded-xl overflow-hidden bg-stone-100 shrink-0">
                   <img
-                    src={recipe.coverImageUrl}
+                    src={sizedImage(recipe.coverImageUrl, 'thumb')}
                     style={coverFocusStyle(recipe.coverFocus)}
                     alt=""
                     className="w-full h-full object-cover"
                     onError={(e) => {
-                      e.currentTarget.style.visibility = 'hidden';
+                      // The original if the smaller picture cannot be had, else nothing
+                      if (isSizedImage(e.currentTarget.src)) e.currentTarget.src = recipe.coverImageUrl;
+                      else e.currentTarget.style.visibility = 'hidden';
                     }}
                   />
                 </span>

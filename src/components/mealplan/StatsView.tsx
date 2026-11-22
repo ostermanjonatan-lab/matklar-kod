@@ -214,7 +214,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ today, recipes, getMealPla
                 >
                   <span className="w-5 text-right text-xs tabular-nums text-stone-400 shrink-0">{i + 1}</span>
                   <span className="relative w-11 h-11 rounded-lg overflow-hidden bg-stone-100 shrink-0">
-                    <FadeImage src={recipe.coverImageUrl} style={coverFocusStyle(recipe.coverFocus)} alt="" loading="lazy" className="absolute inset-0 w-full h-full object-cover" />
+                    <FadeImage size="thumb" src={recipe.coverImageUrl} style={coverFocusStyle(recipe.coverFocus)} alt="" loading="lazy" className="absolute inset-0 w-full h-full object-cover" />
                   </span>
                   <span className="flex-1 min-w-0">
                     <span className="block text-sm font-semibold text-stone-900 truncate">{formatRecipeTitle(recipe.title)}</span>

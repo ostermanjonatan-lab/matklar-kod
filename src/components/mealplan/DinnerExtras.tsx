@@ -38,6 +38,7 @@ export const DinnerExtras: React.FC<DinnerExtrasProps> = ({ extras, recipes, onO
               >
                 <span className="relative w-11 h-11 rounded-xl overflow-hidden bg-stone-100 shrink-0">
                   <FadeImage
+                    size="thumb"
                     src={recipe.coverImageUrl}
                     style={coverFocusStyle(recipe.coverFocus)}
                     alt=""

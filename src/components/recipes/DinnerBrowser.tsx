@@ -8,6 +8,8 @@ import { getRecipeSubcategories } from '../../types/recipe';
 import { formatCookingTime, formatRecipeTitle } from '../../utils/formatters';
 import { hasCoverImage } from '../../utils/coverImage';
 import { NoImage } from '../layout/NoImage';
+import { FadeImage } from '../layout/FadeImage';
+import { isSizedImage, sizedImage } from '../../utils/imageUrl';
 
 
 // Subcategory value meaning "all recipes in the category"
@@ -39,8 +41,8 @@ const timeLabel = (minutes: number) =>
 
 const Thumb: React.FC<{ src?: string; focus?: CoverFocus }> = ({ src, focus }) =>
   hasCoverImage(src) ? (
-    <span className="block w-11 h-11 rounded-xl overflow-hidden bg-stone-200 shrink-0">
-      <img src={smallImage(src)} alt="" loading="lazy" className="w-full h-full object-cover" style={coverFocusStyle(focus)} />
+    <span className="relative block w-11 h-11 rounded-xl overflow-hidden bg-stone-200 shrink-0">
+      <FadeImage src={smallImage(src)} size="thumb" alt="" loading="lazy" className="absolute inset-0 w-full h-full object-cover" style={coverFocusStyle(focus)} />
     </span>
   ) : (
     <span className="relative block w-11 h-11 rounded-xl overflow-hidden shrink-0">
@@ -81,7 +83,11 @@ const SlideshowThumb: React.FC<{ src: string | null }> = ({ src }) => {
       {layers.map((layer, i) => (
         <img
           key={layer.key}
-          src={layer.src}
+          src={sizedImage(layer.src, 'tile')}
+          // The original if the smaller picture cannot be had
+          onError={(e) => {
+            if (isSizedImage(e.currentTarget.src)) e.currentTarget.src = layer.src;
+          }}
           alt=""
           className={`${tileImg} animate-thumb-drift ${i > 0 ? 'animate-thumb-fade' : ''}`}
         />

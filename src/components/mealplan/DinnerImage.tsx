@@ -1,6 +1,7 @@
 import React from 'react';
 import type { Recipe } from '../../types/recipe';
 import { FadeImage } from '../layout/FadeImage';
+import type { ImageSize } from '../../utils/imageUrl';
 import { CustomMealImage } from './CustomMealImage';
 import { coverFocusStyle } from '../../utils/coverFocus';
 import { splitIntoRows } from '../../utils/dinnerExtras';
@@ -18,19 +19,25 @@ interface DinnerImageProps {
   /** Classes for the main picture when it is alone, like a hover zoom */
   className?: string;
   loading?: 'lazy' | 'eager';
+  /** The size the picture is shown at (a slice gets the size of the whole picture) */
+  size?: ImageSize;
+  /** For the picture seen first on the screen */
+  priority?: boolean;
 }
 
 /**
  * The picture of a day's dinner. Fills the box it is in (which needs position and a size). With
  * more dishes than one, each gets its own slice, the dinner first: side by side up to three, then a grid.
  */
-export const DinnerImage: React.FC<DinnerImageProps> = ({ recipe, custom, extras = [], max = 9, onSelectExtra, className = '', loading }) => {
+export const DinnerImage: React.FC<DinnerImageProps> = ({ recipe, custom, extras = [], max = 9, onSelectExtra, className = '', loading, size = 'card', priority }) => {
   const main = recipe ? (
     <FadeImage
       src={recipe.coverImageUrl}
       style={coverFocusStyle(recipe.coverFocus)}
       alt=""
       loading={loading}
+      size={size}
+      priority={priority}
       className={`absolute inset-0 w-full h-full object-cover ${extras.length === 0 ? className : ''}`}
     />
   ) : custom ? (
@@ -50,6 +57,7 @@ export const DinnerImage: React.FC<DinnerImageProps> = ({ recipe, custom, extras
           style={coverFocusStyle(r.coverFocus)}
           alt=""
           loading={loading}
+          size={size}
           className="absolute inset-0 w-full h-full object-cover"
         />
       ),

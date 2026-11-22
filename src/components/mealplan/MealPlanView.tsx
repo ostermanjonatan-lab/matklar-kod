@@ -802,7 +802,7 @@ export const MealPlanView: React.FC = () => {
                         }`}
                       >
                         {hasDinner ? (
-                          <DinnerImage recipe={recipe} custom={dayData?.customDinner?.trim()} extras={extraRecipes(dayData)} max={4} />
+                          <DinnerImage recipe={recipe} custom={dayData?.customDinner?.trim()} extras={extraRecipes(dayData)} max={4} size="thumb" />
                         ) : (
                           <span className="text-base font-bold text-stone-300 group-hover:text-stone-400">
                             +
@@ -938,6 +938,7 @@ export const MealPlanView: React.FC = () => {
                     className="relative aspect-16/10 rounded-t-3xl overflow-hidden cursor-pointer group touch-manipulation"
                   >
                     <DinnerImage
+                      priority
                       recipe={dinnerRecipe}
                       extras={extraRecipes(activeDayData as MealPlanDay)}
                       onSelectExtra={openRecipeDetail}
@@ -1285,7 +1286,7 @@ export const MealPlanView: React.FC = () => {
                     className="flex items-center gap-3 min-w-0 flex-1 cursor-pointer group touch-manipulation"
                   >
                     <span className="relative w-12 h-12 rounded-xl overflow-hidden shrink-0 block">
-                      <FadeImage src={lunchRecipe.coverImageUrl} style={coverFocusStyle(lunchRecipe.coverFocus)} alt={lunchRecipe.title} className="absolute inset-0 w-full h-full object-cover" />
+                      <FadeImage size="thumb" src={lunchRecipe.coverImageUrl} style={coverFocusStyle(lunchRecipe.coverFocus)} alt={lunchRecipe.title} className="absolute inset-0 w-full h-full object-cover" />
                     </span>
                     <div className="min-w-0 flex-1">
                       <h4 className="font-serif font-bold text-sm leading-5 text-stone-900 truncate group-hover:text-emerald-900 transition-colors">
@@ -1351,6 +1352,7 @@ export const MealPlanView: React.FC = () => {
                     <span className="relative w-12 h-12 rounded-xl overflow-hidden shrink-0 block">
                       {leftoverRecipe(weekDates[selectedDayIndex], activeDayData.customLunch) ? (
                         <FadeImage
+                          size="thumb"
                           src={leftoverRecipe(weekDates[selectedDayIndex], activeDayData.customLunch)!.coverImageUrl}
                           style={coverFocusStyle(leftoverRecipe(weekDates[selectedDayIndex], activeDayData.customLunch)!.coverFocus)}
                           alt=""
@@ -1499,7 +1501,7 @@ export const MealPlanView: React.FC = () => {
                   {/* Thumbnail */}
                   <div className="relative w-12 h-12 rounded-xl overflow-hidden bg-stone-100 shrink-0">
                     {dRecipe || hasCustomDinner ? (
-                      <DinnerImage recipe={dRecipe} custom={dayData?.customDinner?.trim()} extras={extraRecipes(dayData)} max={4} />
+                      <DinnerImage recipe={dRecipe} custom={dayData?.customDinner?.trim()} extras={extraRecipes(dayData)} max={4} size="thumb" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-stone-400">
                         <Plus className="w-4 h-4" />

@@ -823,11 +823,12 @@ export const RecipeList: React.FC = () => {
         ) : sortedAndFilteredRecipes.length > 0 ? (
           <div className="space-y-4">
             <div className={compact ? LIST_CLASS : 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6'}>
-              {visibleRecipes.map((recipe) => (
+              {visibleRecipes.map((recipe, index) => (
                 <RecipeCard
                   key={recipe.id}
                   recipe={recipe}
                   compact={compact}
+                  priority={index < (compact ? 8 : 2)}
                   onClick={handleSelectRecipe}
                   onToggleFavorite={handleToggleFavorite}
                   onShareRecipe={handleShareRecipe}

@@ -159,6 +159,7 @@ const MonthGrid: React.FC<{
                   extras={extras}
                   max={4}
                   loading="lazy"
+                  size="thumb"
                   className="md:transition-transform md:duration-300 md:group-hover:scale-105"
                 />
               ) : null}

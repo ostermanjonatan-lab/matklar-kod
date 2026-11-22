@@ -23,6 +23,7 @@ import {
 import confetti from 'canvas-confetti';
 import { formatCookingTime, formatRecipeTitle } from '../../utils/formatters';
 import { coverFocusStyle } from '../../utils/coverFocus';
+import { FadeImage } from '../layout/FadeImage';
 
 interface RandomPickerModalProps {
   recipes: Recipe[];
@@ -514,10 +515,13 @@ export const RandomPickerModal: React.FC<RandomPickerModalProps> = ({
                   >
                     <div className="relative aspect-16/10 w-full bg-stone-100 overflow-hidden">
                       {hasCoverImage(displayedRecipe.coverImageUrl) ? (
-                        <img
+                        <FadeImage
+                          key={displayedRecipe.id}
                           src={displayedRecipe.coverImageUrl} style={coverFocusStyle(displayedRecipe.coverFocus)}
                           alt={displayedRecipe.title}
-                          className="w-full h-full object-cover"
+                          size="card"
+                          priority
+                          className="absolute inset-0 w-full h-full object-cover"
                         />
                       ) : (
                         <NoImage />

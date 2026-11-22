@@ -21,10 +21,12 @@ interface RecipeCardProps {
   isInShoppingList?: boolean;
   /** A low row with a small photo to the left and the text to the right */
   compact?: boolean;
+  /** One of the first cards on the screen: its picture is fetched before the others */
+  priority?: boolean;
 }
 
 export const RecipeCard = React.memo<RecipeCardProps>(
-  ({ recipe, onClick, onToggleFavorite, onAddToShoppingList, isInShoppingList, compact }) => {
+  ({ recipe, onClick, onToggleFavorite, onAddToShoppingList, isInShoppingList, compact, priority }) => {
     // Only access context if onToggleFavorite was not provided by parent
     const recipesContext = useRecipes();
     const toggleFav = onToggleFavorite || recipesContext.toggleFavorite;
@@ -149,6 +151,8 @@ export const RecipeCard = React.memo<RecipeCardProps>(
             <FadeImage
               src={recipe.coverImageUrl} style={coverFocusStyle(recipe.coverFocus)}
               alt=""
+              size="thumb"
+              priority={priority}
               loading="lazy"
               className="absolute inset-0 w-full h-full object-cover"
             />
@@ -197,6 +201,8 @@ export const RecipeCard = React.memo<RecipeCardProps>(
         <FadeImage
           src={recipe.coverImageUrl} style={coverFocusStyle(recipe.coverFocus)}
           alt={recipe.title}
+          size="card"
+          priority={priority}
           loading="lazy"
           className="absolute inset-0 w-full h-full object-cover group-hover:scale-105"
         />
@@ -246,6 +252,7 @@ export const RecipeCard = React.memo<RecipeCardProps>(
   (prevProps, nextProps) => {
     return (
       prevProps.recipe.id === nextProps.recipe.id &&
+      prevProps.priority === nextProps.priority &&
       prevProps.recipe.isFavorite === nextProps.recipe.isFavorite &&
       prevProps.recipe.title === nextProps.recipe.title &&
       prevProps.recipe.coverImageUrl === nextProps.recipe.coverImageUrl &&

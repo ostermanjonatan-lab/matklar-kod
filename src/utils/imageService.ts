@@ -73,65 +73,63 @@ export async function compressImageFile(
 }
 
 /**
+ * Uploads a JPEG to the 'recipe-media' bucket and returns its public address, or null if it could
+ * not be uploaded. The bucket only takes new files named like covers/recipe_… and documents/doc_…
+ * (supabase_schema.sql), so a file is never written over.
+ */
+async function uploadJpeg(blob: Blob, kind: 'cover' | 'document'): Promise<string | null> {
+  const supabase = getSupabase();
+  if (!supabase) return null;
+  const id = `${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+  const filePath = kind === 'cover' ? `covers/recipe_${id}.jpg` : `documents/doc_${id}.jpg`;
+  const options = {
+    contentType: 'image/jpeg',
+    upsert: false,
+    // A file never changes, so phones may keep it for a year
+    cacheControl: '31536000',
+  };
+  try {
+    const { error } = await supabase.storage.from('recipe-media').upload(filePath, blob, options);
+    if (!error) return supabase.storage.from('recipe-media').getPublicUrl(filePath).data?.publicUrl || null;
+    // Households set up before the bucket was renamed have 'recipe-images'
+    if (kind === 'cover') {
+      const legacy = await supabase.storage.from('recipe-images').upload(filePath, blob, options);
+      if (!legacy.error) return supabase.storage.from('recipe-images').getPublicUrl(filePath).data?.publicUrl || null;
+    }
+    console.warn('Supabase storage upload failed:', error.message);
+  } catch (e) {
+    console.warn('Supabase storage exception:', e);
+  }
+  return null;
+}
+
+/**
  * Uploads a recipe cover photo:
  * 1. Compresses image client-side to ~100-200 KB.
  * 2. If Supabase is connected, uploads to 'recipe-media' bucket (with fallback to 'recipe-images').
  * 3. Fallback: Returns the optimized compressed Base64 Data URL (permanent, works offline & across refreshes).
  */
 export async function uploadRecipePhoto(file: File | Blob): Promise<string> {
-  // 1. Compress image first
   const { dataUrl, blob } = await compressImageFile(file, 1200, 0.82);
+  return (await uploadJpeg(blob, 'cover')) ?? dataUrl;
+}
 
-  // 2. Try Supabase Storage if configured
-  const supabase = getSupabase();
-  if (supabase) {
-    try {
-      const fileName = `recipe_${Date.now()}_${Math.random().toString(36).substring(2, 8)}.jpg`;
-      const filePath = `covers/${fileName}`;
+/** True for a picture saved inside the recipe itself (data:image/…) instead of as a file */
+export const isInlineImage = (url?: string | null): url is string => Boolean(url && /^data:image\//i.test(url));
 
-      // Try recipe-media first
-      let uploadResult = await supabase.storage
-        .from('recipe-media')
-        .upload(filePath, blob, {
-          contentType: 'image/jpeg',
-          upsert: false,
-        });
-
-      let bucketName = 'recipe-media';
-
-      // If recipe-media bucket does not exist, try legacy recipe-images bucket
-      if (uploadResult.error) {
-        const legacyResult = await supabase.storage
-          .from('recipe-images')
-          .upload(filePath, blob, {
-            contentType: 'image/jpeg',
-            upsert: false,
-          });
-
-        if (!legacyResult.error) {
-          uploadResult = legacyResult;
-          bucketName = 'recipe-images';
-        }
-      }
-
-      if (!uploadResult.error) {
-        const { data: publicUrlData } = supabase.storage
-          .from(bucketName)
-          .getPublicUrl(filePath);
-
-        if (publicUrlData?.publicUrl) {
-          return publicUrlData.publicUrl;
-        }
-      } else {
-        console.warn('Supabase storage upload failed, falling back to dataUrl:', uploadResult.error.message);
-      }
-    } catch (e) {
-      console.warn('Supabase storage exception, falling back to dataUrl:', e);
-    }
+/**
+ * Uploads a picture saved inside a recipe (because the upload failed when it was added) and
+ * returns its address, or null if it still cannot be uploaded.
+ */
+export async function moveInlineImage(dataUrl: string, kind: 'cover' | 'document'): Promise<string | null> {
+  try {
+    const source = await (await fetch(dataUrl)).blob();
+    const { blob } = await compressImageFile(source, kind === 'cover' ? 1200 : 1600, kind === 'cover' ? 0.82 : 0.85);
+    return await uploadJpeg(blob, kind);
+  } catch (e) {
+    console.warn('Could not move a picture saved in a recipe:', e);
+    return null;
   }
-
-  // Fallback to permanent Data URL
-  return dataUrl;
 }
 
 /**
@@ -143,34 +141,7 @@ export async function persistRecipeDocument(file: File | Blob): Promise<string> 
   if (file.type && file.type.startsWith('image/')) {
     const { dataUrl, blob } = await compressImageFile(file, 1600, 0.85);
 
-    const supabase = getSupabase();
-    if (supabase) {
-      try {
-        const fileName = `doc_${Date.now()}_${Math.random().toString(36).substring(2, 8)}.jpg`;
-        const filePath = `documents/${fileName}`;
-
-        const { error } = await supabase.storage
-          .from('recipe-media')
-          .upload(filePath, blob, {
-            contentType: 'image/jpeg',
-            upsert: false,
-          });
-
-        if (!error) {
-          const { data: publicUrlData } = supabase.storage
-            .from('recipe-media')
-            .getPublicUrl(filePath);
-
-          if (publicUrlData?.publicUrl) {
-            return publicUrlData.publicUrl;
-          }
-        }
-      } catch (err) {
-        console.warn('Document upload to Supabase failed, using permanent dataUrl:', err);
-      }
-    }
-
-    return dataUrl;
+    return (await uploadJpeg(blob, 'document')) ?? dataUrl;
   }
 
   // Fallback for other files (e.g. PDF)
