@@ -11,6 +11,13 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.0.227',
+    date: '2026-11-23',
+    items: [
+      'Bilder laddas snabbare. Små rutor hämtar mindre bilder, och en bild som telefonen redan har visas utan att hämtas igen.',
+    ],
+  },
+  {
     version: '1.0.226',
     date: '2026-11-22',
     items: [
