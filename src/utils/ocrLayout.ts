@@ -306,12 +306,18 @@ function alignedColumn(ws: OcrWord[], h: number, pageWidth: number): number | nu
 /** Boxes and lines around the recipe that are not part of it. */
 const NOISE_START =
   /^(?:kapitel\b|sida\s+\d|redaktionens|krönika|milj[öo]|h[åa]llbarhet|k[öo]ksredskap|förvaring|dryckestips|vintips|dryck\s*tips|vinförslag|n[äa]ring|energi\s*(?:&|och)\s*näring|ener(?:g|a)i\b|[a-zåäö]{3,8}\s*(?:&|och)\s*n[äa]ring|ur boken|recept av|recept:\s|foto\b|styling|text och bild|se recept|se sid(?:an)?\s+\d|isbn|copyright|©|källa\b|annons|redaktionens kommentar|visste du|om författaren|observera|m[åa]ttomvandling|omvandlingstabell|omr[äa]kning|s[äa]kerhet|obs!|notera:|\d\)\s)/i;
+/**
+ * Lines from an app around a recipe in a screenshot (Instagram, TikTok, Facebook): the clock in
+ * the status bar, who follows and likes, the comment field
+ */
+const APP_NOISE =
+  /^\d{1,2}[:.]\d{2}(?:\s|$)|\b(?:följs av|gillas av|gillat av|liked by|followed by|lägg till (?:en )?kommentar|skriv en kommentar|add a comment|visa (?:alla )?\d+ kommentarer|view all \d+ comments|originalljud|original audio)\b/i;
 /** Lines that are the recipe's labels rather than its content, such as "0-5 MIN" in a timeline. */
 const LABEL_LINE = /^(?:\d+\s*[-–]\s*\d+\s*min|servering|förberedelse|\d+\s*min)\.?$/i;
 const INGREDIENT_HEADING =
   /ingrediens|r[åa]var|du behöver|det här behöver|kryddor|smaksätt|tillbehör|komponent|^del\s*\d|^till\s+\w+:?$|^sås:?$|^deg:?$|^fyllning|^topping|^garnering|^dressing:?$|ingredients/i;
 /** The heading over all the ingredients, not over one part of them */
-const GENERAL_INGREDIENT_HEADING = /^(?:ingredienser|ingredients|r[åa]varor|du behöver|det här behöver du|kryddor|komponenter|tillbehör)\b/i;
+const GENERAL_INGREDIENT_HEADING = /^(?:ingredienser|ingredients|r[åa]varor|(?:det\s+)?du behöver|det här behöver du|kryddor|komponenter|tillbehör)\b/i;
 const STEP_HEADING = /g[öo]r s[åa] h[äa]r|s[åa] g[öo]r du|tillagning|tillredning|metod|arbets|moment(?!\s*\d)|instruktion|^steg(?!\s*\d)|method|instructions|directions|beredning/i;
 /** A column of tips or notes beside the recipe ("Anteckningar: Läs igenom hela receptet först") */
 const NOTES_HEADING = /^(?:anteckningar|tips|tips och råd|att tänka på|bra att veta|kockens tips|notera|obs)\b/i;
@@ -407,7 +413,8 @@ function guessKind(item: string): Kind {
 }
 
 const isHeading = (line: string) => {
-  const t = line.trim();
+  // "Det du behöver är..": a heading that trails off
+  const t = line.trim().replace(/\s*(?:\.{2,}|…)$/, ':');
   if (t.length < 3 || t.length > 45) return false;
   if (NEW_ITEM.test(t) && !/^del\s*\d/i.test(t)) return false;
   // A sentence ("Bryn färsen och tillsätt kryddorna.") is not a heading, whatever words it has
@@ -500,9 +507,13 @@ export function recipeTextFromBlocks(readBlocks: ReadBlock[], pageHeight: number
       !/^[a-zåäö]/.test(l.text) &&
       !(isHeading(l.text) && (INGREDIENT_HEADING.test(l.text) || STEP_HEADING.test(l.text)))
   );
-  const title = candidates.sort((a, b) => b.height - a.height)[0];
-  if (!title || title.height < h * 1.3) return null;
-  const titleText = title.text
+  const biggest = candidates.sort((a, b) => b.height - a.height)[0];
+  // A screenshot from an app (a post on Instagram) often has no name above the recipe: it is then
+  // read without one. Other pages without a name are read another way (ocrService.ts).
+  const screenshot = allLines.some((l) => APP_NOISE.test(l.text));
+  const title = biggest && biggest.height >= h * 1.3 ? biggest : null;
+  if (!title && !screenshot) return null;
+  const titleText = (title?.text ?? '')
     // "INDEX-KORT: Stekt strömming", "ARKIVERAT DOKUMENT: Falafel": a label before the name
     .replace(/^[A-ZÅÄÖ][A-ZÅÄÖ-]{2,20}(?:\s+[A-ZÅÄÖ][A-ZÅÄÖ-]{2,20})?:\s+(?=\S+\s+\S+)/u, '')
     // "Smashade Hamburgare / Swedish Dish": the name in English after a slash
@@ -510,9 +521,9 @@ export function recipeTextFromBlocks(readBlocks: ReadBlock[], pageHeight: number
       /\b(?:dish|recipe|style|swedish|with|and|the|of)\b/i.test(rest) ? '' : m
     )
     .trim();
-  const below = (l: OcrLine) => l.top >= title.top - h * 0.3;
+  const below = (l: OcrLine) => !title || l.top >= title.top - h * 0.3;
   // Portions and time sit right under the name
-  const nearTitle = (top: number) => top <= title.bottom + title.height * 4;
+  const nearTitle = (top: number) => title !== null && top <= title.bottom + title.height * 4;
 
   // 3. Lines into items, block by block: a wrapped line continues the item above it
   interface Item {
@@ -522,7 +533,9 @@ export function recipeTextFromBlocks(readBlocks: ReadBlock[], pageHeight: number
   }
   const blockItems: { block: ReadBlock; items: Item[]; hasTitle: boolean }[] = [];
   for (const block of blocks) {
-    const lines = block.lines.filter((l) => below(l) && l !== title && /[a-zåäö]{2,}|[\d½¼¾]/i.test(l.text));
+    const lines = block.lines.filter(
+      (l) => below(l) && l !== title && /[a-zåäö]{2,}|[\d½¼¾]/i.test(l.text) && !APP_NOISE.test(l.text)
+    );
     if (lines.length === 0) continue;
     const width = Math.max(...lines.map((l) => l.right - l.left));
     const lineHeight = median(lines.map((l) => l.height)) || h;
@@ -556,7 +569,19 @@ export function recipeTextFromBlocks(readBlocks: ReadBlock[], pageHeight: number
       } else items.push({ text, top: line.top, bottom: line.bottom });
       prev = line;
     }
-    blockItems.push({ block, items, hasTitle: block.lines.includes(title) });
+    blockItems.push({ block, items, hasTitle: title !== null && block.lines.includes(title) });
+  }
+
+  // In a screenshot without a name, a line on its own (the account's name, a button) is left out
+  // unless it looks like an ingredient or a step
+  if (!title) {
+    const kept = blockItems.filter(
+      (bi) =>
+        bi.items.length >= 2 ||
+        bi.items.some((it) => /^[\d½¼¾⅓⅔]+\s*\p{L}/u.test(stripMarker(it.text)) || STEP_VERB.test(stripMarker(it.text)) || it.text.split(/\s+/).length >= 8)
+    );
+    if (kept.length === 0) return null;
+    blockItems.splice(0, blockItems.length, ...kept);
   }
 
   // A step mark in the middle of a line starts a new item: "4 DL RIVNA MORÖTTER 5 -> BRED ÖVER"
