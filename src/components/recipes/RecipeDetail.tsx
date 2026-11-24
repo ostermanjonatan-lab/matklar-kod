@@ -52,6 +52,7 @@ import { ShareRecipeSheet } from '../share/ShareRecipeSheet';
 import { useTimer } from '../../context/TimerContext';
 import { TimerBar } from '../timer/TimerBar';
 import { useWakeLock } from '../../utils/wakeLock';
+import { useStoredState } from '../../hooks/useStoredState';
 
 interface RecipeDetailProps {
   recipe: Recipe;
@@ -426,6 +427,8 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
     setCheckedIngredients((prev) => ({ ...prev, [index]: !prev[index] }));
   };
 
+  // Whether the amounts are shown in the steps, chosen on this phone for all recipes
+  const [showStepAmounts, setShowStepAmounts] = useStoredState('matklar_step_amounts', true);
   // Words in each step that name an ingredient with an amount. The amount is shown after the word.
   const stepMentions = useMemo(() => {
     const hasAmount = (idx: number) =>
@@ -906,9 +909,19 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
         <div data-scroll-column className="space-y-5 lg:overflow-y-auto lg:overscroll-contain lg:p-5 lg:pl-6 lg:border-l lg:border-[#EBE7DF]">
           {/* Instructions Steps */}
           <div>
-            <h2 className="font-serif text-lg font-bold text-stone-900 mb-3">
-              Gör så här
-            </h2>
+            <div className="flex items-center justify-between gap-3 mb-2">
+              <h2 className="font-serif text-lg font-bold text-stone-900">Gör så här</h2>
+              {Object.values(stepMentions).some((list) => list.length > 0) && (
+                <button
+                  type="button"
+                  onClick={() => setShowStepAmounts((v) => !v)}
+                  aria-pressed={!showStepAmounts}
+                  className="text-xs font-semibold text-[#284235] min-h-[36px] px-1 touch-manipulation"
+                >
+                  {showStepAmounts ? 'Dölj mängder' : 'Visa mängder'}
+                </button>
+              )}
+            </div>
 
           <ol className="w-full divide-y divide-[#EBE7DF] border-y border-[#EBE7DF]">
             {recipe.instructions.map((inst) => {
@@ -963,7 +976,7 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({ recipe: initialRecip
                             parts.push(
                               <span key={`${inst.stepNumber}-${m.start}`} className={isStepDone ? '' : 'font-bold text-[#284235]'}>
                                 {inst.text.slice(m.start, m.end)}
-                                {mentionAmount(m.ingredients) && (
+                                {showStepAmounts && mentionAmount(m.ingredients) && (
                                   <span> ({mentionAmount(m.ingredients)})</span>
                                 )}
                               </span>
