@@ -11,6 +11,14 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.0.228',
+    date: '2026-11-24',
+    items: [
+      'I Gör så här kan mängderna efter ingredienserna döljas med Dölj mängder vid rubriken. Valet sparas på telefonen.',
+      'Fotoskanning läser skärmbilder av recept från Instagram, också utan receptnamn och med beskrivningen utfälld. Det som hör till Instagram, som Visa översättning och hälsningar till läsaren, tas bort.',
+    ],
+  },
+  {
     version: '1.0.227',
     date: '2026-11-23',
     items: [
