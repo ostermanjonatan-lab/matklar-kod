@@ -1,5 +1,5 @@
 /**
- * Checks the reading of pasted recipe text (parseRawRecipeText) against 26 recipe texts.
+ * Checks the reading of pasted recipe text (parseRawRecipeText) against 27 recipe texts.
  * Run: npx tsx scripts/check-recipe-parser.ts
  * When the reading is improved on purpose, update the expected values below.
  */
@@ -441,6 +441,28 @@ const EXPECTED: Record<string, Expected> = {
       "Salt och nymalen vit- eller svartpeppar"
     ],
     "steps": 3
+  },
+  "instagram": {
+    "title": "",
+    "servings": 4,
+    "cookingTimeMinutes": null,
+    "difficulty": null,
+    "category": "Middag",
+    "ingredients": [
+      "Nötfärs från Gårdssällskapet",
+      "Äggnudlar",
+      "Röd paprika",
+      "Broccoli",
+      "Vitlök",
+      "Röd chili",
+      "Japansk soja",
+      "Hoisinsås",
+      "Sesamolja",
+      "Sweetchilisås",
+      "Lime (saften)",
+      "Salt & peppar"
+    ],
+    "steps": 10
   }
 };
 

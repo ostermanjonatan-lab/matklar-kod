@@ -68,7 +68,23 @@ function findTwoColumnGutter(words: TsvWord[], pageWidth: number): number | null
 
   // A two-column split is valid if overlapping words across the gutter is very low (< 7% of words)
   const isTwoColumn = bestSplitX > 0 && minOverlap <= Math.max(4, Math.round(words.length * 0.07));
-  return isTwoColumn ? bestSplitX : null;
+  if (!isTwoColumn) return null;
+
+  // In a paragraph the words on either side of the split are only a space apart on most lines:
+  // that is one column whose lines happen to have a space at the same place, not two columns
+  let lines = 0;
+  let close = 0;
+  for (const w of words) {
+    if (w.left < bestSplitX) continue;
+    const sameLine = words.filter((o) => o.left + o.width <= bestSplitX && Math.abs(o.top - w.top) < Math.max(o.height, w.height) * 0.5);
+    if (sameLine.length === 0) continue;
+    const nearest = Math.max(...sameLine.map((o) => o.left + o.width));
+    // Only the first word to the right of the split on each line
+    if (words.some((o) => o !== w && o.left >= bestSplitX && o.left < w.left && Math.abs(o.top - w.top) < w.height * 0.5)) continue;
+    lines++;
+    if (w.left - nearest < w.height * 1.2) close++;
+  }
+  return lines >= 3 && close >= lines * 0.5 ? null : bestSplitX;
 }
 
 /**
@@ -325,3 +341,4 @@ export async function performClientOCR(
   const parsed = parseRawRecipeText(bestRawText, { fromOcr: true, linesDone: readByLayout });
   return { rawText: bestRawText, parsed, preprocessedDataUrl: bestDataUrl };
 }
+

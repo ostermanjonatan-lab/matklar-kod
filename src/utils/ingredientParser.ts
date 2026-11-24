@@ -1840,6 +1840,8 @@ function shouldMergeWithPreviousIngredient(prevLine: string, curLine: string, lo
   if (!prevLine || !curLine) return false;
   const prevTrimmed = prevLine.trim();
   const curTrimmed = curLine.trim();
+  // "1/2 lime (saften)" is whole, and "salt & peppar" is an ingredient of its own
+  if (/\)$/.test(prevTrimmed) || /^salt\s*(?:&|och|\+|o)\s*peppar\b/i.test(curTrimmed)) return false;
 
   // Pasted text keeps each ingredient on its own line. Only join when the line above clearly
   // continues (ends with a comma or dash, or with "och", "eller" and the like) and the next line
@@ -1864,6 +1866,20 @@ function shouldMergeWithPreviousIngredient(prevLine: string, curLine: string, lo
   if (/^[a-zåäö]/.test(curTrimmed) && !isInstructionLine(curTrimmed)) return true;
 
   return false;
+}
+
+/**
+ * A line of a post that talks to the reader and is not part of the recipe: questions to the
+ * reader and short exclamations, such as "Kommer du testa detta? Hoppas! HEJ!"
+ */
+function isChatter(line: string): boolean {
+  const sentences = line.split(/(?<=[!?])\s+/).map((t) => t.trim()).filter(Boolean);
+  if (sentences.length === 0 || !/[!?]$/.test(line.trim())) return false;
+  return sentences.every(
+    (t) =>
+      (/\?$/.test(t) && /\b(?:du|ni|dig|er|era|din|ditt|dina)\b/i.test(t) && t.split(/\s+/).length <= 10) ||
+      (/!$/.test(t) && t.split(/\s+/).length <= 2 && !/\d/.test(t))
+  );
 }
 
 /**
@@ -2161,8 +2177,13 @@ export function parseRawRecipeText(
   let lines = cleaned
     .split(/\r?\n/)
     .map((l) => stripBullet(l.trim()))
+    // The end of a post: "… mindre" after the text when it is opened in full
+    .map((l) => l.replace(/([!?.)])\s+[^\p{L}\p{N}\s]{0,6}\s*\S{0,3}\s*mindre$/u, '$1'))
     // Hashtags at the end of a post are not part of the recipe
     .filter((l) => l.length > 0 && !/^(#[\p{L}\p{N}_]+[\s,]*)+$/u.test(l))
+    // "27 augusti • Visa översättning" under a post, and a line that only talks to the reader
+    // ("Kommer du testa detta? Hoppas! HEJ!")
+    .filter((l) => !/\b(?:visa översättning|see translation)\b/i.test(l) && !isChatter(l))
     // A whole recipe on one line, "Gröt: 1 dl havregryn, 2 dl vatten. Koka upp ...": the name first
     .flatMap((l) => {
       const m = l.match(/^([^\d:]{2,40}):\s+(?=(?:ca\.?\s+)?[\d½¼¾⅓⅔⅛])(.+)$/);
@@ -2436,11 +2457,22 @@ export function parseRawRecipeText(
   // of the dish over its only list), says nothing about parts
   dropLoneSection(ingredients);
 
-  // Steps written as one block of several sentences become one step per sentence
+  // Steps written as one block of several sentences become one step per sentence, also when a
+  // photo of the block was read as two or three pieces where a line happened to start a sentence
   let stepTexts = steps;
-  if (stepTexts.length === 1 && splitSentences(stepTexts[0]).length >= 3) {
-    stepTexts = splitSentences(stepTexts[0]);
+  if (
+    stepTexts.length === 1 ? splitSentences(stepTexts[0]).length >= 3 : fromOcr && !linesDone && stepTexts.length <= 3 && stepTexts.some((t) => splitSentences(t).length >= 3)
+  ) {
+    stepTexts = stepTexts.flatMap((t) => splitSentences(t));
   }
+  // What a post says to the reader after the last step ("Kommer du testa detta? Hoppas! HEJ!")
+  stepTexts = stepTexts
+    .map((t) => {
+      const sentences = t.split(/(?<=[.!?])\s+/);
+      while (sentences.length > 1 && isChatter(sentences[sentences.length - 1])) sentences.pop();
+      return sentences.join(' ');
+    })
+    .filter((t) => !isChatter(t));
   const instructions: Instruction[] = stepTexts.map((t, idx) => ({ stepNumber: idx + 1, text: convertImperialMeasures(t) }));
 
   const description = descriptionParts.join(' ').trim();

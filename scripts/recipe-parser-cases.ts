@@ -392,4 +392,20 @@ laxsoppa: `Ingredienser (4 portioner)
 \u200b1. Förbered grönsakerna: Skala och tärna potatisen. Skala och slanta morötterna.
 \u200b2. Koka soppan: Fräs löken i smöret. Tillsätt fond, vatten, potatis och morötter och koka 10–12 minuter.
 \u200b3. I med laxen: Lägg i laxen och låt den gå på eftervärme i 3–5 minuter. Toppa med dill.`,
+instagram: `Det du behöver är..
+500 g nötfärs från Gårdssällskapet
+250 g äggnudlar
+1 röd paprika
+250 g broccoli
+2 vitlöksklyftor
+1 röd chili
+0,75 dl japansk soja
+2 msk hoisinsås
+1 msk sesamolja
+2 msk sweetchilisås
+1/2 lime (saften)
+salt & peppar
+
+Koka nudlarna enligt förpackningen och skölj med kallt vatten. Skär paprika och broccoli i bitar. Finhacka vitlök och chili. Blanda ihop soja, hoisinsås, sesamolja, sweetchili och limesaft till såsen. Hetta upp olja i en panna och stek färsen tills den blivit riktigt knaprig och fått ordentligt med färg. Salta och peppra. Sänk till medelvärme och låt vitlök och chili fräsa med. I med paprika och broccoli. Häll över såsen och låt puttra en stund. Vänd ner nudlarna och njut av något otroligt gott! Kommer du testa detta? Hoppas! HEJ! 😍👋 mindre
+27 augusti • Visa översättning`,
 };
