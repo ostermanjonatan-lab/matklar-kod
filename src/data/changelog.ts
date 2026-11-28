@@ -11,6 +11,13 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.0.229',
+    date: '2026-11-28',
+    items: [
+      'Ingrediensernas ordning kan ändras i Lägg till och Redigera recept. Tryck på Ändra ordning vid Ingredienser och dra i handtaget till vänster om raden.',
+    ],
+  },
+  {
     version: '1.0.228',
     date: '2026-11-24',
     items: [
