@@ -148,3 +148,39 @@ async function trimImages(cache) {
   const extra = keys.length - MAX_IMAGES;
   for (let i = 0; i < extra; i++) await cache.delete(keys[i]);
 }
+
+// The kitchen timer's notice, sent by /api/timer-fire when the timer ends and the app is not open
+self.addEventListener('push', (event) => {
+  let data = {};
+  try {
+    data = event.data ? event.data.json() : {};
+  } catch {
+    data = { title: 'Timern är klar' };
+  }
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
+      // The app on the screen sounds the alarm itself
+      if (clients.some((c) => c.visibilityState === 'visible' && c.focused)) return;
+      return self.registration.showNotification(data.title || 'Timern är klar', {
+        body: data.body || '',
+        icon: './icon-192.png',
+        badge: './icon-192.png',
+        tag: 'matklar-timer',
+        renotify: true,
+        requireInteraction: true,
+        vibrate: [400, 200, 400, 200, 400],
+      });
+    })
+  );
+});
+
+// Tapping the notice opens the app
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
+      const open = clients.find((c) => 'focus' in c);
+      return open ? open.focus() : self.clients.openWindow('./');
+    })
+  );
+});

@@ -1,5 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { playTimerAlarm } from '../utils/audioAlert';
+import { askForNotices, checkNotices, keepTimerNotice } from '../services/timerPush';
 
 /**
  * The kitchen timer. It lives above the recipe view, so it keeps counting and stays on screen
@@ -47,6 +48,7 @@ function load(): KitchenTimer | null {
 
 export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [timer, setTimer] = useState<KitchenTimer | null>(load);
+  useEffect(checkNotices, []);
 
   useEffect(() => {
     try {
@@ -86,7 +88,15 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     };
   }, [timer?.isRunning, timer?.targetEndTime]);
 
+  // A notice on the phone when the timer ends, also when the app is not open. A paused or
+  // stopped timer cancels it, and a new end time gets a new one.
+  useEffect(() => {
+    if (!timer?.isRunning || !timer.targetEndTime) return;
+    return keepTimerNotice(timer.targetEndTime, timer.label, timer.recipeTitle);
+  }, [timer?.isRunning, timer?.targetEndTime]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const startTimer = useCallback((minutes: number, label: string, recipe?: { id: string; title: string }) => {
+    askForNotices();
     const totalSeconds = Math.round(minutes * 60);
     setTimer({
       label,
@@ -100,6 +110,7 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, []);
 
   const toggleTimer = useCallback(() => {
+    askForNotices();
     setTimer((prev) => {
       if (!prev) return null;
       return prev.isRunning
@@ -109,6 +120,7 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, []);
 
   const restartTimer = useCallback(() => {
+    askForNotices();
     setTimer((prev) =>
       prev
         ? { ...prev, secondsLeft: prev.totalSeconds, isRunning: true, targetEndTime: Date.now() + prev.totalSeconds * 1000 }
