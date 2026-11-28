@@ -6,6 +6,7 @@ import { coverFocusStyle } from '../../utils/coverFocus';
 import { Camera, ImagePlus, Loader2, Move, Trash2 } from 'lucide-react';
 import { DifficultyPicker } from './DifficultyPicker';
 import { SubcategorySelector } from './SubcategorySelector';
+import { ReorderLines } from './ReorderLines';
 import { STANDARD_CATEGORIES } from '../../data/categories';
 
 /** A text box that grows with its text, so there is no scrolling inside the scrolling form. */
@@ -102,6 +103,8 @@ export const RecipeFormFields: React.FC<RecipeFormFieldsProps> = ({
   const { title, category, subcategories, servings, cookingTimeMinutes, difficulty, coverImageUrl, notes, ingredientsText, instructionsText } = values;
   const [showImageUrl, setShowImageUrl] = useState<boolean>(false);
   const [adjustingImage, setAdjustingImage] = useState(false);
+  // The ingredients as a list whose order can be changed by dragging
+  const [reorderingIngredients, setReorderingIngredients] = useState(false);
   // A new picture starts in the middle again
   const setPicture = (url: string) => {
     if (url !== coverImageUrl) setCoverFocus(undefined);
@@ -261,16 +264,30 @@ export const RecipeFormFields: React.FC<RecipeFormFieldsProps> = ({
               <label className="font-serif font-bold text-stone-900 text-sm" htmlFor={`${idPrefix}-ingredients`}>
                 Ingredienser {parsedIngredients.length > 0 ? `(${parsedIngredients.length})` : ''}
               </label>
-              <span className="text-xs text-stone-500">En per rad</span>
+              {parsedIngredients.length > 1 ? (
+                <button
+                  type="button"
+                  onClick={() => setReorderingIngredients((v) => !v)}
+                  className="text-xs font-semibold text-[#284235] min-h-[36px] px-1 touch-manipulation"
+                >
+                  {reorderingIngredients ? 'Klar' : 'Ändra ordning'}
+                </button>
+              ) : (
+                <span className="text-xs text-stone-500">En per rad</span>
+              )}
             </div>
-            <AutoGrowTextarea
-              id={`${idPrefix}-ingredients`}
-              minRows={4}
-              value={ingredientsText}
-              onChange={(e) => setIngredientsText(e.target.value)}
-              placeholder={'400 g spaghetti\n200 g guanciale\n4 äggulor'}
-              className={`${field} py-3 leading-relaxed`}
-            />
+            {reorderingIngredients ? (
+              <ReorderLines value={ingredientsText} onChange={setIngredientsText} />
+            ) : (
+              <AutoGrowTextarea
+                id={`${idPrefix}-ingredients`}
+                minRows={4}
+                value={ingredientsText}
+                onChange={(e) => setIngredientsText(e.target.value)}
+                placeholder={'400 g spaghetti\n200 g guanciale\n4 äggulor'}
+                className={`${field} py-3 leading-relaxed`}
+              />
+            )}
           </div>
 
           {/* Steps: one per line */}
